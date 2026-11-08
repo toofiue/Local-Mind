@@ -142,3 +142,9 @@ func refusesEmpty() {
         try AttachmentLoader.load(name: "empty.txt", data: Data("  \n".utf8))
     }
 }
+
+@Test("S-020 only vision models accept images")
+func readsVision() {
+    #expect(OllamaModel(name: "a", size: 1, capabilities: ["completion", "vision"]).supportsImages)
+    #expect(!OllamaModel(name: "b", size: 1, capabilities: ["completion"]).supportsImages)
+}

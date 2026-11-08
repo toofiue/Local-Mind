@@ -21,7 +21,7 @@ extension AppModel {
         for url in urls where url.isFileURL {
             do {
                 let loaded = try await Task.detached { try AttachmentLoader.load(contentsOf: url) }.value
-                draftAttachments.append(loaded)
+                addIfSupported(loaded)
             } catch {
                 show(error, fileName: url.lastPathComponent)
             }
@@ -33,10 +33,24 @@ extension AppModel {
         attachmentNotice = nil
         do {
             let loaded = try await Task.detached { try AttachmentLoader.load(name: "Pasted Image", data: data) }.value
-            draftAttachments.append(loaded)
+            addIfSupported(loaded)
         } catch {
             show(error, fileName: "Pasted Image")
         }
+    }
+
+    private func addIfSupported(_ loaded: LoadedAttachment) {
+        if loaded.kind == .image, let refusal = imageRefusal {
+            attachmentNotice = refusal
+        } else {
+            draftAttachments.append(loaded)
+        }
+    }
+
+    /// Why the current model can't take images, or nil if it can.
+    var imageRefusal: String? {
+        guard let model = models.first(where: { $0.name == currentModelName }), !model.supportsImages else { return nil }
+        return "\(model.name) can't read images. Choose a model that can."
     }
 
     func removeAttachment(_ id: UUID) {

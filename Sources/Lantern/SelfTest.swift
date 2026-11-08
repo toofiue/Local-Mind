@@ -36,7 +36,7 @@ enum SelfTest {
     }
 
     private static func runScripted(_ model: AppModel) async {
-        let first = OllamaModel(name: "first:1", size: 100, capabilities: ["completion", "thinking"], contextLimit: 100)
+        let first = OllamaModel(name: "first:1", size: 100, capabilities: ["completion", "thinking", "vision"], contextLimit: 100)
         let second = OllamaModel(name: "second:1", size: 200, capabilities: ["completion"])
         let transport = ScriptedTransport(installed: [first, second])
         model.client = OllamaClient(transport: transport)
@@ -317,6 +317,29 @@ enum SelfTest {
             await model.waitForReply()
             let sent = transport.chatBodies.last ?? ""
             check("S-019 the removed file is not sent", !sent.contains("\"images\"") && sent.contains("kept file text"))
+        }
+
+        // S-020 models without vision
+        do {
+            let previous = model.selection
+            defer { model.selection = previous }
+            model.newConversation()
+            model.draftModelName = "second:1"
+            await model.addPastedImage(SeedData.sampleImage)
+            check("S-020 an image is refused by name", model.attachmentNotice == "second:1 can't read images. Choose a model that can.", model.attachmentNotice ?? "nil")
+            check("S-020 and doesn't attach", model.draftAttachments.isEmpty)
+            model.draftAttachments.append(LoadedAttachment(kind: .text, fileName: "a.txt", text: "text works"))
+            check("S-020 text files still work without vision", model.imageRefusal != nil && model.draftAttachments.count == 1)
+            model.draftAttachments = []
+            model.draftModelName = "first:1"
+            await model.addPastedImage(SeedData.sampleImage)
+            check("S-020 a vision model takes the image", model.draftAttachments.count == 1)
+            model.draftModelName = "second:1"
+            check("S-020 switching away blocks Send", !model.send("Look at this"))
+            check("S-020 and keeps your attachment", model.draftAttachments.count == 1 && model.attachmentNotice?.contains("second:1") == true)
+            model.draftAttachments = []
+            model.attachmentNotice = nil
+            model.draftModelName = nil
         }
 
         // Launch repair

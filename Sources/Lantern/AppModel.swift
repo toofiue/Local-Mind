@@ -235,6 +235,10 @@ final class AppModel {
     func send(_ raw: String) -> Bool {
         let text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty, !isWriting, connection == .connected, let modelName = currentModelName else { return false }
+        if draftAttachments.contains(where: { $0.kind == .image }), let refusal = imageRefusal {
+            attachmentNotice = refusal
+            return false
+        }
 
         let conversation: Conversation
         if let selectedConversation {

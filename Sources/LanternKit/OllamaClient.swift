@@ -13,6 +13,7 @@ public struct OllamaModel: Sendable, Equatable, Identifiable {
 
     public var id: String { name }
     public var supportsThinking: Bool { capabilities.contains("thinking") }
+    public var supportsImages: Bool { capabilities.contains("vision") }
 
     public init(name: String, size: Int64, capabilities: Set<String> = [], contextLimit: Int = OllamaModel.defaultContext) {
         self.name = name

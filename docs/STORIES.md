@@ -321,7 +321,7 @@ UX:
 - States: PDFs and text files work with every model, so only images are checked.
 - Words: "gpt-oss:20b can't read images. Choose a model that can."
 - Access: the message uses words and an icon.
-Status: todo
+Status: done
 
 ## M4 Speed
 
