@@ -1,6 +1,21 @@
 import Foundation
+import SwiftData
+import LanternKit
 
 extension AppModel {
+    /// Moves through the sidebar's order. From a new conversation, moving down selects the first.
+    func selectAdjacentConversation(by step: Int) {
+        let all = (try? context.fetch(FetchDescriptor<Conversation>())) ?? []
+        let groups = ConversationGroups.split(all, isPinned: \.isPinned, updatedAt: \.updatedAt)
+        let order = (groups.pinned + groups.recent).map(\.uid)
+        guard let current = selection, let index = order.firstIndex(of: current) else {
+            if step > 0 { selection = order.first }
+            return
+        }
+        let next = index + step
+        if order.indices.contains(next) { selection = order[next] }
+    }
+
     var latestUserMessage: Message? {
         selectedConversation?.ordered.last { $0.role == .user }
     }

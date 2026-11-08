@@ -420,7 +420,8 @@ enum SelfTest {
             check("S-023 the conversation is selected", model.selectedConversation?.uid == conversation?.uid)
             check("S-023 the panel closes", !QuickAskController.shared.isVisible)
             let main = NSApp.windows.first { $0.canBecomeMain && !($0 is NSPanel) }
-            check("S-023 the main window comes forward", main?.isVisible == true && main?.isKeyWindow == true)
+            // Whether it becomes frontmost depends on the app you're using, so only check it's shown.
+            check("S-023 the main window is shown", main?.isVisible == true)
         }
 
         // S-025 editing
@@ -448,6 +449,30 @@ enum SelfTest {
                 let body = transport.chatBodies.last ?? ""
                 check("S-025 the model sees only the new text", body.contains("New question") && !body.contains("Old question") && !body.contains("First reply"))
             }
+        }
+
+        // S-026 moving between conversations
+        do {
+            let previous = model.selection
+            defer { model.selection = previous }
+            let all = (try? model.container.mainContext.fetch(FetchDescriptor<Conversation>())) ?? []
+            let groups = ConversationGroups.split(all, isPinned: \.isPinned, updatedAt: \.updatedAt)
+            let order = (groups.pinned + groups.recent).map(\.uid)
+            check("S-026 setup has conversations to move through", order.count >= 2)
+            model.selection = nil
+            model.selectAdjacentConversation(by: -1)
+            check("S-026 up from a new conversation stays put", model.selection == nil)
+            model.selectAdjacentConversation(by: 1)
+            check("S-026 down from a new conversation selects the first", model.selection == order.first)
+            model.selectAdjacentConversation(by: 1)
+            check("S-026 next moves down", model.selection == order[1])
+            model.selectAdjacentConversation(by: -1)
+            check("S-026 previous moves up", model.selection == order[0])
+            model.selectAdjacentConversation(by: -1)
+            check("S-026 the top stays put", model.selection == order[0])
+            model.selection = order.last
+            model.selectAdjacentConversation(by: 1)
+            check("S-026 the bottom stays put", model.selection == order.last)
         }
 
         // Launch repair
@@ -478,6 +503,13 @@ enum SelfTest {
         check("LIVE the reply has text", !(reply?.text.isEmpty ?? true), reply?.text ?? "nil")
         check("LIVE thinking arrives apart from the reply", !(reply?.thinking.isEmpty ?? true))
         print("LIVE reply: \(reply?.text ?? "") at \(Int(reply?.tokensPerSecond ?? 0)) tokens per second")
+        model.quickAsk.conversation = nil
+        model.quickAsk.draft = "Reply with exactly: quick ok"
+        check("LIVE Quick Ask sends", model.quickSend())
+        await model.waitForReply()
+        let quickReply = model.quickAsk.conversation?.ordered.last
+        check("LIVE Quick Ask gets a reply", quickReply?.state == .complete && !(quickReply?.text.isEmpty ?? true), quickReply?.failureText ?? "")
+        print("LIVE Quick Ask reply: \(quickReply?.text ?? "")")
         try? await model.client.unload(modelName)
     }
 

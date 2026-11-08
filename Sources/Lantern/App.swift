@@ -63,6 +63,11 @@ struct LanternApp: App {
                     .keyboardShortcut("c", modifiers: [.command, .shift])
                     .disabled(!menu.hasReply)
                 Divider()
+                Button("Previous Conversation") { model.selectAdjacentConversation(by: -1) }
+                    .keyboardShortcut("[")
+                Button("Next Conversation") { model.selectAdjacentConversation(by: 1) }
+                    .keyboardShortcut("]")
+                Divider()
                 Button("Rename") { model.startRenaming() }
                     .keyboardShortcut("r", modifiers: [.command, .shift])
                     .disabled(!menu.hasSelection)

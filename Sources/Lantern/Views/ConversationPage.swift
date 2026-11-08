@@ -111,7 +111,8 @@ private struct Composer: View {
                           isEnabled: model.connection == .connected,
                           focusRequest: model.focusRequest, maxLines: 8, onSubmit: submit,
                           onPasteFiles: { urls in Task { await model.addFiles(urls) } },
-                          onPasteImage: { data in Task { await model.addPastedImage(data) } })
+                          onPasteImage: { data in Task { await model.addPastedImage(data) } },
+                          onMoveConversation: { model.selectAdjacentConversation(by: $0) })
                 .frame(height: fieldHeight)
                 .overlay(alignment: .topLeading) {
                     if draft.isEmpty {

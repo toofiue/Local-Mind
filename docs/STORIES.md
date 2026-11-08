@@ -411,7 +411,7 @@ UX:
 - States: at either end nothing moves; ⌘↓ from a new conversation selects the first one. In a multi-line draft ⌘↑ and ⌘↓ keep their normal text meaning.
 - Words: "Previous Conversation", "Next Conversation".
 - Access: the whole path works without the mouse.
-Status: todo
+Status: done
 
 ## M5 Models and memory
 

@@ -35,6 +35,8 @@ struct ComposerField: NSViewRepresentable {
     var onPasteFiles: ([URL]) -> Void = { _ in }
     var onPasteImage: (Data) -> Void = { _ in }
     var onEscape: (() -> Void)?
+    /// Called for ⌘↑ and ⌘↓ while the field holds a single line.
+    var onMoveConversation: ((Int) -> Void)?
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -83,7 +85,10 @@ struct ComposerField: NSViewRepresentable {
             context.coordinator.handledFocusRequest = focusRequest
             DispatchQueue.main.async {
                 // Arrow keys in the sidebar must keep moving through the list.
-                if NSApp.currentEvent?.type != .keyDown { textView.window?.makeFirstResponder(textView) }
+                let event = NSApp.currentEvent
+                if event?.type != .keyDown || event?.modifierFlags.contains(.command) == true {
+                    textView.window?.makeFirstResponder(textView)
+                }
             }
         }
     }
@@ -106,6 +111,16 @@ struct ComposerField: NSViewRepresentable {
             if selector == #selector(NSResponder.cancelOperation(_:)) || selector == #selector(NSResponder.complete(_:)), let onEscape = parent.onEscape {
                 onEscape()
                 return true
+            }
+            if let onMove = parent.onMoveConversation, !textView.string.contains("\n") {
+                if selector == #selector(NSResponder.moveToBeginningOfDocument(_:)) {
+                    onMove(-1)
+                    return true
+                }
+                if selector == #selector(NSResponder.moveToEndOfDocument(_:)) {
+                    onMove(1)
+                    return true
+                }
             }
             guard selector == #selector(NSResponder.insertNewline(_:)) else { return false }
             if NSApp.currentEvent?.modifierFlags.contains(.shift) == true {
