@@ -1,5 +1,6 @@
 import SwiftData
 import SwiftUI
+import LanternKit
 
 struct ConversationSidebar: View {
     @Environment(AppModel.self) private var model
@@ -7,10 +8,25 @@ struct ConversationSidebar: View {
 
     var body: some View {
         @Bindable var model = model
+        let groups = ConversationGroups.split(conversations, isPinned: \.isPinned, updatedAt: \.updatedAt)
         List(selection: $model.selection) {
-            ForEach(conversations) { conversation in
-                ConversationRow(conversation: conversation)
+            if groups.pinned.isEmpty {
+                rows(groups.recent)
+            } else {
+                Section("Pinned") { rows(groups.pinned) }
+                Section("Recent") { rows(groups.recent) }
             }
+        }
+        .onDeleteCommand { model.requestDelete() }
+        .confirmationDialog(
+            "Delete “\(model.pendingDeletion?.title ?? "")”?",
+            isPresented: Binding(get: { model.pendingDeletion != nil }, set: { if !$0 { model.pendingDeletion = nil } }),
+            presenting: model.pendingDeletion
+        ) { conversation in
+            Button("Delete", role: .destructive) { model.delete(conversation) }
+            Button("Cancel", role: .cancel) {}
+        } message: { _ in
+            Text("You can't undo this action.")
         }
         .overlay {
             if conversations.isEmpty {
@@ -22,6 +38,12 @@ struct ConversationSidebar: View {
                     Button("New Conversation") { model.newConversation() }
                 }
             }
+        }
+    }
+
+    private func rows(_ items: [Conversation]) -> some View {
+        ForEach(items) { conversation in
+            ConversationRow(conversation: conversation)
         }
     }
 }
@@ -62,6 +84,10 @@ private struct ConversationRow: View {
         .tag(conversation.uid)
         .contextMenu {
             Button("Rename") { model.startRenaming(conversation) }
+            Button(conversation.isPinned ? "Unpin" : "Pin") { model.togglePin(conversation) }
+            Divider()
+            Button("Delete", role: .destructive) { model.requestDelete(conversation) }
+                .disabled(model.isWriting(in: conversation))
         }
     }
 }

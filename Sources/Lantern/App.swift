@@ -55,6 +55,14 @@ struct LanternApp: App {
                 Button("Rename") { model.startRenaming() }
                     .keyboardShortcut("r", modifiers: [.command, .shift])
                     .disabled(!menu.hasSelection)
+                Button(menu.isPinned ? "Unpin" : "Pin") { model.togglePin() }
+                    .keyboardShortcut("p", modifiers: [.command, .shift])
+                    .disabled(!menu.hasSelection)
+                Divider()
+                // No shortcut here: the Delete key must keep working in text fields.
+                // The sidebar handles it with onDeleteCommand.
+                Button("Delete") { model.requestDelete() }
+                    .disabled(!menu.canDelete)
             }
         }
 

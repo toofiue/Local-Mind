@@ -58,10 +58,11 @@ enum SeedData {
         let context = model.container.mainContext
         guard ((try? context.fetchCount(FetchDescriptor<Conversation>())) ?? 0) == 0 else { return }
 
-        func add(_ title: String, hoursAgo: Double, reply: String, thinking: String = "", state: ReplyState = .complete) {
+        func add(_ title: String, hoursAgo: Double, reply: String, thinking: String = "", state: ReplyState = .complete, pinned: Bool = false) {
             let name = "gemma4:12b-mlx"
             let conversation = Conversation(modelName: name)
             conversation.title = ConversationTitle.make(from: title)
+            conversation.isPinned = pinned
             conversation.updatedAt = .now.addingTimeInterval(-hoursAgo * 3_600)
             context.insert(conversation)
             conversation.messages.append(Message(role: .user, text: title, modelName: name, sequence: 0))
@@ -73,7 +74,8 @@ enum SeedData {
         add(formatted, hoursAgo: 0.1, reply: formattedReply)
         add(thinking, hoursAgo: 3,
             reply: "Yes, for one model at a time. Models around 8 GB leave room for your other apps.",
-            thinking: "The person has 16 GB of memory. A model of 7.7 GB loads fully, but two at once would not fit, so the honest answer is one at a time.")
+            thinking: "The person has 16 GB of memory. A model of 7.7 GB loads fully, but two at once would not fit, so the honest answer is one at a time.",
+            pinned: true)
         add(writing, hoursAgo: 26, reply: "Hi Sam,\n\nCould we move our meeting to Thursday afternoon?", state: .writing)
         add(longTitle, hoursAgo: 50, reply: "The largest model writes best, and the smallest loads fastest.", state: .stopped)
         try? context.save()

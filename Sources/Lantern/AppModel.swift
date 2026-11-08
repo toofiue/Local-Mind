@@ -18,8 +18,12 @@ final class MenuState: ObservableObject {
     @Published private(set) var isWriting = false
     @Published private(set) var hasReply = false
     @Published private(set) var hasSelection = false
+    @Published private(set) var isPinned = false
+    @Published private(set) var canDelete = false
 
-    func update(isWriting: Bool, hasReply: Bool, hasSelection: Bool) {
+    func update(isWriting: Bool, hasReply: Bool, hasSelection: Bool, isPinned: Bool, canDelete: Bool) {
+        if self.canDelete != canDelete { self.canDelete = canDelete }
+        if self.isPinned != isPinned { self.isPinned = isPinned }
         if self.isWriting != isWriting { self.isWriting = isWriting }
         if self.hasReply != hasReply { self.hasReply = hasReply }
         if self.hasSelection != hasSelection { self.hasSelection = hasSelection }
@@ -46,10 +50,13 @@ final class AppModel {
     var models: [OllamaModel] = []
     var draftModelName: String?
     var writingReplyID: UUID? { didSet { syncMenu() } }
+    private var writingConversationID: UUID?
     var writingPhase: WritingPhase?
     var showingModelPicker = false
     /// The conversation whose sidebar row is being edited.
     var renamingID: UUID?
+    /// The conversation waiting on a delete confirmation.
+    var pendingDeletion: Conversation?
     /// Goes up whenever the message field should take focus.
     var focusRequest = 0
     /// Settings reopens on the last tab. Test and snapshot runs leave it alone.
@@ -160,6 +167,36 @@ final class AppModel {
         selection = nil
     }
 
+    func togglePin(_ conversation: Conversation? = nil) {
+        guard let target = conversation ?? selectedConversation else { return }
+        target.isPinned.toggle()
+        save()
+    }
+
+    func isWriting(in conversation: Conversation) -> Bool {
+        writingConversationID == conversation.uid
+    }
+
+    /// Asks for confirmation. A reply can't be deleted while it's being written.
+    func requestDelete(_ conversation: Conversation? = nil) {
+        guard let target = conversation ?? selectedConversation, !isWriting(in: target) else { return }
+        pendingDeletion = target
+    }
+
+    func delete(_ conversation: Conversation) {
+        pendingDeletion = nil
+        guard !isWriting(in: conversation) else { return }
+        let all = (try? context.fetch(FetchDescriptor<Conversation>())) ?? []
+        let groups = ConversationGroups.split(all, isPinned: \.isPinned, updatedAt: \.updatedAt)
+        let order = (groups.pinned + groups.recent).map(\.uid)
+        let wasSelected = selection == conversation.uid
+        let next = ConversationGroups.next(in: order, afterRemoving: conversation.uid)
+        // Move away first, so nothing on screen is reading the deleted conversation.
+        if wasSelected { selection = next }
+        context.delete(conversation)
+        save()
+    }
+
     func startRenaming(_ conversation: Conversation? = nil) {
         renamingID = (conversation ?? selectedConversation)?.uid
     }
@@ -243,6 +280,7 @@ final class AppModel {
         save()
 
         let think = models.first { $0.name == modelName }?.supportsThinking ?? false
+        writingConversationID = conversation.uid
         writingReplyID = reply.uid
         writingPhase = .waiting
         replyTask = Task { await runReply(reply, in: conversation, modelName: modelName, turns: turns, think: think) }
@@ -297,6 +335,7 @@ final class AppModel {
         flush()
         conversation.updatedAt = .now
         save()
+        writingConversationID = nil
         writingReplyID = nil
         writingPhase = nil
         focusRequest += 1
@@ -310,7 +349,9 @@ final class AppModel {
     private func syncMenu() {
         MenuState.shared.update(isWriting: writingReplyID != nil,
                                 hasReply: !(latestReply?.text.isEmpty ?? true),
-                                hasSelection: selectedConversation != nil)
+                                hasSelection: selectedConversation != nil,
+                                isPinned: selectedConversation?.isPinned ?? false,
+                                canDelete: selectedConversation.map { !isWriting(in: $0) } ?? false)
     }
 }
 

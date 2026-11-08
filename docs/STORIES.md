@@ -209,7 +209,7 @@ UX:
 - States: no pinned conversations means no section headers at all; with pins, sections read "Pinned" and "Recent"; pinning doesn't change a conversation's date.
 - Words: "Pin", "Unpin"; a pin symbol on pinned rows isn't needed because the section header says it.
 - Access: VoiceOver reads the section header; the menu item's name changes between Pin and Unpin.
-Status: todo
+Status: done
 
 ### S-014 Delete a conversation
 As the user, I delete a conversation from its context menu after confirming.
@@ -224,7 +224,7 @@ UX:
 - States: Delete is unavailable while that conversation's reply is being written; deleting the last one shows the new conversation page.
 - Words: title "Delete “<title>”?", message "You can't undo this action.", buttons "Delete" and "Cancel".
 - Access: Escape cancels; the Delete button is marked destructive.
-Status: todo
+Status: done
 
 ### S-015 Search conversations
 As the user, I type in the sidebar search and see conversations that match.

@@ -163,6 +163,63 @@ enum SelfTest {
             check("S-012 a title you set stays after more messages", conversation.title == "My Title")
         }
 
+        // S-013 pin
+        if let conversation = model.selectedConversation {
+            let date = conversation.updatedAt
+            model.togglePin()
+            check("S-013 Pin marks the conversation", conversation.isPinned)
+            check("S-013 the menu knows it's pinned", MenuState.shared.isPinned)
+            check("S-013 pinning leaves its date alone", conversation.updatedAt == date)
+            model.togglePin(conversation)
+            check("S-013 Unpin clears it", !conversation.isPinned && !MenuState.shared.isPinned)
+        }
+
+        // S-014 delete
+        do {
+            let context = model.container.mainContext
+            func messageCount() -> Int { (try? context.fetchCount(FetchDescriptor<Message>())) ?? -1 }
+            func conversationCount() -> Int { (try? context.fetchCount(FetchDescriptor<Conversation>())) ?? -1 }
+            func start(_ text: String) async -> Conversation? {
+                model.newConversation()
+                transport.script(ScriptedTransport.reply(text: ["Reply"]))
+                model.send(text)
+                await model.waitForReply()
+                // Separate timestamps, so the order is certain.
+                try? await Task.sleep(for: .milliseconds(20))
+                return model.selectedConversation
+            }
+            let oldest = await start("Delete oldest")
+            let middle = await start("Delete middle")
+            let newest = await start("Delete newest")
+            guard let oldest, let middle, let newest else { return check("S-014 setup", false) }
+
+            model.selection = middle.uid
+            let conversations = conversationCount()
+            let messages = messageCount()
+            model.requestDelete()
+            check("S-014 Delete asks first", model.pendingDeletion?.uid == middle.uid && conversationCount() == conversations)
+            model.pendingDeletion = nil
+            check("S-014 Cancel keeps it", conversationCount() == conversations)
+            model.delete(middle)
+            check("S-014 the conversation is gone", conversationCount() == conversations - 1)
+            check("S-014 its messages are gone too", messageCount() == messages - 2, "\(messageCount())")
+            check("S-014 the next row is selected", model.selection == oldest.uid)
+
+            let current = model.selection
+            model.delete(newest)
+            check("S-014 deleting another row keeps your selection", model.selection == current)
+
+            transport.script(ScriptedTransport.reply(text: Array(repeating: "x ", count: 100)), delay: .milliseconds(20))
+            model.send("Writing now")
+            try? await Task.sleep(for: .milliseconds(150))
+            model.requestDelete()
+            check("S-014 a conversation being written can't be deleted", model.pendingDeletion == nil)
+            model.delete(oldest)
+            check("S-014 and direct deletion is refused too", model.selection == oldest.uid)
+            model.stop()
+            await model.waitForReply()
+        }
+
         // Launch repair
         let stale = Message(role: .assistant, text: "Cut", modelName: "first:1", sequence: 99, state: .writing)
         model.selectedConversation?.messages.append(stale)

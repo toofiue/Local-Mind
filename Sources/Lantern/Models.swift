@@ -9,6 +9,7 @@ final class Conversation {
     var modelName: String = ""
     var createdAt: Date = Date.now
     var updatedAt: Date = Date.now
+    var isPinned: Bool = false
     @Relationship(deleteRule: .cascade, inverse: \Message.conversation)
     var messages: [Message] = []
 
