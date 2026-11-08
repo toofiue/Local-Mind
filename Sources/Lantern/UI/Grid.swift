@@ -15,6 +15,21 @@ enum Space {
     static let margin: CGFloat = 20
 }
 
+enum Radius {
+    static let md: CGFloat = 8
+    static let lg: CGFloat = 16
+}
+
+enum Layout {
+    /// The widest a conversation's text gets, for comfortable line lengths.
+    static let column: CGFloat = 720
+}
+
+enum Motion {
+    /// How long "Copied" stays before the button returns.
+    static let confirmation: Duration = .seconds(2)
+}
+
 extension View {
     /// Marks an area (a page, a card, a sheet). Probes inside it must sit on
     /// the 4 pt grid and at least `inset` from its edges.

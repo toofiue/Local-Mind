@@ -3,59 +3,58 @@ import SwiftData
 import LanternKit
 
 @Model
-final class Item {
-    var title: String
-    var notes: String = ""
-    var isStarred: Bool = false
+final class Conversation {
+    var uid: UUID = UUID()
+    var title: String = ConversationTitle.placeholder
+    var modelName: String = ""
     var createdAt: Date = Date.now
-    /// A stable id for links, sync, and the agent CLI.
-    var uuid: UUID = UUID()
+    var updatedAt: Date = Date.now
+    @Relationship(deleteRule: .cascade, inverse: \Message.conversation)
+    var messages: [Message] = []
 
-    init(title: String) {
-        self.title = title
+    init(modelName: String) {
+        self.modelName = modelName
     }
+
+    /// SwiftData doesn't keep relationship order.
+    var ordered: [Message] { messages.sorted { $0.sequence < $1.sequence } }
+    var nextSequence: Int { (messages.map(\.sequence).max() ?? -1) + 1 }
 }
 
-/// The sidebar pages. Snapshot mode walks through every case.
-enum SidebarItem: String, CaseIterable, Identifiable {
-    case all, starred
-
-    var id: String { rawValue }
-
-    var title: String {
-        switch self {
-        case .all: "All Items"
-        case .starred: "Starred"
-        }
-    }
-
-    var symbol: String {
-        switch self {
-        case .all: "tray"
-        case .starred: "star"
-        }
-    }
+enum MessageRole: String {
+    case user, assistant
 }
 
-/// App-wide state that menus, toolbars, and views share.
-@Observable
-final class AppModel {
-    let container: ModelContainer
-    var sidebar: SidebarItem? = .all
-    var selection: PersistentIdentifier?
-    /// Settings reopens on the last tab. Test and snapshot runs leave it alone.
-    var settingsTab: SettingsTab = SettingsTab(rawValue: UserDefaults.standard.string(forKey: "settings.tab") ?? "") ?? .general {
-        didSet { if !Store.isOverridden { UserDefaults.standard.set(settingsTab.rawValue, forKey: "settings.tab") } }
+enum ReplyState: String {
+    case complete, writing, stopped, interrupted, failed
+}
+
+@Model
+final class Message {
+    var uid: UUID = UUID()
+    var roleValue: String = MessageRole.user.rawValue
+    var text: String = ""
+    var thinking: String = ""
+    var createdAt: Date = Date.now
+    var modelName: String = ""
+    var tokensPerSecond: Double?
+    var stateValue: String = ReplyState.complete.rawValue
+    var failureText: String = ""
+    var sequence: Int = 0
+    var conversation: Conversation?
+
+    init(role: MessageRole, text: String, modelName: String, sequence: Int, state: ReplyState = .complete) {
+        self.roleValue = role.rawValue
+        self.text = text
+        self.modelName = modelName
+        self.sequence = sequence
+        self.stateValue = state.rawValue
     }
 
-    init(container: ModelContainer) {
-        self.container = container
-    }
+    var role: MessageRole { MessageRole(rawValue: roleValue) ?? .user }
 
-    func addItem(title: String = "") {
-        let item = Item(title: ItemTitle.clean(title))
-        if sidebar == .starred { item.isStarred = true }
-        container.mainContext.insert(item)
-        selection = item.id
+    var state: ReplyState {
+        get { ReplyState(rawValue: stateValue) ?? .complete }
+        set { stateValue = newValue.rawValue }
     }
 }

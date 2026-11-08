@@ -20,7 +20,7 @@ UX:
 - States: loading "Starting Ollama…" only after half a second; failure goes to S-002; no models goes to S-034; long model names truncate with the full name in a tooltip.
 - Words: "Starting Ollama…"; first view line "Replies are written on this Mac by local models. Nothing leaves it."
 - Access: focus lands in the message field; VoiceOver announces "Connected to Ollama".
-Status: todo
+Status: done
 
 ### S-002 See why Lantern can't reach Ollama
 As the user, I see one clear message and a Try Again button when Ollama can't be started.
@@ -33,10 +33,10 @@ Acceptance:
 UX:
 - Flow: connection fails -> message and Try Again above the message field -> click or Return -> field is enabled again. Way back: past conversations stay readable the whole time.
 - Surface: inline, next to the problem (information with a fix doesn't need an alert).
-- States: error as below; while retrying the button reads "Connecting…"; an interrupted reply keeps its text with "Interrupted" below it.
+- States: error as below; while retrying the status reads "Starting Ollama…"; an interrupted reply keeps its text with "Interrupted" below it.
 - Words: "Unable to start Ollama. Open Ollama from Applications, then try again."; button "Try Again"; "Interrupted. Lantern lost its connection to Ollama."
 - Access: Try Again takes focus when the message appears; VoiceOver reads the message; the state uses words and an icon, not color alone.
-Status: todo
+Status: done
 
 ### S-003 Send a message and watch the reply stream
 As the user, I type a message, press Return, and the reply appears as it is generated.
@@ -54,7 +54,7 @@ UX:
 - States: Send is disabled while the field is empty; a model being loaded shows S-006's text in the reply's place; when scrolled up, a "Jump to Latest" button appears; long replies scroll smoothly.
 - Words: placeholder "Ask anything"; Send tooltip "Send this message to the model (↩)"; every reply is labeled with the name of the model that wrote it, which marks it as generated.
 - Access: the field's VoiceOver label is "Message" (a chat field's placeholder is a deliberate exception to the visible-label rule); new reply text is announced when it finishes, not word by word.
-Status: todo
+Status: done
 
 ### S-004 Stop a reply
 As the user, I press Stop or Escape to end a reply that is still generating.
@@ -70,7 +70,7 @@ UX:
 - States: Stop shows only while a reply is being written; "Stopped" appears at once, in the same frame.
 - Words: "Stop"; tooltip "End this reply and keep its text so far (⎋)"; "Stopped".
 - Access: Escape works from the message field; VoiceOver reads the button as "Stop" while writing and "Send" otherwise.
-Status: todo
+Status: done
 
 ### S-005 Keep conversations after a restart
 As the user, I quit and reopen Lantern and all my conversations are still there.
@@ -86,7 +86,7 @@ UX:
 - States: empty sidebar "No Conversations. Conversations you start appear here." with New Conversation; long titles truncate with the full title in a tooltip; a thousand rows still scroll smoothly.
 - Words: "New Conversation"; tooltip "Start a conversation with the default model (⌘N)".
 - Access: arrow keys move through the sidebar; VoiceOver reads each row's title and date.
-Status: todo
+Status: done
 
 ### S-006 Choose a model for a conversation
 As the user, I pick a model from the toolbar and the next message uses it.
@@ -98,12 +98,12 @@ Acceptance:
 - [self] During the first load, the reply area says the model is loading.
 - [snap] The picker lists all installed models with the current one checked.
 UX:
-- Flow: click the toolbar picker or press ⇧⌘M -> menu of models -> choose one -> picker shows it, focus returns to the message field. Way back: choose the previous model. The picker is disabled while a reply is being written.
-- Surface: inline menu in the toolbar (changes one value on screen).
+- Flow: click the toolbar picker or press ⇧⌘M -> popover of models -> choose one -> picker shows it, focus returns to the message field. Way back: choose the previous model. The picker is disabled while a reply is being written.
+- Surface: popover from the toolbar (SwiftUI can't open a toolbar menu from a shortcut, and ⇧⌘M needs to).
 - States: first load shows "Loading gemma4:12b-mlx…" in the reply's place, with the model's real name; a failed load shows "Unable to load gemma4:12b-mlx. Close other apps to free memory, then click Retry."
 - Words: label "Model"; tooltip "Choose which model writes the next reply (⇧⌘M)".
-- Access: the menu works with arrow keys and Return; VoiceOver reads "Model, gemma4:12b-mlx".
-Status: todo
+- Access: the list works with arrow keys and Return; VoiceOver reads the model's name on the button.
+Status: done
 
 ### S-007 Read formatted replies
 As the user, I see headings, lists, tables, bold text, and code blocks properly formatted.
@@ -119,7 +119,7 @@ UX:
 - States: while streaming, unfinished tables and code blocks show what has arrived without jumping; wide tables and long code lines scroll inside their own block and never widen the page.
 - Words: none on screen.
 - Access: VoiceOver reads headings as headings and tables as tables; text respects Increase Contrast and stays 10 pt or larger.
-Status: todo
+Status: done
 
 ### S-008 Copy a code block
 As the user, I click Copy on a code block and only that code goes on the clipboard.
@@ -135,7 +135,7 @@ UX:
 - States: a block with no language is labeled "Code"; Copy appears once the block has finished streaming.
 - Words: "Copy", "Copied". It has a text label, so it needs no tooltip.
 - Access: reachable with Tab; VoiceOver reads "Copy Swift code" using the block's language.
-Status: todo
+Status: done
 
 ### S-009 Copy a whole reply
 As the user, I click Copy under a reply and paste the text somewhere else.
@@ -150,7 +150,7 @@ UX:
 - States: the action row appears when the reply has finished. Retry and Edit join it in S-024 and S-025.
 - Words: tooltip "Copy this reply as Markdown (⇧⌘C)".
 - Access: always visible, not hover-only; VoiceOver reads "Copy reply" and announces "Copied".
-Status: todo
+Status: done
 
 ### S-010 See the model's thinking
 As the user, I expand a Thinking section above a reply to read how the model reasoned.
@@ -167,7 +167,7 @@ UX:
 - States: no thinking from the model means no section; long thinking scrolls inside a set height.
 - Words: "Thinking…" while it streams, "Thinking" when finished.
 - Access: Space toggles it when focused; VoiceOver reads "Thinking, collapsed"; Reduce Motion replaces the slide with a fade.
-Status: todo
+Status: done
 
 ## M2 Organize
 
@@ -178,7 +178,7 @@ Depends: S-005
 Acceptance:
 - [unit] The title is the first line of the message, trimmed to 50 characters at a word boundary.
 - [snap] The sidebar shows the title, not "New Conversation", after the first message.
-Status: todo
+Status: done
 
 ### S-012 Rename a conversation
 As the user, I rename a conversation from its context menu.
@@ -308,7 +308,7 @@ Depends: S-003
 Acceptance:
 - [unit] Retry replaces the last reply and resends the conversation up to my last message.
 - [snap] Retry shows only on the latest reply.
-Status: todo
+Status: done
 
 ### S-025 Edit my last message and resend
 As the user, I edit my last message and get a new reply to it.

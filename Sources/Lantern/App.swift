@@ -5,9 +5,11 @@ import SwiftUI
 // Lantern
 //   Lantern                      the app
 //   APP_STORE=<file> Lantern     use another database (tests, experiments)
-//   APP_SNAPSHOT=<dir> Lantern   save a PNG of every sidebar page and Settings tab in light and dark mode, then quit
-//   APP_SEED=1 Lantern           fill an empty /tmp store with sample items (tools/snap.sh)
+//   APP_OLLAMA_URL=<url>         with APP_STORE, talk to another address instead of local Ollama
+//   APP_SNAPSHOT=<dir> Lantern   save a PNG of every page and Settings tab in light and dark mode, then quit
+//   APP_SEED=1 Lantern           fill an empty /tmp store with sample conversations (tools/snap.sh)
 //   Lantern --selftest           run the self-test on a /tmp store and quit with 0 or 1 (tools/selftest.sh)
+//   APP_SELFTEST_LIVE=<model>    also run one real reply through local Ollama in the self-test
 //   APP_ACCENT=<id> Lantern      run with another accent from Theme.all (UI/Theme.swift)
 //   APP_GRID=1 Lantern           draw the 8 pt grid and the layout probes over the window
 
@@ -15,6 +17,7 @@ import SwiftUI
 struct LanternApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @State private var model = AppModel(container: Store.makeContainer())
+    @ObservedObject private var menu = MenuState.shared
 
     var body: some Scene {
         Window("Lantern", id: "main") {
@@ -31,8 +34,23 @@ struct LanternApp: App {
             SidebarCommands()
             ToolbarCommands()
             CommandGroup(replacing: .newItem) {
-                Button("New Item") { model.addItem() }
+                Button("New Conversation") { model.newConversation() }
                     .keyboardShortcut("n")
+            }
+            CommandMenu("Conversation") {
+                Button("Choose Model…") { model.showingModelPicker.toggle() }
+                    .keyboardShortcut("m", modifiers: [.command, .shift])
+                    .disabled(menu.isWriting)
+                Divider()
+                Button("Stop") { model.stop() }
+                    .keyboardShortcut(".")
+                    .disabled(!menu.isWriting)
+                Button("Retry") { model.retry() }
+                    .keyboardShortcut("r")
+                    .disabled(menu.isWriting || !menu.hasReply)
+                Button("Copy Reply") { model.copyLatestReply() }
+                    .keyboardShortcut("c", modifiers: [.command, .shift])
+                    .disabled(!menu.hasReply)
             }
         }
 
@@ -78,7 +96,7 @@ enum Store {
 
     static func makeContainer() -> ModelContainer {
         do {
-            return try ModelContainer(for: Item.self, configurations: ModelConfiguration(url: url))
+            return try ModelContainer(for: Conversation.self, Message.self, configurations: ModelConfiguration(url: url))
         } catch {
             fatalError("Could not open the database at \(url.path): \(error)")
         }

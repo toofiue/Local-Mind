@@ -5,7 +5,8 @@ import LanternKit
 /// Self-test for agents: runs the app's real functions on a test store,
 /// prints PASS or FAIL per check, and quits with exit code 0 or 1.
 ///   APP_STORE=/tmp/Lantern-self.store ~/Applications/Lantern.app/Contents/MacOS/Lantern --selftest
-/// (tools/selftest.sh does this.) Add a check for every story with logic.
+/// (tools/selftest.sh does this.) Ollama is replaced by a script, so no model
+/// loads. APP_SELFTEST_LIVE=<model> adds one real reply through local Ollama.
 @MainActor
 enum SelfTest {
     static var requested: Bool { CommandLine.arguments.contains("--selftest") }
@@ -25,26 +26,154 @@ enum SelfTest {
         }
         Task {
             try? await Task.sleep(for: .seconds(0.5))
-            let context = model.container.mainContext
-            func items() -> [Item] { (try? context.fetch(FetchDescriptor<Item>())) ?? [] }
-
-            let before = items().count
-            model.addItem()
-            check("New Item adds one item", items().count == before + 1)
-            check("the new item is selected", model.selection != nil)
-
-            if let item = items().first(where: { $0.id == model.selection }) {
-                item.isStarred.toggle()
-                check("starring an item marks it starred", item.isStarred)
-                context.delete(item)
-                try? context.save()
-                check("deleting the item removes it", items().count == before)
+            await runScripted(model)
+            if let live = ProcessInfo.processInfo.environment["APP_SELFTEST_LIVE"], !live.isEmpty {
+                await runLive(model, modelName: live)
             }
-            check("titles are cleaned", ItemTitle.clean("  Buy   milk ") == "Buy milk")
-
             print(failures == 0 ? "SELFTEST PASS \(count) checks" : "SELFTEST FAIL \(failures) of \(count) checks")
             finish(code: failures == 0 ? 0 : 1)
         }
+    }
+
+    private static func runScripted(_ model: AppModel) async {
+        let first = OllamaModel(name: "first:1", size: 100, capabilities: ["completion", "thinking"])
+        let second = OllamaModel(name: "second:1", size: 200, capabilities: ["completion"])
+        let transport = ScriptedTransport(installed: [first, second])
+        model.client = OllamaClient(transport: transport)
+        model.startOllama = {}
+        model.startupWait = .milliseconds(600)
+
+        // S-001 connecting
+        await model.connect()
+        check("S-001 connects and lists models", model.connection == .connected && model.models.count == 2)
+        check("S-001 a model is chosen", model.currentModelName == "first:1")
+
+        // S-003 and S-010 sending
+        transport.script(ScriptedTransport.reply(thinking: ["Let me ", "think"], text: ["Hello ", "there"]))
+        check("S-003 a blank message is refused", !model.send("   \n"))
+        check("S-003 a message is accepted", model.send("  Fix my code\nplease "))
+        await model.waitForReply()
+        let conversation = model.selectedConversation
+        check("S-005 the new conversation is selected", conversation != nil)
+        check("S-011 the title comes from the first line", conversation?.title == "Fix my code")
+        let reply = model.latestReply
+        check("S-003 the reply has its text", reply?.text == "Hello there", reply?.text ?? "nil")
+        check("S-010 thinking is kept apart", reply?.thinking == "Let me think", reply?.thinking ?? "nil")
+        check("S-003 the reply finishes", reply?.state == .complete)
+        check("S-033 speed is saved", reply?.tokensPerSecond == 20)
+        check("S-006 the reply names its model", reply?.modelName == "first:1")
+        check("S-010 a thinking model gets the think option", transport.chatBodies.last?.contains("\"think\":true") == true)
+        check("writing has ended", !model.isWriting)
+
+        // S-003 history
+        transport.script(ScriptedTransport.reply(text: ["Second"]))
+        model.send("And again")
+        await model.waitForReply()
+        let body = transport.chatBodies.last ?? ""
+        let order = ["Fix my code", "Hello there", "And again"].compactMap { body.range(of: $0)?.lowerBound }
+        check("S-003 history goes in order", order.count == 3 && order == order.sorted(), body)
+
+        // S-006 switching
+        transport.setLoaded(["first:1"])
+        model.chooseModel("second:1")
+        transport.script(ScriptedTransport.reply(text: ["From second"]))
+        model.send("Switch")
+        await model.waitForReply()
+        let paths = transport.requests.map(\.path)
+        let unload = paths.lastIndex { $0.hasSuffix("/api/generate") }
+        let chat = paths.lastIndex { $0.hasSuffix("/api/chat") }
+        check("S-006 the old model unloads before the next loads", unload != nil && chat != nil && unload! < chat!)
+        check("S-006 the conversation remembers its model", model.selectedConversation?.modelName == "second:1")
+        check("S-006 the older reply keeps its model", model.selectedConversation?.ordered[1].modelName == "first:1")
+        check("S-010 other models don't get the think option", transport.chatBodies.last?.contains("think") == false)
+
+        // S-004 stop
+        transport.script(ScriptedTransport.reply(text: Array(repeating: "word ", count: 200)), delay: .milliseconds(20))
+        model.send("Long one")
+        try? await Task.sleep(for: .milliseconds(300))
+        check("S-004 Stop is available while writing", model.isWriting)
+        let started = ContinuousClock.now
+        model.stop()
+        await model.waitForReply()
+        check("S-004 stops within a second", ContinuousClock.now - started < .seconds(1))
+        let stopped = model.latestReply
+        check("S-004 the reply is marked stopped", stopped?.state == .stopped)
+        let partial = stopped?.text.count ?? 0
+        check("S-004 the text so far stays", partial > 0 && partial < 1_000, "\(partial)")
+
+        // S-024 retry
+        let stoppedID = stopped?.uid
+        let replies = model.selectedConversation?.messages.count ?? 0
+        transport.script(ScriptedTransport.reply(text: ["Retried"]))
+        model.retry()
+        await model.waitForReply()
+        check("S-024 Retry replaces the reply", model.latestReply?.text == "Retried" && model.latestReply?.uid != stoppedID)
+        check("S-024 no extra message appears", model.selectedConversation?.messages.count == replies)
+
+        // S-006 load failure
+        transport.script([#"{"error":"model requires more system memory"}"#])
+        model.send("Too big")
+        await model.waitForReply()
+        check("S-006 a failed load explains itself", model.latestReply?.failureText.contains("Unable to load second:1") == true)
+
+        // S-002 lost connection
+        transport.script([#"{"message":{"role":"assistant","content":"Half a"},"done":false}"#])
+        model.send("Drop this")
+        await model.waitForReply()
+        check("S-002 a dropped reply keeps its text", model.latestReply?.text == "Half a")
+        check("S-002 a dropped reply is marked interrupted", model.latestReply?.state == .interrupted)
+
+        transport.setDown(true)
+        await model.connect()
+        check("S-002 an unreachable Ollama fails", model.connection == .failed)
+        check("S-002 sending is refused while offline", !model.send("nope"))
+        transport.setDown(false)
+        await model.connect()
+        check("S-002 Try Again reconnects", model.connection == .connected)
+
+        // S-005 persistence
+        let uid = model.selectedConversation?.uid
+        let messageCount = model.selectedConversation?.messages.count ?? 0
+        let reopened = try? ModelContainer(for: Conversation.self, Message.self,
+                                           configurations: ModelConfiguration(url: Store.url))
+        let saved = (try? reopened?.mainContext.fetch(FetchDescriptor<Conversation>())) ?? []
+        let found = saved.first { $0.uid == uid }
+        check("S-005 conversations survive reopening the store", found?.messages.count == messageCount, "\(found?.messages.count ?? -1)")
+
+        model.newConversation()
+        check("S-005 New Conversation clears the selection", model.selectedConversation == nil)
+        model.selection = uid
+        check("S-005 selecting brings it back", model.selectedConversation?.uid == uid)
+
+        // Launch repair
+        let stale = Message(role: .assistant, text: "Cut", modelName: "first:1", sequence: 99, state: .writing)
+        model.selectedConversation?.messages.append(stale)
+        model.repairInterruptedReplies()
+        check("a reply left writing at launch becomes interrupted", stale.state == .interrupted)
+
+        // Leaves whatever you had copied in place.
+        let clipboard = NSPasteboard.general.string(forType: .string)
+        Clipboard.copy("copy check")
+        check("S-009 Copy reaches the clipboard", NSPasteboard.general.string(forType: .string) == "copy check")
+        if let clipboard { Clipboard.copy(clipboard) }
+    }
+
+    /// One real round trip through Ollama. Unloads the model afterwards.
+    private static func runLive(_ model: AppModel, modelName: String) async {
+        model.client = OllamaClient()
+        await model.connect()
+        check("LIVE connects to Ollama", model.connection == .connected)
+        check("LIVE the model is installed", model.models.contains { $0.name == modelName })
+        model.newConversation()
+        model.draftModelName = modelName
+        check("LIVE sends a message", model.send("Reply with exactly: ok"))
+        await model.waitForReply()
+        let reply = model.latestReply
+        check("LIVE the reply finishes", reply?.state == .complete, reply?.failureText ?? "")
+        check("LIVE the reply has text", !(reply?.text.isEmpty ?? true), reply?.text ?? "nil")
+        check("LIVE thinking arrives apart from the reply", !(reply?.thinking.isEmpty ?? true))
+        print("LIVE reply: \(reply?.text ?? "") at \(Int(reply?.tokensPerSecond ?? 0)) tokens per second")
+        try? await model.client.unload(modelName)
     }
 
     private static func check(_ name: String, _ ok: Bool, _ detail: String = "") {

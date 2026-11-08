@@ -2,14 +2,45 @@ import AppKit
 import IOKit.pwr_mgt
 import SwiftUI
 
+/// The pages snapshot mode captures.
+enum SnapshotPage: String, CaseIterable {
+    case chat
+    case chatEmpty = "chat-empty"
+    case chatThinking = "chat-thinking"
+    case chatWriting = "chat-writing"
+    case offline
+    case modelPicker = "model-picker"
+
+    func apply(to model: AppModel) {
+        model.connection = self == .offline ? .failed : .connected
+        model.writingReplyID = nil
+        model.showingModelPicker = false
+        switch self {
+        case .chat, .offline, .modelPicker:
+            model.selection = SeedData.conversation(titled: SeedData.formatted, in: model)?.uid
+        case .chatEmpty:
+            model.selection = nil
+        case .chatThinking:
+            model.selection = SeedData.conversation(titled: SeedData.thinking, in: model)?.uid
+        case .chatWriting:
+            let conversation = SeedData.conversation(titled: SeedData.writing, in: model)
+            model.selection = conversation?.uid
+            model.writingReplyID = conversation?.ordered.last?.uid
+        }
+        if self == .modelPicker { model.showingModelPicker = true }
+    }
+}
+
 /// Screenshot mode for agents.
 ///   APP_STORE=/tmp/test.store APP_SNAPSHOT=/tmp/shots ~/Applications/Lantern.app/Contents/MacOS/Lantern
-/// writes <page>-light.png and <page>-dark.png for every sidebar page, and
+/// writes <page>-light.png and <page>-dark.png for every page, and
 /// settings-<tab>-light.png and settings-<tab>-dark.png for every Settings tab, then quits.
 /// Each PNG gets a <page>-<mode>-layout.json with the grid probes (tools/check-layout.swift).
-/// APP_SNAPSHOT_PAGES=all,starred limits the pages. Add "settings" to include Settings.
+/// APP_SNAPSHOT_PAGES=chat,offline limits the pages. Add "settings" to include Settings.
 /// Add APP_ACCENT=<id> to see the pages in another accent.
 enum Snapshot {
+    static var requested: Bool { !(ProcessInfo.processInfo.environment["APP_SNAPSHOT"] ?? "").isEmpty }
+
     static func runIfRequested(model: AppModel, openSettings: OpenSettingsAction) {
         let env = ProcessInfo.processInfo.environment
         guard let dir = env["APP_SNAPSHOT"], !dir.isEmpty else { return }
@@ -32,10 +63,14 @@ enum Snapshot {
             try? await Task.sleep(for: .seconds(1.5))
             for mode in ["light", "dark"] {
                 NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
-                for page in SidebarItem.allCases where only?.contains(page.rawValue) ?? true {
-                    model.sidebar = page
-                    try? await Task.sleep(for: .seconds(0.8))
-                    capture(to: "\(dir)/\(page.rawValue)-\(mode).png")
+                for page in SnapshotPage.allCases where only?.contains(page.rawValue) ?? true {
+                    page.apply(to: model)
+                    try? await Task.sleep(for: .seconds(1))
+                    let popover = page == .modelPicker
+                        ? NSApp.windows.first { String(describing: type(of: $0)).contains("Popover") && $0.isVisible }
+                        : nil
+                    capture(to: "\(dir)/\(page.rawValue)-\(mode).png", window: popover)
+                    model.showingModelPicker = false
                 }
             }
             if only == nil || only?.contains("settings") == true {
