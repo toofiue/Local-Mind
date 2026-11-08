@@ -104,6 +104,7 @@ private struct Composer: View {
                 .buttonStyle(.borderless)
                 .foregroundStyle(.secondary)
                 .help("Attach images, PDFs, or text files (⇧⌘A)")
+                .frame(width: Space.xl)
                 .padding(.vertical, Space.xs)
 
             ComposerField(text: $draft, height: $fieldHeight,

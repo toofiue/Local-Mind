@@ -55,7 +55,9 @@ struct AttachmentTile: View {
                 Button("Remove", systemImage: "xmark.circle.fill", action: onRemove)
                     .labelStyle(.iconOnly)
                     .buttonStyle(.borderless)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.primary)
+                    // A backing keeps it visible on any picture.
+                    .background(.regularMaterial, in: Circle())
                     .padding(Space.xs)
                     .help("Remove this attachment")
                     .accessibilityLabel("Remove \(fileName)")

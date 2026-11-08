@@ -31,6 +31,10 @@ Proposal: leave it. It's about 100 lines, runs only with `--selftest`, and gives
 
 Do nothing now. Extract `ReplyWriter` as the first step of M4, when Quick Ask gives it a second caller.
 
+## Milestone 3 update
+
+Still no `Strong` candidates. The code is 3,600 lines, and `AppModel` stayed at 377 because attachments went into `AppModel+Attachments.swift`. Repeated attachments now travel with every request in a conversation, so very long image conversations may get slow. Measure that before changing it.
+
 ## Considered, not recommended
 
 - Splitting `Markdown.parse`: long, but one straight loop that's fully covered by tests.
