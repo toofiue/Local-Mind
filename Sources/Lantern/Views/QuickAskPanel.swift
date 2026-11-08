@@ -8,6 +8,10 @@ final class QuickAskState {
     var draft = ""
     var fieldHeight: CGFloat = Space.lg
     var focusRequest = 0
+    /// The conversation this Quick Ask has started, once you've sent something.
+    var conversation: Conversation?
+    /// Why the last message couldn't be sent.
+    var notice: String?
 }
 
 private final class QuickPanel: NSPanel {
@@ -69,6 +73,10 @@ final class QuickAskController {
 
     func show() {
         guard let panel, let model else { return }
+        // Fresh each time, unless a reply is still being written here.
+        let quick = model.quickAsk
+        if let conversation = quick.conversation, !model.replies.isWriting(in: conversation) { quick.conversation = nil }
+        quick.notice = nil
         panel.setFrame(startingFrame(height: panel.frame.height), display: true)
         panel.orderFrontRegardless()
         panel.makeKey()
@@ -107,7 +115,7 @@ struct QuickAskView: View {
             HStack(spacing: Space.md) {
                 ComposerField(text: $quick.draft, height: $quick.fieldHeight,
                               isEnabled: model.connection == .connected,
-                              focusRequest: quick.focusRequest, maxLines: 6, onSubmit: {},
+                              focusRequest: quick.focusRequest, maxLines: 6, onSubmit: { model.quickSend() },
                               onEscape: { QuickAskController.shared.hide() })
                     .frame(height: quick.fieldHeight)
                     .overlay(alignment: .topLeading) {
@@ -117,11 +125,31 @@ struct QuickAskView: View {
                                 .allowsHitTesting(false)
                         }
                     }
-                Text(model.defaultModelName ?? "No Models")
+                Text(quick.conversation?.modelName ?? model.defaultModelName ?? "No Models")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                if let conversation = quick.conversation, model.replies.isWriting(in: conversation) {
+                    Button("Stop", systemImage: "stop.fill") { model.stop() }
+                        .labelStyle(.iconOnly)
+                        .buttonStyle(.borderedProminent)
+                        .buttonBorderShape(.circle)
+                        .help("End this reply and keep its text so far")
+                }
             }
             .padding(Space.lg)
+
+            if let notice = quick.notice {
+                Label(notice, systemImage: "exclamationmark.triangle")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .padding([.horizontal, .bottom], Space.lg)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            if let conversation = quick.conversation {
+                Divider()
+                QuickAskConversation(conversation: conversation)
+            }
         }
         .frame(width: Layout.quickPanel)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Radius.lg))
@@ -129,5 +157,27 @@ struct QuickAskView: View {
             QuickAskController.shared.resize(height: height)
         }
         .frame(maxHeight: .infinity, alignment: .top)
+    }
+}
+
+/// The messages under the field. Grows with the reply, then scrolls.
+private struct QuickAskConversation: View {
+    let conversation: Conversation
+    @State private var contentHeight: CGFloat = 0
+
+    var body: some View {
+        let messages = conversation.ordered
+        let latestReplyID = messages.last { $0.role == .assistant }?.uid
+        ScrollView {
+            VStack(spacing: Space.lg) {
+                ForEach(messages) { message in
+                    MessageRow(message: message, isLatestReply: message.uid == latestReplyID)
+                }
+            }
+            .padding(Space.lg)
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { contentHeight = $0 }
+        }
+        .defaultScrollAnchor(.bottom)
+        .frame(height: min(contentHeight, Layout.quickReply))
     }
 }

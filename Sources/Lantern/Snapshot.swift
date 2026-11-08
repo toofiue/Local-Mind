@@ -73,7 +73,11 @@ enum Snapshot {
                 for page in SnapshotPage.allCases where only?.contains(page.rawValue) ?? true {
                     page.apply(to: model)
                     try? await Task.sleep(for: .seconds(1))
-                    if page == .quickPanel { QuickAskController.shared.show(); try? await Task.sleep(for: .seconds(0.6)) }
+                    if page == .quickPanel {
+                        QuickAskController.shared.show()
+                        model.quickAsk.conversation = SeedData.conversation(titled: SeedData.thinking, in: model)
+                        try? await Task.sleep(for: .seconds(1))
+                    }
                     let popover = page == .quickPanel ? QuickAskController.shared.window
                         : page == .modelPicker ? NSApp.windows.first { String(describing: type(of: $0)).contains("Popover") && $0.isVisible }
                         : nil

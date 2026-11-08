@@ -362,6 +362,48 @@ enum SelfTest {
             main?.makeKeyAndOrderFront(nil)
         }
 
+        // S-022 replies in the panel
+        do {
+            let context = model.container.mainContext
+            let before = (try? context.fetchCount(FetchDescriptor<Conversation>())) ?? -1
+            let selectedBefore = model.selection
+            model.quickAsk.conversation = nil
+            model.quickAsk.draft = "  Quick question\nmore "
+            transport.script(ScriptedTransport.reply(text: ["Quick answer"]))
+            check("S-022 a quick ask sends", model.quickSend())
+            await model.waitForReply()
+            check("S-022 it's saved as a normal conversation", (try? context.fetchCount(FetchDescriptor<Conversation>())) == before + 1)
+            check("S-022 it's titled like any other", model.quickAsk.conversation?.title == "Quick question")
+            check("S-022 the reply is written", model.quickAsk.conversation?.ordered.last?.text == "Quick answer")
+            check("S-022 the main window's selection doesn't move", model.selection == selectedBefore)
+            check("S-022 the field clears", model.quickAsk.draft.isEmpty)
+            model.quickAsk.draft = "A follow up"
+            transport.script(ScriptedTransport.reply(text: ["More"]))
+            model.quickSend()
+            await model.waitForReply()
+            check("S-022 a follow up stays in the same conversation", model.quickAsk.conversation?.messages.count == 4)
+            check("S-022 a follow up carries the history", transport.chatBodies.last?.contains("Quick answer") == true)
+            let conversation = model.quickAsk.conversation
+            transport.script(ScriptedTransport.reply(text: ["Retried quickly"]))
+            model.retry(conversation)
+            await model.waitForReply()
+            check("S-022 Retry works on the panel's conversation", conversation?.ordered.last?.text == "Retried quickly")
+            QuickAskController.shared.show()
+            check("S-022 reopening starts fresh", model.quickAsk.conversation == nil)
+            QuickAskController.shared.hide()
+
+            transport.script(ScriptedTransport.reply(text: Array(repeating: "x ", count: 100)), delay: .milliseconds(20))
+            model.send("Busy now")
+            try? await Task.sleep(for: .milliseconds(100))
+            model.quickAsk.draft = "Too soon"
+            check("S-022 a second reply waits its turn", !model.quickSend() && model.quickAsk.notice == "Lantern is finishing another reply.")
+            check("S-022 and keeps your text", model.quickAsk.draft == "Too soon")
+            model.stop()
+            await model.waitForReply()
+            model.quickAsk.draft = ""
+            model.quickAsk.notice = nil
+        }
+
         // Launch repair
         let stale = Message(role: .assistant, text: "Cut", modelName: "first:1", sequence: 99, state: .writing)
         model.selectedConversation?.messages.append(stale)

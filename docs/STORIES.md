@@ -357,7 +357,7 @@ UX:
 - States: past 480 pt tall the reply scrolls; while another reply is being written elsewhere, Send is unavailable and the panel says "Lantern is finishing another reply."
 - Words: Copy and Retry as in the main window, "Stop".
 - Access: Return sends and Shift-Return adds a line, as in the main window.
-Status: todo
+Status: done
 
 ### S-023 Continue a quick ask in the main window
 As the user, I click Open in Window and carry on with the same conversation.

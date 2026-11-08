@@ -124,7 +124,7 @@ private struct ReplyRow: View {
                 HStack(spacing: Space.xs) {
                     if !message.text.isEmpty { CopyReplyButton(text: message.text) }
                     if isLatestReply {
-                        Button("Retry", systemImage: "arrow.clockwise") { model.retry() }
+                        Button("Retry", systemImage: "arrow.clockwise") { model.retry(message.conversation) }
                             .help("Replace this reply with a new one (⌘R)")
                             .disabled(model.isWriting)
                     }

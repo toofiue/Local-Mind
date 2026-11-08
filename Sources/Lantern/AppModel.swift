@@ -85,7 +85,7 @@ final class AppModel {
         }
     }
 
-    private var context: ModelContext { container.mainContext }
+    var context: ModelContext { container.mainContext }
 
     // MARK: Connection
 
@@ -164,7 +164,7 @@ final class AppModel {
         focusRequest += 1
     }
 
-    private func remember(model name: String) {
+    func remember(model name: String) {
         if !Store.isOverridden { UserDefaults.standard.set(name, forKey: "lastModel") }
     }
 
@@ -270,10 +270,11 @@ final class AppModel {
     }
 
     /// Replaces the latest reply with a new one.
-    func retry() {
-        guard !isWriting, connection == .connected,
-              let conversation = selectedConversation, let reply = latestReply,
-              let modelName = currentModelName else { return }
+    func retry(_ target: Conversation? = nil) {
+        guard !isWriting, connection == .connected, let conversation = target ?? selectedConversation,
+              let reply = conversation.ordered.last(where: { $0.role == .assistant }) else { return }
+        let installed = models.contains { $0.name == conversation.modelName }
+        guard let modelName = installed ? conversation.modelName : defaultModelName else { return }
         conversation.messages.removeAll { $0.uid == reply.uid }
         context.delete(reply)
         startReply(in: conversation, modelName: modelName)
@@ -292,7 +293,7 @@ final class AppModel {
         await replies.wait()
     }
 
-    private func startReply(in conversation: Conversation, modelName: String) {
+    func startReply(in conversation: Conversation, modelName: String) {
         let turns = ChatHistory.turns(conversation.ordered.map(turn(for:)))
         let reply = Message(role: .assistant, text: "", modelName: modelName,
                             sequence: conversation.nextSequence, state: .writing)
