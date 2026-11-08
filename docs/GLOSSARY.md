@@ -19,6 +19,9 @@ Calm, direct, brief. Say "click", talk to the person as "you", and don't use "we
 | Attachment | An image, PDF, or text file added to a message | upload, file chip |
 | Quick Ask | The floating panel opened by the global shortcut | popup, mini chat, spotlight |
 | Default Model | The model new conversations and Quick Ask start with | main model, favorite |
+| Title | A conversation's name in the sidebar | name, subject |
+| Snippet | The bit of text shown under a search result | preview, excerpt |
+| Pinned / Recent | The sidebar's two sections once something is pinned | Favorites, Other |
 
 ## Actions
 
@@ -35,6 +38,8 @@ Calm, direct, brief. Say "click", talk to the person as "you", and don't use "we
 | Unload | Take a model out of memory | Eject, Stop, Kill |
 | Pin / Unpin | Keep a conversation at the top of the sidebar / undo that | Favorite, Star |
 | Delete | Remove a conversation; it can't come back | Remove, Trash |
+| Rename | Give a conversation a different title | Edit Title, Retitle |
+| Search | Narrow the sidebar to conversations that contain your text | Find, Filter |
 
 ## States
 

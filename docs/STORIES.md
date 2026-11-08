@@ -187,7 +187,13 @@ Depends: S-005
 Acceptance:
 - [self] Rename turns the row into a text field, and Return saves it.
 - [unit] A title I set is not replaced by the automatic title.
-Status: todo
+UX:
+- Flow: context menu Rename, or Conversation > Rename (⇧⌘R) for the selected one -> row becomes a text field with its title -> Return or clicking away saves. Way back: Escape keeps the old title.
+- Surface: inline in the row (changes one value already on screen).
+- States: an empty title keeps the old one; long titles scroll inside the field.
+- Words: "Rename"; field label "Title".
+- Access: focus moves to the field and back to the message field after saving; VoiceOver reads "Title".
+Status: done
 
 ### S-013 Pin a conversation
 As the user, I pin a conversation so it stays at the top of the sidebar.
@@ -197,6 +203,12 @@ Acceptance:
 - [snap] Pinned conversations appear in a Pinned section above the rest.
 - [unit] Pinned conversations sort by most recently updated.
 - [self] Unpin returns it to its place in the list.
+UX:
+- Flow: context menu Pin, or Conversation > Pin (⇧⌘P) -> row moves into Pinned at once. Way back: Unpin in the same places.
+- Surface: inline, a sidebar section (a place people come back to).
+- States: no pinned conversations means no section headers at all; with pins, sections read "Pinned" and "Recent"; pinning doesn't change a conversation's date.
+- Words: "Pin", "Unpin"; a pin symbol on pinned rows isn't needed because the section header says it.
+- Access: VoiceOver reads the section header; the menu item's name changes between Pin and Unpin.
 Status: todo
 
 ### S-014 Delete a conversation
@@ -206,6 +218,12 @@ Depends: S-005
 Acceptance:
 - [self] Delete asks for confirmation, then removes the row and selects the next one.
 - [unit] Deleting a Conversation also deletes its Messages and Attachments.
+UX:
+- Flow: context menu Delete, Conversation > Delete, or the Delete key on the selected row -> confirmation -> Delete removes it and selects the next row. Way back: Cancel or Escape.
+- Surface: confirmation dialog (a rare action that destroys data and can't be undone).
+- States: Delete is unavailable while that conversation's reply is being written; deleting the last one shows the new conversation page.
+- Words: title "Delete “<title>”?", message "You can't undo this action.", buttons "Delete" and "Cancel".
+- Access: Escape cancels; the Delete button is marked destructive.
 Status: todo
 
 ### S-015 Search conversations
@@ -217,6 +235,12 @@ Acceptance:
 - [snap] Results show the title and a snippet around the match.
 - [self] Clicking a result opens the conversation. Clearing search restores the list.
 - [self] Command-F focuses the search field.
+UX:
+- Flow: click the search field, ⌘F, or Edit > Search Conversations -> type -> list narrows as you type -> click a result to open it. Way back: clear the field or press Escape to see the whole list again.
+- Surface: system search field in the sidebar (filters a place people come back to).
+- States: no matches shows the system "No Results" view with your search text; a match only in the title shows the start of the conversation as its snippet; thinking text isn't searched.
+- Words: placeholder "Search"; menu item "Search Conversations".
+- Access: results are ordinary list rows with arrow-key movement; VoiceOver reads each title and snippet.
 Status: todo
 
 ## M3 Files and images

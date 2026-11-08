@@ -17,10 +17,12 @@ final class MenuState: ObservableObject {
     static let shared = MenuState()
     @Published private(set) var isWriting = false
     @Published private(set) var hasReply = false
+    @Published private(set) var hasSelection = false
 
-    func update(isWriting: Bool, hasReply: Bool) {
+    func update(isWriting: Bool, hasReply: Bool, hasSelection: Bool) {
         if self.isWriting != isWriting { self.isWriting = isWriting }
         if self.hasReply != hasReply { self.hasReply = hasReply }
+        if self.hasSelection != hasSelection { self.hasSelection = hasSelection }
     }
 }
 
@@ -46,6 +48,8 @@ final class AppModel {
     var writingReplyID: UUID? { didSet { syncMenu() } }
     var writingPhase: WritingPhase?
     var showingModelPicker = false
+    /// The conversation whose sidebar row is being edited.
+    var renamingID: UUID?
     /// Goes up whenever the message field should take focus.
     var focusRequest = 0
     /// Settings reopens on the last tab. Test and snapshot runs leave it alone.
@@ -154,6 +158,26 @@ final class AppModel {
 
     func newConversation() {
         selection = nil
+    }
+
+    func startRenaming(_ conversation: Conversation? = nil) {
+        renamingID = (conversation ?? selectedConversation)?.uid
+    }
+
+    /// An empty title keeps the old one.
+    func rename(_ conversation: Conversation, to title: String) {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty {
+            conversation.title = trimmed
+            save()
+        }
+        finishRenaming()
+    }
+
+    func finishRenaming() {
+        guard renamingID != nil else { return }
+        renamingID = nil
+        focusRequest += 1
     }
 
     var latestReply: Message? {
@@ -284,7 +308,9 @@ final class AppModel {
     }
 
     private func syncMenu() {
-        MenuState.shared.update(isWriting: writingReplyID != nil, hasReply: !(latestReply?.text.isEmpty ?? true))
+        MenuState.shared.update(isWriting: writingReplyID != nil,
+                                hasReply: !(latestReply?.text.isEmpty ?? true),
+                                hasSelection: selectedConversation != nil)
     }
 }
 

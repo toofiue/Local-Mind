@@ -51,6 +51,10 @@ struct LanternApp: App {
                 Button("Copy Reply") { model.copyLatestReply() }
                     .keyboardShortcut("c", modifiers: [.command, .shift])
                     .disabled(!menu.hasReply)
+                Divider()
+                Button("Rename") { model.startRenaming() }
+                    .keyboardShortcut("r", modifiers: [.command, .shift])
+                    .disabled(!menu.hasSelection)
             }
         }
 

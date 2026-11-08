@@ -145,6 +145,24 @@ enum SelfTest {
         model.selection = uid
         check("S-005 selecting brings it back", model.selectedConversation?.uid == uid)
 
+        // S-012 rename
+        if let conversation = model.selectedConversation {
+            let original = conversation.title
+            model.startRenaming()
+            check("S-012 Rename edits the selected row", model.renamingID == conversation.uid)
+            model.rename(conversation, to: "   ")
+            check("S-012 an empty title keeps the old one", conversation.title == original)
+            model.startRenaming(conversation)
+            model.finishRenaming()
+            check("S-012 Escape leaves the title and ends editing", conversation.title == original && model.renamingID == nil)
+            model.rename(conversation, to: "  My Title ")
+            check("S-012 a new title is saved, trimmed", conversation.title == "My Title")
+            transport.script(ScriptedTransport.reply(text: ["Fine"]))
+            model.send("One more message")
+            await model.waitForReply()
+            check("S-012 a title you set stays after more messages", conversation.title == "My Title")
+        }
+
         // Launch repair
         let stale = Message(role: .assistant, text: "Cut", modelName: "first:1", sequence: 99, state: .writing)
         model.selectedConversation?.messages.append(stale)
