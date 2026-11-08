@@ -8,6 +8,8 @@ struct AttachmentTile: View {
     let fileName: String
     let imageData: Data?
     let pageCount: Int
+    /// Shows an X when the attachment can still be removed.
+    var onRemove: (() -> Void)?
     @State private var image: NSImage?
 
     var body: some View {
@@ -40,11 +42,23 @@ struct AttachmentTile: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-                .padding(.horizontal, Space.md)
+                .padding(.leading, Space.md)
+                .padding(.trailing, Space.xxl)
                 .frame(height: Layout.thumbnail)
                 .frame(maxWidth: Layout.chip)
                 .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: Radius.md))
                 .help(fileName)
+            }
+        }
+        .overlay(alignment: .topTrailing) {
+            if let onRemove {
+                Button("Remove", systemImage: "xmark.circle.fill", action: onRemove)
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(.secondary)
+                    .padding(Space.xs)
+                    .help("Remove this attachment")
+                    .accessibilityLabel("Remove \(fileName)")
             }
         }
         .onAppear {
@@ -65,7 +79,8 @@ struct DraftAttachmentRow: View {
         ScrollView(.horizontal) {
             HStack(spacing: Space.sm) {
                 ForEach(model.draftAttachments) { item in
-                    AttachmentTile(kind: item.kind, fileName: item.fileName, imageData: item.imageData, pageCount: item.pageCount)
+                    AttachmentTile(kind: item.kind, fileName: item.fileName, imageData: item.imageData, pageCount: item.pageCount,
+                                   onRemove: { model.removeAttachment(item.id) })
                 }
             }
         }

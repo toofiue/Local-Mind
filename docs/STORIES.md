@@ -306,7 +306,7 @@ UX:
 - States: sent attachments have no X.
 - Words: tooltip "Remove this attachment"; VoiceOver "Remove <file name>".
 - Access: the X is always visible, not hover-only, and reachable with Tab.
-Status: todo
+Status: done
 
 ### S-020 Only see attachment options a model supports
 As the user, I can't attach an image when the chosen model can't read one.

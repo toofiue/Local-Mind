@@ -305,6 +305,20 @@ enum SelfTest {
             check("S-018 the file reaches the model with its name", sent.contains("let answer = 42") && sent.contains("main.swift"))
         }
 
+        // S-019 removing
+        do {
+            model.newConversation()
+            await model.addPastedImage(SeedData.sampleImage)
+            model.draftAttachments.append(LoadedAttachment(kind: .text, fileName: "keep.txt", text: "kept file text"))
+            if let image = model.draftAttachments.first { model.removeAttachment(image.id) }
+            check("S-019 only the removed attachment goes", model.draftAttachments.map(\.fileName) == ["keep.txt"])
+            transport.script(ScriptedTransport.reply(text: ["Done"]))
+            model.send("Check this")
+            await model.waitForReply()
+            let sent = transport.chatBodies.last ?? ""
+            check("S-019 the removed file is not sent", !sent.contains("\"images\"") && sent.contains("kept file text"))
+        }
+
         // Launch repair
         let stale = Message(role: .assistant, text: "Cut", modelName: "first:1", sequence: 99, state: .writing)
         model.selectedConversation?.messages.append(stale)

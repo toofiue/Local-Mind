@@ -39,6 +39,11 @@ extension AppModel {
         }
     }
 
+    func removeAttachment(_ id: UUID) {
+        draftAttachments.removeAll { $0.id == id }
+        attachmentNotice = nil
+    }
+
     private func show(_ error: Error, fileName: String) {
         if case AttachmentError.noReadableText = error {
             attachmentNotice = "“\(fileName)” has no readable text."
