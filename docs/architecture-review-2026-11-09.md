@@ -35,6 +35,10 @@ Do nothing now. Extract `ReplyWriter` as the first step of M4, when Quick Ask gi
 
 Still no `Strong` candidates. The code is 3,600 lines, and `AppModel` stayed at 377 because attachments went into `AppModel+Attachments.swift`. Repeated attachments now travel with every request in a conversation, so very long image conversations may get slow. Measure that before changing it.
 
+## Milestone 4 update
+
+`ReplyWriter` is extracted, as recommended above, and both the main window and Quick Ask use it. Still no `Strong` candidates: the app code is 4,200 lines and no file outside the self-test passes 340. `SelfTest.swift` is 529 lines and will want splitting by feature if it reaches 600.
+
 ## Considered, not recommended
 
 - Splitting `Markdown.parse`: long, but one straight loop that's fully covered by tests.
