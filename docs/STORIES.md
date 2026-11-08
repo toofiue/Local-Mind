@@ -395,7 +395,7 @@ UX:
 - States: only your latest message can be edited, and not while a reply is being written; an empty edit keeps the original; its attachments stay.
 - Words: "Edit Message"; tooltip "Change this message and write a new reply (⇧⌘E)".
 - Access: focus moves to the field and returns to the message field after saving.
-Status: todo
+Status: done
 
 ### S-026 Use the app from the keyboard
 As the user, I move between conversations and send without touching the mouse.

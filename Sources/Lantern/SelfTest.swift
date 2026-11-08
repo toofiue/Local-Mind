@@ -423,6 +423,33 @@ enum SelfTest {
             check("S-023 the main window comes forward", main?.isVisible == true && main?.isKeyWindow == true)
         }
 
+        // S-025 editing
+        do {
+            model.newConversation()
+            transport.script(ScriptedTransport.reply(text: ["First reply"]))
+            model.send("Old question")
+            await model.waitForReply()
+            let conversation = model.selectedConversation
+            check("S-025 the menu allows editing", MenuState.shared.canEdit)
+            model.startEditing()
+            check("S-025 Edit targets your latest message", model.editingMessageID == model.latestUserMessage?.uid)
+            model.cancelEditing()
+            check("S-025 Escape cancels", model.editingMessageID == nil && conversation?.messages.count == 2)
+            if let message = model.latestUserMessage {
+                model.saveEdit(message, text: "   ")
+                check("S-025 an empty edit changes nothing", message.text == "Old question" && conversation?.messages.count == 2)
+                transport.script(ScriptedTransport.reply(text: ["Second reply"]))
+                let oldReply = model.latestReply?.uid
+                model.saveEdit(message, text: "New question")
+                await model.waitForReply()
+                check("S-025 the message changes", message.text == "New question")
+                check("S-025 the old reply is gone", conversation?.messages.count == 2 && model.latestReply?.uid != oldReply)
+                check("S-025 a new reply is written", model.latestReply?.text == "Second reply")
+                let body = transport.chatBodies.last ?? ""
+                check("S-025 the model sees only the new text", body.contains("New question") && !body.contains("Old question") && !body.contains("First reply"))
+            }
+        }
+
         // Launch repair
         let stale = Message(role: .assistant, text: "Cut", modelName: "first:1", sequence: 99, state: .writing)
         model.selectedConversation?.messages.append(stale)

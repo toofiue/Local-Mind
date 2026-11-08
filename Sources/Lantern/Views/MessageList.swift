@@ -15,12 +15,14 @@ struct MessageList: View {
     var body: some View {
         let messages = conversation.ordered
         let latestReplyID = messages.last { $0.role == .assistant }?.uid
+        let latestUserID = messages.last { $0.role == .user }?.uid
         let progress = messages.last.map { $0.text.count + $0.thinking.count } ?? 0
 
         ScrollView {
             LazyVStack(spacing: Space.xxl) {
                 ForEach(messages) { message in
-                    MessageRow(message: message, isLatestReply: message.uid == latestReplyID)
+                    MessageRow(message: message, isLatestReply: message.uid == latestReplyID,
+                               canEdit: message.uid == latestUserID)
                 }
             }
             .frame(maxWidth: Layout.column)
@@ -65,6 +67,9 @@ struct MessageList: View {
 struct MessageRow: View {
     let message: Message
     let isLatestReply: Bool
+    /// Only the latest message in the main window can be changed.
+    var canEdit = false
+    @Environment(AppModel.self) private var model
 
     var body: some View {
         switch message.role {
@@ -73,16 +78,54 @@ struct MessageRow: View {
                 Spacer(minLength: Space.section)
                 VStack(alignment: .trailing, spacing: Space.sm) {
                     if !message.attachments.isEmpty { SentAttachmentRow(message: message) }
-                    Text(message.text)
-                        .textSelection(.enabled)
-                        .padding(.horizontal, Space.md)
-                        .padding(.vertical, Space.sm)
-                        .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: Radius.lg))
+                    if model.editingMessageID == message.uid {
+                        EditMessageField(message: message)
+                    } else {
+                        Text(message.text)
+                            .textSelection(.enabled)
+                            .padding(.horizontal, Space.md)
+                            .padding(.vertical, Space.sm)
+                            .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: Radius.lg))
+                        if canEdit {
+                            Button("Edit Message", systemImage: "pencil") { model.startEditing() }
+                                .labelStyle(.iconOnly)
+                                .buttonStyle(.borderless)
+                                .foregroundStyle(.secondary)
+                                .disabled(model.isWriting)
+                                .help("Change this message and write a new reply (⇧⌘E)")
+                        }
+                    }
                 }
             }
         case .assistant:
             ReplyRow(message: message, isLatestReply: isLatestReply)
         }
+    }
+}
+
+private struct EditMessageField: View {
+    let message: Message
+    @Environment(AppModel.self) private var model
+    @State private var draft = ""
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        TextField("Message", text: $draft, axis: .vertical)
+            .textFieldStyle(.plain)
+            .labelsHidden()
+            .focused($isFocused)
+            .onSubmit { model.saveEdit(message, text: draft) }
+            .onExitCommand { model.cancelEditing() }
+            .padding(.horizontal, Space.md)
+            .padding(.vertical, Space.sm)
+            .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: Radius.lg))
+            .frame(maxWidth: Layout.column)
+            .task {
+                draft = message.text
+                // A row can't take focus until it has been laid out.
+                try? await Task.sleep(for: .milliseconds(50))
+                isFocused = true
+            }
     }
 }
 

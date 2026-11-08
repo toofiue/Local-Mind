@@ -56,6 +56,9 @@ struct LanternApp: App {
                 Button("Retry") { model.retry() }
                     .keyboardShortcut("r")
                     .disabled(menu.isWriting || !menu.hasReply)
+                Button("Edit Message") { model.startEditing() }
+                    .keyboardShortcut("e", modifiers: [.command, .shift])
+                    .disabled(!menu.canEdit)
                 Button("Copy Reply") { model.copyLatestReply() }
                     .keyboardShortcut("c", modifiers: [.command, .shift])
                     .disabled(!menu.hasReply)

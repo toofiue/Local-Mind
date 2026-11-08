@@ -16,8 +16,10 @@ final class MenuState: ObservableObject {
     @Published private(set) var hasSelection = false
     @Published private(set) var isPinned = false
     @Published private(set) var canDelete = false
+    @Published private(set) var canEdit = false
 
-    func update(isWriting: Bool, hasReply: Bool, hasSelection: Bool, isPinned: Bool, canDelete: Bool) {
+    func update(isWriting: Bool, hasReply: Bool, hasSelection: Bool, isPinned: Bool, canDelete: Bool, canEdit: Bool) {
+        if self.canEdit != canEdit { self.canEdit = canEdit }
         if self.canDelete != canDelete { self.canDelete = canDelete }
         if self.isPinned != isPinned { self.isPinned = isPinned }
         if self.isWriting != isWriting { self.isWriting = isWriting }
@@ -54,6 +56,8 @@ final class AppModel {
     var showingModelPicker = false
     /// The conversation whose sidebar row is being edited.
     var renamingID: UUID?
+    /// The message being changed in place.
+    var editingMessageID: UUID?
     /// The conversation waiting on a delete confirmation.
     var pendingDeletion: Conversation?
     var searchText = ""
@@ -309,17 +313,18 @@ final class AppModel {
         replies.start(reply, in: conversation, modelName: modelName, turns: turns, think: think, client: client)
     }
 
-    private func save() {
+    func save() {
         try? context.save()
         syncMenu()
     }
 
-    private func syncMenu() {
+    func syncMenu() {
         MenuState.shared.update(isWriting: replies.isWriting,
                                 hasReply: !(latestReply?.text.isEmpty ?? true),
                                 hasSelection: selectedConversation != nil,
                                 isPinned: selectedConversation?.isPinned ?? false,
-                                canDelete: selectedConversation.map { !isWriting(in: $0) } ?? false)
+                                canDelete: selectedConversation.map { !isWriting(in: $0) } ?? false,
+                                canEdit: !isWriting && latestUserMessage != nil)
     }
 }
 
