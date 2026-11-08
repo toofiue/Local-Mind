@@ -277,7 +277,7 @@ UX:
 - States: no text layer shows "“scan.pdf” has no readable text." and nothing attaches; too long shows a warning but still lets you send.
 - Words: "12 pages"; warning "“report.pdf” is longer than this model can read at once. It may only see part of it."
 - Access: warnings use words and an icon; VoiceOver reads the name and page count.
-Status: todo
+Status: done
 
 ### S-018 Attach a text or code file
 As the user, I drop a text or code file and ask about it.

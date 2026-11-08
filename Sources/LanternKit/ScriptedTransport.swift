@@ -62,7 +62,9 @@ public final class ScriptedTransport: OllamaTransport {
         return try state.withLock { state in
             func encode(_ value: Any) throws -> Data { try JSONSerialization.data(withJSONObject: value) }
             if path.hasSuffix("/api/tags") {
-                return try encode(["models": state.installed.map { ["name": $0.name, "size": $0.size] as [String: Any] }])
+                return try encode(["models": state.installed.map {
+                    ["name": $0.name, "size": $0.size, "details": ["runner": "mlx"]] as [String: Any]
+                }])
             }
             if path.hasSuffix("/api/ps") {
                 return try encode(["models": state.loaded.map { ["name": $0, "size": 1_000] as [String: Any] }])
@@ -70,7 +72,8 @@ public final class ScriptedTransport: OllamaTransport {
             if path.hasSuffix("/api/show") {
                 let asked = (try? JSONSerialization.jsonObject(with: request.httpBody ?? Data())) as? [String: Any]
                 let model = state.installed.first { $0.name == asked?["model"] as? String }
-                return try encode(["capabilities": Array(model?.capabilities ?? [])])
+                return try encode(["capabilities": Array(model?.capabilities ?? []),
+                                   "model_info": ["test.context_length": model?.contextLimit ?? 0]] as [String: Any])
             }
             if path.hasSuffix("/api/generate") {
                 let asked = (try? JSONSerialization.jsonObject(with: request.httpBody ?? Data())) as? [String: Any]

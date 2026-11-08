@@ -1,4 +1,5 @@
 import CoreGraphics
+import CoreText
 import Foundation
 import ImageIO
 import Testing
@@ -61,4 +62,62 @@ func omitsImages() async throws {
     transport.script(ScriptedTransport.reply(text: ["ok"]))
     for try await _ in OllamaClient(transport: transport).chat(model: "m", turns: [ChatTurn(role: "user", content: "hi")], think: false) {}
     #expect(!transport.chatBodies[0].contains("images"))
+}
+
+func makePDF(pages: [String]) -> Data {
+    let output = NSMutableData()
+    var box = CGRect(x: 0, y: 0, width: 300, height: 300)
+    let context = CGContext(consumer: CGDataConsumer(data: output)!, mediaBox: &box, nil)!
+    for text in pages {
+        context.beginPDFPage(nil)
+        if !text.isEmpty {
+            let line = CTLineCreateWithAttributedString(NSAttributedString(string: text, attributes: [
+                kCTFontAttributeName as NSAttributedString.Key: CTFontCreateWithName("Helvetica" as CFString, 12, nil),
+            ]))
+            context.textPosition = CGPoint(x: 20, y: 200)
+            CTLineDraw(line, context)
+        }
+        context.endPDFPage()
+    }
+    context.closePDF()
+    return output as Data
+}
+
+@Test("S-017 PDF text and page count are read")
+func readsPDF() throws {
+    let attachment = try AttachmentLoader.load(name: "report.pdf", data: makePDF(pages: ["First page text", "Second page text"]))
+    #expect(attachment.kind == .pdf)
+    #expect(attachment.pageCount == 2)
+    #expect(attachment.text.contains("First page text"))
+    #expect(attachment.text.contains("Second page text"))
+}
+
+@Test("S-017 a PDF with no text layer is refused")
+func refusesBlankPDF() {
+    #expect(throws: AttachmentError.noReadableText("scan.pdf")) {
+        try AttachmentLoader.load(name: "scan.pdf", data: makePDF(pages: ["", ""]))
+    }
+}
+
+@Test("S-017 attached text goes in the prompt with its file name")
+func composesPrompt() {
+    let prompt = AttachmentPrompt.compose(message: "Summarize this", files: [(name: "report.pdf", text: "Revenue rose.")])
+    #expect(prompt == "<file name=\"report.pdf\">\nRevenue rose.\n</file>\n\nSummarize this")
+}
+
+@Test("S-017 a message with no files is unchanged")
+func composesPlainPrompt() {
+    #expect(AttachmentPrompt.compose(message: "Hello", files: []) == "Hello")
+}
+
+@Test("S-017 text over the model's limit is flagged", arguments: [(39_000, false), (41_000, true)])
+func flagsLongText(characters: Int, flagged: Bool) {
+    #expect(AttachmentPrompt.exceedsContext(String(repeating: "a", count: characters), limit: 10_000) == flagged)
+}
+
+@Test("S-017 MLX models use their full limit from Ollama")
+func readsContextLimit() async throws {
+    let installed = OllamaModel(name: "m", size: 1, contextLimit: 262_144)
+    let models = try await OllamaClient(transport: ScriptedTransport(installed: [installed])).models()
+    #expect(models[0].contextLimit == 262_144)
 }

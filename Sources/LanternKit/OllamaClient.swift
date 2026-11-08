@@ -5,14 +5,20 @@ public struct OllamaModel: Sendable, Equatable, Identifiable {
     public let name: String
     public let size: Int64
     public var capabilities: Set<String>
+    /// Roughly how many tokens the model can read at once.
+    public var contextLimit: Int
+
+    /// What Ollama gives a non-MLX model unless told otherwise. MLX models read up to their full limit.
+    public static let defaultContext = 4_096
 
     public var id: String { name }
     public var supportsThinking: Bool { capabilities.contains("thinking") }
 
-    public init(name: String, size: Int64, capabilities: Set<String> = []) {
+    public init(name: String, size: Int64, capabilities: Set<String> = [], contextLimit: Int = OllamaModel.defaultContext) {
         self.name = name
         self.size = size
         self.capabilities = capabilities
+        self.contextLimit = contextLimit
     }
 }
 
@@ -149,7 +155,8 @@ public struct OllamaClient: Sendable {
     /// Every installed model with its capabilities.
     public func models() async throws -> [OllamaModel] {
         struct Tags: Decodable {
-            struct Row: Decodable { let name: String; let size: Int64 }
+            struct Details: Decodable { let runner: String? }
+            struct Row: Decodable { let name: String; let size: Int64; let details: Details? }
             let models: [Row]
         }
         struct Show: Decodable { let capabilities: [String]? }
@@ -159,9 +166,18 @@ public struct OllamaClient: Sendable {
         for row in tags.models {
             let data = try await transport.send(post("api/show", ["model": row.name]))
             let show = try JSONDecoder().decode(Show.self, from: data)
-            result.append(OllamaModel(name: row.name, size: row.size, capabilities: Set(show.capabilities ?? [])))
+            let limit = row.details?.runner == "mlx" ? Self.fullContext(in: data) : nil
+            result.append(OllamaModel(name: row.name, size: row.size, capabilities: Set(show.capabilities ?? []),
+                                      contextLimit: limit ?? OllamaModel.defaultContext))
         }
         return result
+    }
+
+    /// The model's own limit, stored under a key like "gemma4_unified.context_length".
+    private static func fullContext(in showResponse: Data) -> Int? {
+        let object = try? JSONSerialization.jsonObject(with: showResponse) as? [String: Any]
+        let info = object?["model_info"] as? [String: Any]
+        return info?.first { $0.key.hasSuffix(".context_length") }?.value as? Int
     }
 
     /// The models in memory right now.

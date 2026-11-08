@@ -92,6 +92,11 @@ private struct Composer: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
+            if let warning = model.attachmentLengthWarning {
+                Label(warning, systemImage: "exclamationmark.triangle")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
             if !model.draftAttachments.isEmpty { DraftAttachmentRow() }
             HStack(alignment: .bottom, spacing: Space.sm) {
             Button("Attach Files", systemImage: "paperclip") { model.chooseFiles() }

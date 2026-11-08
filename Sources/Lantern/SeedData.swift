@@ -1,4 +1,5 @@
 import AppKit
+import CoreText
 import SwiftData
 import LanternKit
 
@@ -29,7 +30,28 @@ enum SeedData {
         return Data()
     }
 
-    static var draftAttachments: [LoadedAttachment] { [sampleImageAttachment] }
+    static var draftAttachments: [LoadedAttachment] {
+        [sampleImageAttachment,
+         LoadedAttachment(kind: .pdf, fileName: "Quarterly report.pdf", text: "Revenue rose in the third quarter.", pageCount: 12)]
+    }
+
+    /// A one-page PDF, with text or with none, for the self-test.
+    static func samplePDF(text: String) -> Data {
+        let output = NSMutableData()
+        var box = CGRect(x: 0, y: 0, width: 300, height: 300)
+        guard let consumer = CGDataConsumer(data: output),
+              let context = CGContext(consumer: consumer, mediaBox: &box, nil) else { return Data() }
+        context.beginPDFPage(nil)
+        if !text.isEmpty {
+            let font = CTFontCreateWithName("Helvetica" as CFString, 12, nil)
+            let line = CTLineCreateWithAttributedString(NSAttributedString(string: text, attributes: [.font: font]))
+            context.textPosition = CGPoint(x: 20, y: 200)
+            CTLineDraw(line, context)
+        }
+        context.endPDFPage()
+        context.closePDF()
+        return output as Data
+    }
 
     static var sampleImageAttachment: LoadedAttachment {
         LoadedAttachment(kind: .image, fileName: "Screenshot.png", imageData: sampleImage)

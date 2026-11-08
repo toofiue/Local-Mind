@@ -36,7 +36,7 @@ enum SelfTest {
     }
 
     private static func runScripted(_ model: AppModel) async {
-        let first = OllamaModel(name: "first:1", size: 100, capabilities: ["completion", "thinking"])
+        let first = OllamaModel(name: "first:1", size: 100, capabilities: ["completion", "thinking"], contextLimit: 100)
         let second = OllamaModel(name: "second:1", size: 200, capabilities: ["completion"])
         let transport = ScriptedTransport(installed: [first, second])
         model.client = OllamaClient(transport: transport)
@@ -251,6 +251,37 @@ enum SelfTest {
                 let after = (try? context.fetchCount(FetchDescriptor<Attachment>())) ?? -1
                 check("S-014 deleting a conversation deletes its attachments", after == before - 1, "\(before) to \(after)")
             }
+        }
+
+        // S-017 PDFs
+        do {
+            model.newConversation()
+            let folder = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString, directoryHint: .isDirectory)
+            try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            defer { try? FileManager.default.removeItem(at: folder) }
+            let scan = folder.appending(path: "scan.pdf")
+            try? SeedData.samplePDF(text: "").write(to: scan)
+            await model.addFiles([scan])
+            check("S-017 a PDF with no text is explained", model.attachmentNotice == "“scan.pdf” has no readable text.", model.attachmentNotice ?? "nil")
+            check("S-017 and doesn't attach", model.draftAttachments.isEmpty)
+
+            let report = folder.appending(path: "report.pdf")
+            try? SeedData.samplePDF(text: "Revenue rose sharply").write(to: report)
+            await model.addFiles([report])
+            check("S-017 a PDF attaches with its page count", model.draftAttachments.first?.pageCount == 1)
+            check("S-017 a successful attach clears the notice", model.attachmentNotice == nil)
+            check("S-017 a short PDF has no warning", model.attachmentLengthWarning == nil)
+
+            model.draftAttachments.append(LoadedAttachment(kind: .pdf, fileName: "huge.pdf", text: String(repeating: "a", count: 2_000), pageCount: 1))
+            check("S-017 a long file is flagged before sending", model.attachmentLengthWarning?.contains("huge.pdf") == true && first.contextLimit == 100, model.attachmentLengthWarning ?? "nil")
+            model.draftAttachments.removeLast()
+
+            transport.script(ScriptedTransport.reply(text: ["It rose"]))
+            model.send("What happened to revenue?")
+            await model.waitForReply()
+            let sent = transport.chatBodies.last ?? ""
+            check("S-017 the PDF text reaches the model", sent.contains("Revenue rose sharply") && sent.contains("report.pdf"))
+            check("S-017 your message stays clean in the conversation", model.selectedConversation?.ordered.first?.text == "What happened to revenue?")
         }
 
         // Launch repair

@@ -40,12 +40,27 @@ extension AppModel {
     }
 
     private func show(_ error: Error, fileName: String) {
-        attachmentNotice = "Unable to read “\(fileName)”. Attach an image, PDF, or text file."
+        if case AttachmentError.noReadableText = error {
+            attachmentNotice = "“\(fileName)” has no readable text."
+        } else {
+            attachmentNotice = "Unable to read “\(fileName)”. Attach an image, PDF, or text file."
+        }
     }
 
     /// The history turn for one stored message, with its attachments.
     func turn(for message: Message) -> ChatTurn {
-        let images = message.orderedAttachments.compactMap { $0.imageData?.base64EncodedString() }
-        return ChatTurn(role: message.role.rawValue, content: message.text, images: images.isEmpty ? nil : images)
+        let attachments = message.orderedAttachments
+        let images = attachments.compactMap { $0.imageData?.base64EncodedString() }
+        let files = attachments.filter { $0.kind != .image }.map { (name: $0.fileName, text: $0.text) }
+        return ChatTurn(role: message.role.rawValue,
+                        content: AttachmentPrompt.compose(message: message.text, files: files),
+                        images: images.isEmpty ? nil : images)
+    }
+
+    /// A warning if an attached file is too long for the current model. Sending is still allowed.
+    var attachmentLengthWarning: String? {
+        guard let limit = models.first(where: { $0.name == currentModelName })?.contextLimit else { return nil }
+        let tooLong = draftAttachments.first { $0.kind != .image && AttachmentPrompt.exceedsContext($0.text, limit: limit) }
+        return tooLong.map { "“\($0.fileName)” is longer than this model can read at once. It may only see part of it." }
     }
 }
