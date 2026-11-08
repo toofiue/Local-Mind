@@ -138,7 +138,7 @@ private struct ReplyRow: View {
     }
 
     private var progressText: String {
-        if case .loading(let name) = model.writingPhase, model.writingReplyID == message.uid {
+        if case .loading(let name) = model.replies.phase, model.replies.activeReplyID == message.uid {
             return "Loading \(name)…"
         }
         return "Writing reply…"

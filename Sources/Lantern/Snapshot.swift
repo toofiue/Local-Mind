@@ -17,7 +17,7 @@ enum SnapshotPage: String, CaseIterable {
         model.draftAttachments = self == .chatAttachments ? SeedData.draftAttachments : []
         model.connection = self == .offline ? .failed : .connected
         model.searchText = self == .sidebarSearch ? "model" : ""
-        model.writingReplyID = nil
+        model.replies.activeReplyID = nil
         model.showingModelPicker = false
         switch self {
         case .chat, .offline, .modelPicker, .sidebarSearch:
@@ -31,7 +31,7 @@ enum SnapshotPage: String, CaseIterable {
         case .chatWriting:
             let conversation = SeedData.conversation(titled: SeedData.writing, in: model)
             model.selection = conversation?.uid
-            model.writingReplyID = conversation?.ordered.last?.uid
+            model.replies.activeReplyID = conversation?.ordered.last?.uid
         }
         if self == .modelPicker { model.showingModelPicker = true }
     }

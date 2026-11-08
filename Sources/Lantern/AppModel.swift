@@ -8,10 +8,6 @@ enum Connection: Equatable {
     case connecting, starting, connected, failed
 }
 
-enum WritingPhase: Equatable {
-    case loading(String), waiting
-}
-
 /// Menus don't observe `@Observable` models, so the App observes this instead.
 final class MenuState: ObservableObject {
     static let shared = MenuState()
@@ -49,9 +45,7 @@ final class AppModel {
     var connection: Connection = .connecting
     var models: [OllamaModel] = []
     var draftModelName: String?
-    var writingReplyID: UUID? { didSet { syncMenu() } }
-    private var writingConversationID: UUID?
-    var writingPhase: WritingPhase?
+    let replies = ReplyWriter()
     var showingModelPicker = false
     /// The conversation whose sidebar row is being edited.
     var renamingID: UUID?
@@ -73,7 +67,6 @@ final class AppModel {
 
     @ObservationIgnored var startOllama: @MainActor () -> Void = { AppModel.openOllamaApp() }
     @ObservationIgnored var startupWait: Duration = .seconds(15)
-    @ObservationIgnored private var replyTask: Task<Void, Never>?
 
     init(container: ModelContainer) {
         self.container = container
@@ -82,6 +75,13 @@ final class AppModel {
             base = url
         }
         client = OllamaClient(base: base)
+        replies.onChange = { [weak self] in self?.syncMenu() }
+        replies.onFinished = { [weak self] lostConnection in
+            guard let self else { return }
+            if lostConnection, !(await self.refreshModels()) { self.connection = .failed }
+            self.syncMenu()
+            self.focusRequest += 1
+        }
     }
 
     private var context: ModelContext { container.mainContext }
@@ -181,7 +181,7 @@ final class AppModel {
     }
 
     func isWriting(in conversation: Conversation) -> Bool {
-        writingConversationID == conversation.uid
+        replies.isWriting(in: conversation)
     }
 
     /// Asks for confirmation. A reply can't be deleted while it's being written.
@@ -228,7 +228,7 @@ final class AppModel {
         selectedConversation?.ordered.last { $0.role == .assistant }
     }
 
-    var isWriting: Bool { writingReplyID != nil }
+    var isWriting: Bool { replies.isWriting }
 
     /// Returns false when the message couldn't be sent, so the field keeps its text.
     @discardableResult
@@ -273,7 +273,7 @@ final class AppModel {
     }
 
     func stop() {
-        replyTask?.cancel()
+        replies.stop()
     }
 
     func copyLatestReply() {
@@ -282,7 +282,7 @@ final class AppModel {
 
     /// Lets the self-test wait for a reply to finish.
     func waitForReply() async {
-        await replyTask?.value
+        await replies.wait()
     }
 
     private func startReply(in conversation: Conversation, modelName: String) {
@@ -294,65 +294,7 @@ final class AppModel {
         save()
 
         let think = models.first { $0.name == modelName }?.supportsThinking ?? false
-        writingConversationID = conversation.uid
-        writingReplyID = reply.uid
-        writingPhase = .waiting
-        replyTask = Task { await runReply(reply, in: conversation, modelName: modelName, turns: turns, think: think) }
-    }
-
-    private func runReply(_ reply: Message, in conversation: Conversation, modelName: String, turns: [ChatTurn], think: Bool) async {
-        var text = ""
-        var thinking = ""
-        var lastFlush = ContinuousClock.now
-
-        func flush() {
-            reply.text = text
-            reply.thinking = thinking
-        }
-
-        do {
-            // Only one model fits in memory, so make room before loading. If
-            // Ollama is too busy to say what's loaded, the chat request still queues.
-            let loaded = (try? await client.loadedModels()) ?? []
-            for other in loaded where other.name != modelName {
-                try? await client.unload(other.name)
-            }
-            if !loaded.contains(where: { $0.name == modelName }) { writingPhase = .loading(modelName) }
-
-            for try await event in client.chat(model: modelName, turns: turns, think: think) {
-                writingPhase = nil
-                switch event {
-                case .thinking(let chunk): thinking += chunk
-                case .text(let chunk): text += chunk
-                case .done(let speed): reply.tokensPerSecond = speed
-                }
-                if ContinuousClock.now - lastFlush >= .milliseconds(50) {
-                    flush()
-                    lastFlush = .now
-                }
-            }
-            try Task.checkCancellation()
-            reply.state = .complete
-        } catch is CancellationError {
-            reply.state = .stopped
-        } catch OllamaError.server(let message) {
-            reply.state = .failed
-            let nothingWritten = text.isEmpty && thinking.isEmpty
-            reply.failureText = nothingWritten
-                ? "Unable to load \(modelName). Close other apps to free memory, then click Retry."
-                : "Unable to finish this reply. \(message)"
-        } catch {
-            reply.state = .interrupted
-            if !(await refreshModels()) { connection = .failed }
-        }
-
-        flush()
-        conversation.updatedAt = .now
-        save()
-        writingConversationID = nil
-        writingReplyID = nil
-        writingPhase = nil
-        focusRequest += 1
+        replies.start(reply, in: conversation, modelName: modelName, turns: turns, think: think, client: client)
     }
 
     private func save() {
@@ -361,7 +303,7 @@ final class AppModel {
     }
 
     private func syncMenu() {
-        MenuState.shared.update(isWriting: writingReplyID != nil,
+        MenuState.shared.update(isWriting: replies.isWriting,
                                 hasReply: !(latestReply?.text.isEmpty ?? true),
                                 hasSelection: selectedConversation != nil,
                                 isPinned: selectedConversation?.isPinned ?? false,
