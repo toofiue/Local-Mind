@@ -23,6 +23,10 @@ enum Radius {
 enum Layout {
     /// The widest a conversation's text gets, for comfortable line lengths.
     static let column: CGFloat = 720
+    /// The size of an attached image, and the height of a file chip.
+    static let thumbnail: CGFloat = 48
+    /// The widest a file chip gets.
+    static let chip: CGFloat = 220
 }
 
 enum Motion {

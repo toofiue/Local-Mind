@@ -1,6 +1,28 @@
 import AppKit
 import SwiftUI
 
+/// Sends pasted files and images to the conversation instead of inserting
+/// them as text. Drops are left for the conversation page to handle.
+private final class ComposerTextView: NSTextView {
+    var onPasteFiles: (([URL]) -> Void)?
+    var onPasteImage: ((Data) -> Void)?
+
+    override var acceptableDragTypes: [NSPasteboard.PasteboardType] { [] }
+    override func updateDragTypeRegistration() { unregisterDraggedTypes() }
+
+    override func paste(_ sender: Any?) {
+        let board = NSPasteboard.general
+        let files = board.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
+        if !files.isEmpty {
+            onPasteFiles?(files)
+        } else if board.string(forType: .string) == nil, let image = board.data(forType: .png) ?? board.data(forType: .tiff) {
+            onPasteImage?(image)
+        } else {
+            super.paste(sender)
+        }
+    }
+}
+
 /// The message field. A real text view, so fast typing, paste, undo, and input
 /// methods all behave. Return submits and Shift-Return adds a line.
 struct ComposerField: NSViewRepresentable {
@@ -10,16 +32,18 @@ struct ComposerField: NSViewRepresentable {
     let focusRequest: Int
     let maxLines: Int
     let onSubmit: () -> Void
+    let onPasteFiles: ([URL]) -> Void
+    let onPasteImage: (Data) -> Void
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
     func makeNSView(context: Context) -> NSScrollView {
-        let scrollView = NSTextView.scrollableTextView()
-        scrollView.drawsBackground = false
-        scrollView.hasVerticalScroller = true
-        scrollView.autohidesScrollers = true
-        scrollView.borderType = .noBorder
-        guard let textView = scrollView.documentView as? NSTextView else { return scrollView }
+        let textView = ComposerTextView()
+        textView.isVerticallyResizable = true
+        textView.isHorizontallyResizable = false
+        textView.autoresizingMask = .width
+        textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: .greatestFiniteMagnitude)
+        textView.textContainer?.widthTracksTextView = true
         textView.delegate = context.coordinator
         textView.font = .preferredFont(forTextStyle: .body)
         textView.textColor = .labelColor
@@ -32,12 +56,22 @@ struct ComposerField: NSViewRepresentable {
         textView.isAutomaticDashSubstitutionEnabled = false
         textView.isAutomaticTextReplacementEnabled = false
         textView.setAccessibilityLabel("Message")
+        textView.unregisterDraggedTypes()
+
+        let scrollView = NSScrollView()
+        scrollView.documentView = textView
+        scrollView.drawsBackground = false
+        scrollView.hasVerticalScroller = true
+        scrollView.autohidesScrollers = true
+        scrollView.borderType = .noBorder
         return scrollView
     }
 
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
-        guard let textView = scrollView.documentView as? NSTextView else { return }
+        guard let textView = scrollView.documentView as? ComposerTextView else { return }
         context.coordinator.parent = self
+        textView.onPasteFiles = onPasteFiles
+        textView.onPasteImage = onPasteImage
         if textView.string != text {
             textView.string = text
             // After this update, once layout has caught up with the new text.

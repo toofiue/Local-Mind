@@ -134,7 +134,7 @@ enum SelfTest {
         // S-005 persistence
         let uid = model.selectedConversation?.uid
         let messageCount = model.selectedConversation?.messages.count ?? 0
-        let reopened = try? ModelContainer(for: Conversation.self, Message.self,
+        let reopened = try? ModelContainer(for: Conversation.self, Message.self, Attachment.self,
                                            configurations: ModelConfiguration(url: Store.url))
         let saved = (try? reopened?.mainContext.fetch(FetchDescriptor<Conversation>())) ?? []
         let found = saved.first { $0.uid == uid }
@@ -218,6 +218,39 @@ enum SelfTest {
             check("S-014 and direct deletion is refused too", model.selection == oldest.uid)
             model.stop()
             await model.waitForReply()
+        }
+
+        // S-016 images
+        do {
+            model.newConversation()
+            await model.addPastedImage(SeedData.sampleImage)
+            check("S-016 a pasted image attaches", model.draftAttachments.first?.kind == .image)
+            check("S-016 a pasted image gets a name", model.draftAttachments.first?.fileName == "Pasted Image")
+            transport.script(ScriptedTransport.reply(text: ["A gradient"]))
+            model.send("What is this?")
+            await model.waitForReply()
+            check("S-016 the image goes in the request", transport.chatBodies.last?.contains("\"images\":[\"") == true)
+            check("S-016 sending clears the draft", model.draftAttachments.isEmpty)
+            let question = model.selectedConversation?.ordered.first
+            check("S-016 the image is stored with its message", question?.attachments.first?.imageData?.isEmpty == false)
+
+            let reopened = try? ModelContainer(for: Conversation.self, Message.self, Attachment.self,
+                                               configurations: ModelConfiguration(url: Store.url))
+            let saved = (try? reopened?.mainContext.fetch(FetchDescriptor<Attachment>())) ?? []
+            check("S-016 images survive reopening the store", saved.contains { $0.imageData?.isEmpty == false })
+
+            transport.script(ScriptedTransport.reply(text: ["Still a gradient"]))
+            model.send("Are you sure?")
+            await model.waitForReply()
+            check("S-016 later messages still carry the earlier image", transport.chatBodies.last?.contains("\"images\":[\"") == true)
+
+            if let conversation = model.selectedConversation {
+                let context = model.container.mainContext
+                let before = (try? context.fetchCount(FetchDescriptor<Attachment>())) ?? -1
+                model.delete(conversation)
+                let after = (try? context.fetchCount(FetchDescriptor<Attachment>())) ?? -1
+                check("S-014 deleting a conversation deletes its attachments", after == before - 1, "\(before) to \(after)")
+            }
         }
 
         // Launch repair

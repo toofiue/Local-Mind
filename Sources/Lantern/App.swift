@@ -36,6 +36,8 @@ struct LanternApp: App {
             CommandGroup(replacing: .newItem) {
                 Button("New Conversation") { model.newConversation() }
                     .keyboardShortcut("n")
+                Button("Attach Files…") { model.chooseFiles() }
+                    .keyboardShortcut("a", modifiers: [.command, .shift])
             }
             CommandGroup(after: .textEditing) {
                 Button("Search Conversations") { model.searchRequest += 1 }
@@ -112,7 +114,7 @@ enum Store {
 
     static func makeContainer() -> ModelContainer {
         do {
-            return try ModelContainer(for: Conversation.self, Message.self, configurations: ModelConfiguration(url: url))
+            return try ModelContainer(for: Conversation.self, Message.self, Attachment.self, configurations: ModelConfiguration(url: url))
         } catch {
             fatalError("Could not open the database at \(url.path): \(error)")
         }

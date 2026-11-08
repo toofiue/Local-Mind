@@ -31,10 +31,13 @@ public struct LoadedModel: Sendable, Equatable {
 public struct ChatTurn: Sendable, Equatable, Encodable {
     public let role: String
     public let content: String
+    /// Base64-encoded images, left out of the request when nil.
+    public let images: [String]?
 
-    public init(role: String, content: String) {
+    public init(role: String, content: String, images: [String]? = nil) {
         self.role = role
         self.content = content
+        self.images = images
     }
 }
 

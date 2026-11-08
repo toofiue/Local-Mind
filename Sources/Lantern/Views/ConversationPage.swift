@@ -21,6 +21,10 @@ struct ConversationPage: View {
             Composer()
         }
         .gridArea("conversation", inset: 0)
+        .dropDestination(for: URL.self) { urls, _ in
+            Task { await model.addFiles(urls) }
+            return !urls.isEmpty
+        }
         .navigationTitle(model.selectedConversation?.title ?? ConversationTitle.placeholder)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -82,10 +86,26 @@ private struct Composer: View {
     }
 
     var body: some View {
-        HStack(alignment: .bottom, spacing: Space.sm) {
+        VStack(alignment: .leading, spacing: Space.sm) {
+            if let notice = model.attachmentNotice {
+                Label(notice, systemImage: "exclamationmark.triangle")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            if !model.draftAttachments.isEmpty { DraftAttachmentRow() }
+            HStack(alignment: .bottom, spacing: Space.sm) {
+            Button("Attach Files", systemImage: "paperclip") { model.chooseFiles() }
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
+                .foregroundStyle(.secondary)
+                .help("Attach images, PDFs, or text files (⇧⌘A)")
+                .padding(.vertical, Space.xs)
+
             ComposerField(text: $draft, height: $fieldHeight,
                           isEnabled: model.connection == .connected,
-                          focusRequest: model.focusRequest, maxLines: 8, onSubmit: submit)
+                          focusRequest: model.focusRequest, maxLines: 8, onSubmit: submit,
+                          onPasteFiles: { urls in Task { await model.addFiles(urls) } },
+                          onPasteImage: { data in Task { await model.addPastedImage(data) } })
                 .frame(height: fieldHeight)
                 .overlay(alignment: .topLeading) {
                     if draft.isEmpty {
@@ -111,6 +131,7 @@ private struct Composer: View {
                     .buttonBorderShape(.circle)
                     .disabled(!canSend)
                     .help("Send this message to the model (↩)")
+            }
             }
         }
         .padding(Space.md)

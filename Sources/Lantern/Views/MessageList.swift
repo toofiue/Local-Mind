@@ -71,11 +71,14 @@ struct MessageRow: View {
         case .user:
             HStack {
                 Spacer(minLength: Space.section)
-                Text(message.text)
-                    .textSelection(.enabled)
-                    .padding(.horizontal, Space.md)
-                    .padding(.vertical, Space.sm)
-                    .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: Radius.lg))
+                VStack(alignment: .trailing, spacing: Space.sm) {
+                    if !message.attachments.isEmpty { SentAttachmentRow(message: message) }
+                    Text(message.text)
+                        .textSelection(.enabled)
+                        .padding(.horizontal, Space.md)
+                        .padding(.vertical, Space.sm)
+                        .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: Radius.lg))
+                }
             }
         case .assistant:
             ReplyRow(message: message, isLatestReply: isLatestReply)

@@ -38,6 +38,7 @@ Calm, direct, brief. Say "click", talk to the person as "you", and don't use "we
 | Unload | Take a model out of memory | Eject, Stop, Kill |
 | Pin / Unpin | Keep a conversation at the top of the sidebar / undo that | Favorite, Star |
 | Delete | Remove a conversation; it can't come back | Remove, Trash |
+| Attach | Add a file to the message you're writing | Upload, Add File |
 | Rename | Give a conversation a different title | Edit Title, Retitle |
 | Search | Narrow the sidebar to conversations that contain your text | Find, Filter |
 

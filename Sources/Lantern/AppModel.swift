@@ -58,6 +58,10 @@ final class AppModel {
     /// The conversation waiting on a delete confirmation.
     var pendingDeletion: Conversation?
     var searchText = ""
+    /// Files attached to the message being written.
+    var draftAttachments: [LoadedAttachment] = []
+    /// Why the last attachment couldn't be added.
+    var attachmentNotice: String?
     /// Goes up whenever the search field should take focus.
     var searchRequest = 0
     /// Goes up whenever the message field should take focus.
@@ -242,8 +246,13 @@ final class AppModel {
             context.insert(conversation)
             selection = conversation.uid
         }
-        conversation.messages.append(
-            Message(role: .user, text: text, modelName: modelName, sequence: conversation.nextSequence))
+        let message = Message(role: .user, text: text, modelName: modelName, sequence: conversation.nextSequence)
+        conversation.messages.append(message)
+        for (index, loaded) in draftAttachments.enumerated() {
+            message.attachments.append(Attachment(loaded, sequence: index))
+        }
+        draftAttachments = []
+        attachmentNotice = nil
         remember(model: modelName)
         startReply(in: conversation, modelName: modelName)
         return true
@@ -273,9 +282,7 @@ final class AppModel {
     }
 
     private func startReply(in conversation: Conversation, modelName: String) {
-        let turns = ChatHistory.turns(conversation.ordered.map {
-            ChatTurn(role: $0.role.rawValue, content: $0.text)
-        })
+        let turns = ChatHistory.turns(conversation.ordered.map(turn(for:)))
         let reply = Message(role: .assistant, text: "", modelName: modelName,
                             sequence: conversation.nextSequence, state: .writing)
         conversation.messages.append(reply)

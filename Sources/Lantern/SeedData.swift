@@ -1,4 +1,4 @@
-import Foundation
+import AppKit
 import SwiftData
 import LanternKit
 
@@ -11,6 +11,29 @@ enum SeedData {
     static let thinking = "Is a 16 GB Mac enough for local models?"
     static let writing = "Draft a short email asking to move our meeting"
     static let longTitle = "Summarize the differences between the three Gemma model sizes and when each one is the right choice"
+
+    static let attached = "What is in this screenshot?"
+
+    /// A small gradient, so snapshots and the self-test have a real image to use.
+    static var sampleImage: Data {
+        let size = 320
+        let context = CGContext(data: nil, width: size, height: size, bitsPerComponent: 8, bytesPerRow: 0,
+                                space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)
+        if let context, let gradient = CGGradient(colorSpace: CGColorSpaceCreateDeviceRGB(),
+                                                  colorComponents: [0.2, 0.5, 0.9, 1, 0.1, 0.2, 0.5, 1], locations: nil, count: 2) {
+            context.drawLinearGradient(gradient, start: .zero, end: CGPoint(x: size, y: size), options: [])
+            if let image = context.makeImage() {
+                return NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]) ?? Data()
+            }
+        }
+        return Data()
+    }
+
+    static var draftAttachments: [LoadedAttachment] { [sampleImageAttachment] }
+
+    static var sampleImageAttachment: LoadedAttachment {
+        LoadedAttachment(kind: .image, fileName: "Screenshot.png", imageData: sampleImage)
+    }
 
     static var isRequested: Bool { ProcessInfo.processInfo.environment["APP_SEED"] == "1" && Store.isOverridden }
 
@@ -71,6 +94,10 @@ enum SeedData {
             conversation.messages.append(message)
         }
 
+        add(attached, hoursAgo: 0.05, reply: "A blue gradient with no text or objects in it.")
+        if let question = conversation(titled: attached, in: model)?.ordered.first {
+            question.attachments.append(Attachment(sampleImageAttachment, sequence: 0))
+        }
         add(formatted, hoursAgo: 0.1, reply: formattedReply)
         add(thinking, hoursAgo: 3,
             reply: "Yes, for one model at a time. Models around 8 GB leave room for your other apps.",

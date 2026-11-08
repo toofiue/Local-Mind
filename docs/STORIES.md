@@ -254,7 +254,13 @@ Acceptance:
 - [snap] A thumbnail shows above the field before sending and in the sent message.
 - [unit] Images are stored with their Message and survive a restart.
 - [self] A screenshot pasted from the clipboard attaches the same way as a dropped file.
-Status: todo
+UX:
+- Flow: drop a file anywhere on the conversation, paste with ⌘V, click the paperclip, or File > Attach Files… (⇧⌘A) -> thumbnail appears above the message field -> write and send. Way back: the X on the attachment (S-019).
+- Surface: inline above the message field.
+- States: images are shrunk to at most 1,568 pixels before sending; a sent message shows its thumbnails above its text.
+- Words: "Attach Files…"; paperclip tooltip "Attach images, PDFs, or text files (⇧⌘A)"; a pasted image is named "Pasted Image".
+- Access: every drop has a keyboard path through ⇧⌘A; VoiceOver reads each thumbnail's file name.
+Status: done
 
 ### S-017 Attach a PDF
 As the user, I drop a PDF and ask about what it says.
@@ -265,6 +271,12 @@ Acceptance:
 - [self] A PDF with no text layer shows a message that it has no readable text.
 - [unit] Text that exceeds the model's context is flagged before sending.
 - [snap] The attachment shows as a chip with its name and page count.
+UX:
+- Flow: same ways in as S-016 -> chip with name and page count -> write and send. Way back: the X on the chip.
+- Surface: inline chip above the message field.
+- States: no text layer shows "“scan.pdf” has no readable text." and nothing attaches; too long shows a warning but still lets you send.
+- Words: "12 pages"; warning "“report.pdf” is longer than this model can read at once. It may only see part of it."
+- Access: warnings use words and an icon; VoiceOver reads the name and page count.
 Status: todo
 
 ### S-018 Attach a text or code file
@@ -274,6 +286,12 @@ Depends: S-017
 Acceptance:
 - [unit] UTF-8 text files are read and added to the prompt with the file name.
 - [self] A binary file is refused with a message naming the file.
+UX:
+- Flow: same ways in as S-016 -> chip with the file name -> write and send. Way back: the X on the chip.
+- Surface: inline chip above the message field.
+- States: an unreadable file shows "Unable to read “app.zip”. Attach an image, PDF, or text file." and nothing attaches.
+- Words: as above; the chip's detail reads "Text".
+- Access: as S-017.
 Status: todo
 
 ### S-019 Remove an attachment before sending
@@ -282,6 +300,12 @@ Screens: chat-attachments
 Depends: S-016
 Acceptance:
 - [self] The chip or thumbnail disappears and the file is not sent.
+UX:
+- Flow: click the X -> the attachment disappears at once. Way back: attach it again.
+- Surface: inline on the attachment.
+- States: sent attachments have no X.
+- Words: tooltip "Remove this attachment"; VoiceOver "Remove <file name>".
+- Access: the X is always visible, not hover-only, and reachable with Tab.
 Status: todo
 
 ### S-020 Only see attachment options a model supports
@@ -291,6 +315,12 @@ Depends: S-006, S-016
 Acceptance:
 - [unit] Image attachment is available only for models with the vision capability.
 - [self] Dropping an image on an unsupported model shows a message naming the model.
+UX:
+- Flow: attach an image with a model that can't read one -> message above the field, nothing attaches. Switching to such a model with an image already attached blocks Send with the same message.
+- Surface: inline above the message field.
+- States: PDFs and text files work with every model, so only images are checked.
+- Words: "gpt-oss:20b can't read images. Choose a model that can."
+- Access: the message uses words and an icon.
 Status: todo
 
 ## M4 Speed

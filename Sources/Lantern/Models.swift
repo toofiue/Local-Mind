@@ -43,6 +43,8 @@ final class Message {
     var failureText: String = ""
     var sequence: Int = 0
     var conversation: Conversation?
+    @Relationship(deleteRule: .cascade, inverse: \Attachment.message)
+    var attachments: [Attachment] = []
 
     init(role: MessageRole, text: String, modelName: String, sequence: Int, state: ReplyState = .complete) {
         self.roleValue = role.rawValue
@@ -53,9 +55,33 @@ final class Message {
     }
 
     var role: MessageRole { MessageRole(rawValue: roleValue) ?? .user }
+    var orderedAttachments: [Attachment] { attachments.sorted { $0.sequence < $1.sequence } }
 
     var state: ReplyState {
         get { ReplyState(rawValue: stateValue) ?? .complete }
         set { stateValue = newValue.rawValue }
     }
+}
+
+@Model
+final class Attachment {
+    var uid: UUID = UUID()
+    var kindValue: String = AttachmentKind.text.rawValue
+    var fileName: String = ""
+    @Attribute(.externalStorage) var imageData: Data?
+    var text: String = ""
+    var pageCount: Int = 0
+    var sequence: Int = 0
+    var message: Message?
+
+    init(_ loaded: LoadedAttachment, sequence: Int) {
+        self.kindValue = loaded.kind.rawValue
+        self.fileName = loaded.fileName
+        self.imageData = loaded.imageData
+        self.text = loaded.text
+        self.pageCount = loaded.pageCount
+        self.sequence = sequence
+    }
+
+    var kind: AttachmentKind { AttachmentKind(rawValue: kindValue) ?? .text }
 }
