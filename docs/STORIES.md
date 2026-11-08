@@ -241,7 +241,7 @@ UX:
 - States: no matches shows the system "No Results" view with your search text; a match only in the title shows the start of the conversation as its snippet; thinking text isn't searched.
 - Words: placeholder "Search"; menu item "Search Conversations".
 - Access: results are ordinary list rows with arrow-key movement; VoiceOver reads each title and snippet.
-Status: todo
+Status: done
 
 ## M3 Files and images
 
@@ -350,7 +350,7 @@ Depends: S-005
 Acceptance:
 - [self] Command-Up and Command-Down select the previous and next conversation.
 - [self] The message field regains focus after a conversation is selected.
-- [self] The File and Edit menus list New Conversation, Find, and Stop with their shortcuts.
+- [self] The File and Edit menus list New Conversation, Search Conversations, and Stop with their shortcuts.
 Status: todo
 
 ## M5 Models and memory

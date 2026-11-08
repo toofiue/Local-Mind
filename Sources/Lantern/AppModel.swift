@@ -57,6 +57,9 @@ final class AppModel {
     var renamingID: UUID?
     /// The conversation waiting on a delete confirmation.
     var pendingDeletion: Conversation?
+    var searchText = ""
+    /// Goes up whenever the search field should take focus.
+    var searchRequest = 0
     /// Goes up whenever the message field should take focus.
     var focusRequest = 0
     /// Settings reopens on the last tab. Test and snapshot runs leave it alone.

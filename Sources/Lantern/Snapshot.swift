@@ -10,13 +10,15 @@ enum SnapshotPage: String, CaseIterable {
     case chatWriting = "chat-writing"
     case offline
     case modelPicker = "model-picker"
+    case sidebarSearch = "sidebar-search"
 
     func apply(to model: AppModel) {
         model.connection = self == .offline ? .failed : .connected
+        model.searchText = self == .sidebarSearch ? "model" : ""
         model.writingReplyID = nil
         model.showingModelPicker = false
         switch self {
-        case .chat, .offline, .modelPicker:
+        case .chat, .offline, .modelPicker, .sidebarSearch:
             model.selection = SeedData.conversation(titled: SeedData.formatted, in: model)?.uid
         case .chatEmpty:
             model.selection = nil

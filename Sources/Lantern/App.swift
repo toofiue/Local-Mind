@@ -37,6 +37,10 @@ struct LanternApp: App {
                 Button("New Conversation") { model.newConversation() }
                     .keyboardShortcut("n")
             }
+            CommandGroup(after: .textEditing) {
+                Button("Search Conversations") { model.searchRequest += 1 }
+                    .keyboardShortcut("f")
+            }
             CommandMenu("Conversation") {
                 Button("Choose Model…") { model.showingModelPicker.toggle() }
                     .keyboardShortcut("m", modifiers: [.command, .shift])

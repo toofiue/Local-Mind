@@ -5,18 +5,39 @@ import LanternKit
 struct ConversationSidebar: View {
     @Environment(AppModel.self) private var model
     @Query(sort: \Conversation.updatedAt, order: .reverse) private var conversations: [Conversation]
+    @FocusState private var isSearching: Bool
+
+    private var isFiltering: Bool {
+        !model.searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var results: [(conversation: Conversation, snippet: String)] {
+        conversations.compactMap { conversation in
+            ConversationSearch.snippet(for: model.searchText, title: conversation.title,
+                                       messages: conversation.ordered.map(\.text))
+                .map { (conversation, $0) }
+        }
+    }
 
     var body: some View {
         @Bindable var model = model
         let groups = ConversationGroups.split(conversations, isPinned: \.isPinned, updatedAt: \.updatedAt)
+        let found = isFiltering ? results : []
         List(selection: $model.selection) {
-            if groups.pinned.isEmpty {
+            if isFiltering {
+                ForEach(found, id: \.conversation.uid) { result in
+                    ConversationRow(conversation: result.conversation, snippet: result.snippet)
+                }
+            } else if groups.pinned.isEmpty {
                 rows(groups.recent)
             } else {
                 Section("Pinned") { rows(groups.pinned) }
                 Section("Recent") { rows(groups.recent) }
             }
         }
+        .searchable(text: $model.searchText, placement: .sidebar, prompt: "Search")
+        .searchFocused($isSearching)
+        .onChange(of: model.searchRequest) { isSearching = true }
         .onDeleteCommand { model.requestDelete() }
         .confirmationDialog(
             "Delete “\(model.pendingDeletion?.title ?? "")”?",
@@ -29,7 +50,9 @@ struct ConversationSidebar: View {
             Text("You can't undo this action.")
         }
         .overlay {
-            if conversations.isEmpty {
+            if isFiltering && found.isEmpty {
+                ContentUnavailableView.search(text: model.searchText)
+            } else if conversations.isEmpty {
                 ContentUnavailableView {
                     Label("No Conversations", systemImage: "bubble.left.and.bubble.right")
                 } description: {
@@ -50,6 +73,8 @@ struct ConversationSidebar: View {
 
 private struct ConversationRow: View {
     let conversation: Conversation
+    /// Shown in place of the date when this row is a search result.
+    var snippet: String?
     @Environment(AppModel.self) private var model
     @State private var draft = ""
     @FocusState private var isEditing: Bool
@@ -76,9 +101,16 @@ private struct ConversationRow: View {
                 Text(conversation.title)
                     .lineLimit(1)
             }
-            Text(conversation.updatedAt, format: .relative(presentation: .named))
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            if let snippet {
+                Text(snippet)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            } else {
+                Text(conversation.updatedAt, format: .relative(presentation: .named))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
         .help(conversation.title)
         .tag(conversation.uid)
