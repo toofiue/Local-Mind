@@ -1,0 +1,441 @@
+# Lantern user stories
+
+Source: `docs/BRIEF.md`. No reference app, so `Screens:` names the snapshot pages that show each story.
+
+Snapshot pages: `chat`, `chat-empty`, `chat-thinking`, `chat-attachments`, `offline`, `sidebar-search`, `models`, `settings`, `quick-panel`, `menu-bar`.
+
+## M1 Core loop
+
+### S-001 Connect to Ollama at launch
+As the user, I open Lantern and it connects to Ollama and lists my models without any setup.
+Screens: chat-empty
+Acceptance:
+- [unit] With Ollama reachable, the client returns every model from `/api/tags` with its name and size.
+- [unit] Each model's capabilities are read from `/api/show` and stored by model name.
+- [self] If Ollama isn't running, Lantern starts it and connects within 15 seconds.
+- [snap] The model picker shows the default model's name once connected.
+UX:
+- Flow: open Lantern -> model picker fills -> message field has focus, ready to type. Way back: nothing to undo; connecting never blocks reading past conversations.
+- Surface: inline on the conversation page (changes one value already on screen).
+- States: loading "Starting Ollama…" only after half a second; failure goes to S-002; no models goes to S-034; long model names truncate with the full name in a tooltip.
+- Words: "Starting Ollama…"; first view line "Replies are written on this Mac by local models. Nothing leaves it."
+- Access: focus lands in the message field; VoiceOver announces "Connected to Ollama".
+Status: todo
+
+### S-002 See why Lantern can't reach Ollama
+As the user, I see one clear message and a Try Again button when Ollama can't be started.
+Screens: offline
+Depends: S-001
+Acceptance:
+- [snap] The window shows the message and a Try Again button, and the message field is disabled.
+- [self] Try Again connects and returns to the chat when Ollama becomes reachable.
+- [unit] A connection failure during a reply keeps the partial text and marks the message as interrupted.
+UX:
+- Flow: connection fails -> message and Try Again above the message field -> click or Return -> field is enabled again. Way back: past conversations stay readable the whole time.
+- Surface: inline, next to the problem (information with a fix doesn't need an alert).
+- States: error as below; while retrying the button reads "Connecting…"; an interrupted reply keeps its text with "Interrupted" below it.
+- Words: "Unable to start Ollama. Open Ollama from Applications, then try again."; button "Try Again"; "Interrupted. Lantern lost its connection to Ollama."
+- Access: Try Again takes focus when the message appears; VoiceOver reads the message; the state uses words and an icon, not color alone.
+Status: todo
+
+### S-003 Send a message and watch the reply stream
+As the user, I type a message, press Return, and the reply appears as it is generated.
+Screens: chat
+Depends: S-001
+Acceptance:
+- [unit] The stream parser turns newline-delimited `/api/chat` chunks into text deltas and a final done event.
+- [unit] Each request includes the whole conversation so far, in order.
+- [self] Text appears before the reply finishes, and the view follows the newest line.
+- [self] Shift-Return adds a new line instead of sending.
+- [self] Scrolling up during a reply stops the view from following.
+UX:
+- Flow: type in the message field -> Return or Send -> message appears, reply streams -> focus stays in the field. Way back: Stop (S-004), then Retry (S-024) or edit the message (S-025).
+- Surface: inline on the conversation page (a place people come back to).
+- States: Send is disabled while the field is empty; a model being loaded shows S-006's text in the reply's place; when scrolled up, a "Jump to Latest" button appears; long replies scroll smoothly.
+- Words: placeholder "Ask anything"; Send tooltip "Send this message to the model (↩)"; every reply is labeled with the name of the model that wrote it, which marks it as generated.
+- Access: the field's VoiceOver label is "Message" (a chat field's placeholder is a deliberate exception to the visible-label rule); new reply text is announced when it finishes, not word by word.
+Status: todo
+
+### S-004 Stop a reply
+As the user, I press Stop or Escape to end a reply that is still generating.
+Screens: chat
+Depends: S-003
+Acceptance:
+- [self] The stream ends within one second and the text so far stays in the conversation.
+- [snap] The Send button shows as Stop while a reply is generating.
+- [unit] A stopped reply is saved with its partial text.
+UX:
+- Flow: Stop button, Escape, or Stop in the menu (S-026) -> writing ends -> text stays with "Stopped" below it -> focus in the message field. Way back: Retry (S-024).
+- Surface: inline, the Send button changes to Stop in place without moving.
+- States: Stop shows only while a reply is being written; "Stopped" appears at once, in the same frame.
+- Words: "Stop"; tooltip "End this reply and keep its text so far (⎋)"; "Stopped".
+- Access: Escape works from the message field; VoiceOver reads the button as "Stop" while writing and "Send" otherwise.
+Status: todo
+
+### S-005 Keep conversations after a restart
+As the user, I quit and reopen Lantern and all my conversations are still there.
+Screens: chat
+Depends: S-003
+Acceptance:
+- [unit] A Conversation with Messages survives saving and reloading from a new model container.
+- [self] After a restart, the sidebar lists earlier conversations with the newest first.
+- [self] Clicking a conversation shows its messages. Command-N starts a new one.
+UX:
+- Flow: Command-N, toolbar New Conversation, or File > New Conversation -> empty conversation with focus in the message field; or click a sidebar row -> its messages show. Way back: click the earlier row. An empty conversation isn't saved until its first message.
+- Surface: sidebar page (a place people come back to).
+- States: empty sidebar "No Conversations. Conversations you start appear here." with New Conversation; long titles truncate with the full title in a tooltip; a thousand rows still scroll smoothly.
+- Words: "New Conversation"; tooltip "Start a conversation with the default model (⌘N)".
+- Access: arrow keys move through the sidebar; VoiceOver reads each row's title and date.
+Status: todo
+
+### S-006 Choose a model for a conversation
+As the user, I pick a model from the toolbar and the next message uses it.
+Screens: chat
+Depends: S-001, S-003
+Acceptance:
+- [unit] Switching model sends an unload request (`keep_alive: 0`) for the previous model before loading the next.
+- [unit] A conversation remembers its model and each Message records the model that wrote it.
+- [self] During the first load, the reply area says the model is loading.
+- [snap] The picker lists all installed models with the current one checked.
+UX:
+- Flow: click the toolbar picker or press ⇧⌘M -> menu of models -> choose one -> picker shows it, focus returns to the message field. Way back: choose the previous model. The picker is disabled while a reply is being written.
+- Surface: inline menu in the toolbar (changes one value on screen).
+- States: first load shows "Loading gemma4:12b-mlx…" in the reply's place, with the model's real name; a failed load shows "Unable to load gemma4:12b-mlx. Close other apps to free memory, then click Retry."
+- Words: label "Model"; tooltip "Choose which model writes the next reply (⇧⌘M)".
+- Access: the menu works with arrow keys and Return; VoiceOver reads "Model, gemma4:12b-mlx".
+Status: todo
+
+### S-007 Read formatted replies
+As the user, I see headings, lists, tables, bold text, and code blocks properly formatted.
+Screens: chat
+Depends: S-003
+Acceptance:
+- [snap] A seeded reply shows a heading, a list, a table, and a code block, in light and dark mode.
+- [unit] An unclosed code fence during streaming renders as code, not as raw backticks.
+- [self] Text in replies can be selected and copied.
+UX:
+- Flow: reply streams -> formatting applies as text arrives -> read and select. Way back: nothing to undo, formatting changes no data.
+- Surface: inline in the conversation.
+- States: while streaming, unfinished tables and code blocks show what has arrived without jumping; wide tables and long code lines scroll inside their own block and never widen the page.
+- Words: none on screen.
+- Access: VoiceOver reads headings as headings and tables as tables; text respects Increase Contrast and stays 10 pt or larger.
+Status: todo
+
+### S-008 Copy a code block
+As the user, I click Copy on a code block and only that code goes on the clipboard.
+Screens: chat
+Depends: S-007
+Acceptance:
+- [snap] Each code block shows its language and a Copy button.
+- [unit] The copied text has no fence markers or language label.
+- [self] The button shows Copied for about two seconds.
+UX:
+- Flow: click Copy on the code block -> clipboard filled -> button reads Copied, then returns. Way back: not needed, nothing in the conversation changes.
+- Surface: inline in the code block header.
+- States: a block with no language is labeled "Code"; Copy appears once the block has finished streaming.
+- Words: "Copy", "Copied". It has a text label, so it needs no tooltip.
+- Access: reachable with Tab; VoiceOver reads "Copy Swift code" using the block's language.
+Status: todo
+
+### S-009 Copy a whole reply
+As the user, I click Copy under a reply and paste the text somewhere else.
+Screens: chat
+Depends: S-007
+Acceptance:
+- [snap] Finished replies show a Copy action below them.
+- [unit] The copied text is the reply's Markdown without the thinking text.
+UX:
+- Flow: click Copy below a reply, or ⇧⌘C for the latest reply -> clipboard filled -> icon changes to a checkmark for two seconds. Way back: not needed, nothing in the conversation changes.
+- Surface: inline action row below the reply.
+- States: the action row appears when the reply has finished. Retry and Edit join it in S-024 and S-025.
+- Words: tooltip "Copy this reply as Markdown (⇧⌘C)".
+- Access: always visible, not hover-only; VoiceOver reads "Copy reply" and announces "Copied".
+Status: todo
+
+### S-010 See the model's thinking
+As the user, I expand a Thinking section above a reply to read how the model reasoned.
+Screens: chat-thinking
+Depends: S-003
+Acceptance:
+- [unit] Thinking chunks and reply chunks are stored in separate fields.
+- [snap] Finished thinking is collapsed under a Thinking label, and expands on click.
+- [self] Thinking is visible while it streams, and collapses when the reply starts.
+- [unit] Models without the thinking capability don't send the `think` option.
+UX:
+- Flow: model thinks -> "Thinking…" streams above the reply -> collapses to "Thinking" when the reply starts -> click to expand or collapse. Way back: click again.
+- Surface: inline disclosure above the reply (shows detail in place).
+- States: no thinking from the model means no section; long thinking scrolls inside a set height.
+- Words: "Thinking…" while it streams, "Thinking" when finished.
+- Access: Space toggles it when focused; VoiceOver reads "Thinking, collapsed"; Reduce Motion replaces the slide with a fade.
+Status: todo
+
+## M2 Organize
+
+### S-011 Name a conversation automatically
+As the user, a new conversation gets a short title from my first message.
+Screens: chat
+Depends: S-005
+Acceptance:
+- [unit] The title is the first line of the message, trimmed to 50 characters at a word boundary.
+- [snap] The sidebar shows the title, not "New Conversation", after the first message.
+Status: todo
+
+### S-012 Rename a conversation
+As the user, I rename a conversation from its context menu.
+Screens: chat
+Depends: S-005
+Acceptance:
+- [self] Rename turns the row into a text field, and Return saves it.
+- [unit] A title I set is not replaced by the automatic title.
+Status: todo
+
+### S-013 Pin a conversation
+As the user, I pin a conversation so it stays at the top of the sidebar.
+Screens: chat
+Depends: S-005
+Acceptance:
+- [snap] Pinned conversations appear in a Pinned section above the rest.
+- [unit] Pinned conversations sort by most recently updated.
+- [self] Unpin returns it to its place in the list.
+Status: todo
+
+### S-014 Delete a conversation
+As the user, I delete a conversation from its context menu after confirming.
+Screens: chat
+Depends: S-005
+Acceptance:
+- [self] Delete asks for confirmation, then removes the row and selects the next one.
+- [unit] Deleting a Conversation also deletes its Messages and Attachments.
+Status: todo
+
+### S-015 Search conversations
+As the user, I type in the sidebar search and see conversations that match.
+Screens: sidebar-search
+Depends: S-005
+Acceptance:
+- [unit] Search matches conversation titles and message text, ignoring case.
+- [snap] Results show the title and a snippet around the match.
+- [self] Clicking a result opens the conversation. Clearing search restores the list.
+- [self] Command-F focuses the search field.
+Status: todo
+
+## M3 Files and images
+
+### S-016 Attach an image
+As the user, I drop or paste an image into the message field and ask about it.
+Screens: chat-attachments
+Depends: S-003
+Acceptance:
+- [unit] The request sends the image as base64 in the message's `images` field.
+- [snap] A thumbnail shows above the field before sending and in the sent message.
+- [unit] Images are stored with their Message and survive a restart.
+- [self] A screenshot pasted from the clipboard attaches the same way as a dropped file.
+Status: todo
+
+### S-017 Attach a PDF
+As the user, I drop a PDF and ask about what it says.
+Screens: chat-attachments
+Depends: S-003
+Acceptance:
+- [unit] PDF text is extracted and added to the prompt with the file name.
+- [self] A PDF with no text layer shows a message that it has no readable text.
+- [unit] Text that exceeds the model's context is flagged before sending.
+- [snap] The attachment shows as a chip with its name and page count.
+Status: todo
+
+### S-018 Attach a text or code file
+As the user, I drop a text or code file and ask about it.
+Screens: chat-attachments
+Depends: S-017
+Acceptance:
+- [unit] UTF-8 text files are read and added to the prompt with the file name.
+- [self] A binary file is refused with a message naming the file.
+Status: todo
+
+### S-019 Remove an attachment before sending
+As the user, I click the X on an attachment to remove it from my message.
+Screens: chat-attachments
+Depends: S-016
+Acceptance:
+- [self] The chip or thumbnail disappears and the file is not sent.
+Status: todo
+
+### S-020 Only see attachment options a model supports
+As the user, I can't attach an image when the chosen model can't read one.
+Screens: chat-attachments
+Depends: S-006, S-016
+Acceptance:
+- [unit] Image attachment is available only for models with the vision capability.
+- [self] Dropping an image on an unsupported model shows a message naming the model.
+Status: todo
+
+## M4 Speed
+
+### S-021 Open quick ask from any app
+As the user, I press the global shortcut in any app and a floating panel appears, ready to type.
+Screens: quick-panel
+Depends: S-003
+Acceptance:
+- [manual] Control-Option-Space opens the panel over a full-screen app and on the current Space.
+- [snap] The panel shows one field and the current model name.
+- [self] The field has focus as soon as the panel opens.
+- [self] Pressing the shortcut again or Escape hides the panel.
+- [self] The panel doesn't activate the main window.
+Status: todo
+
+### S-022 Get a streaming reply in the panel
+As the user, I type in the panel, press Return, and the reply streams right there.
+Screens: quick-panel
+Depends: S-021, S-007
+Acceptance:
+- [self] The panel grows to fit the reply, then scrolls past a set height.
+- [unit] Each quick ask is saved as a normal Conversation.
+- [snap] The formatted reply and a Copy action show in the panel.
+Status: todo
+
+### S-023 Continue a quick ask in the main window
+As the user, I click Open in Window and carry on with the same conversation.
+Screens: quick-panel, chat
+Depends: S-022
+Acceptance:
+- [self] The main window comes forward with that conversation selected, and the panel closes.
+Status: todo
+
+### S-024 Retry a reply
+As the user, I click Retry under the last reply to get a new one.
+Screens: chat
+Depends: S-003
+Acceptance:
+- [unit] Retry replaces the last reply and resends the conversation up to my last message.
+- [snap] Retry shows only on the latest reply.
+Status: todo
+
+### S-025 Edit my last message and resend
+As the user, I edit my last message and get a new reply to it.
+Screens: chat
+Depends: S-024
+Acceptance:
+- [self] Edit puts the message in an inline field. Saving replaces it and generates a new reply.
+- [unit] Editing removes the reply that followed the old text.
+Status: todo
+
+### S-026 Use the app from the keyboard
+As the user, I move between conversations and send without touching the mouse.
+Screens: chat
+Depends: S-005
+Acceptance:
+- [self] Command-Up and Command-Down select the previous and next conversation.
+- [self] The message field regains focus after a conversation is selected.
+- [self] The File and Edit menus list New Conversation, Find, and Stop with their shortcuts.
+Status: todo
+
+## M5 Models and memory
+
+### S-027 See what's loaded
+As the user, I open the Models page and see every installed model and which one is using memory.
+Screens: models
+Depends: S-001
+Acceptance:
+- [unit] Loaded state and memory size are read from `/api/ps`.
+- [snap] Rows show name, disk size, capabilities, and a Loaded badge with memory used.
+- [self] The page refreshes within two seconds of a model loading or unloading.
+Status: todo
+
+### S-028 Unload a model
+As the user, I click Unload on the Models page to free its memory.
+Screens: models
+Depends: S-027
+Acceptance:
+- [unit] Unload sends `keep_alive: 0` for that model.
+- [self] The Loaded badge disappears after unloading.
+- [self] While a reply is generating from that model, Unload is disabled.
+Status: todo
+
+### S-029 Unload models when idle
+As the user, I set how long a model stays loaded after I stop using it.
+Screens: settings
+Depends: S-003
+Acceptance:
+- [unit] Each chat request sends the `keep_alive` value from Settings.
+- [snap] Settings offers 1, 5, 15, and 30 minutes. The default is 5 minutes.
+Status: todo
+
+### S-030 Check the model from the menu bar
+As the user, I glance at the menu bar and open a menu that shows the loaded model, with Ask and Unload.
+Screens: menu-bar
+Depends: S-021, S-028
+Acceptance:
+- [snap] The menu shows the loaded model and its memory, or "No model loaded".
+- [self] Ask opens the quick panel. Unload frees the model.
+Status: todo
+
+## M6 Polish
+
+### S-031 Set a default model
+As the user, I choose the model that new conversations and quick asks use.
+Screens: settings
+Depends: S-001
+Acceptance:
+- [unit] New conversations use the default model.
+- [unit] If the default model is removed, the first installed model is used instead.
+- [snap] Settings shows the default model picker.
+Status: todo
+
+### S-032 Change the quick-ask shortcut
+As the user, I record a different global shortcut in Settings.
+Screens: settings
+Depends: S-021
+Acceptance:
+- [manual] The new shortcut opens the panel and the old one stops working.
+- [self] A shortcut already taken by the system shows a message.
+- [unit] The shortcut survives a restart.
+Status: todo
+
+### S-033 See reply speed
+As the user, I see how fast a reply was generated, in tokens per second.
+Screens: chat
+Depends: S-003
+Acceptance:
+- [unit] Tokens per second is `eval_count` divided by `eval_duration` from the final chunk, saved on the Message.
+- [snap] The speed shows in small text below finished replies.
+Status: todo
+
+### S-034 Understand empty states
+As the user, I see helpful text when there are no conversations, no search results, or no models.
+Screens: chat-empty, sidebar-search, models
+Depends: S-015, S-027
+Acceptance:
+- [snap] A new conversation shows the model name and a focused message field.
+- [snap] With no models installed, the page shows the `ollama pull` command with a Copy button.
+- [snap] Search with no matches says so.
+Status: todo
+
+### S-035 Recognize the app in the Dock
+As the user, I see a Lantern icon in the Dock and menu bar.
+Screens: menu-bar
+Acceptance:
+- [snap] The app icon renders in light, dark, and tinted looks.
+- [snap] The menu bar icon is a template image that adapts to the bar.
+Status: todo
+
+## Later
+Next after version one:
+- Projects with their own instructions and files
+- Saved prompts
+- Local memory
+
+After that:
+- File-reading tools with approval prompts
+- Optional web search
+- MCP connections
+- Agent mode for code, if the models handle it well
+- Audio attachments, once Ollama's API support is confirmed
+- Downloading and deleting models in the app
+- iCloud sync
+
+## Dropped
+- Accounts and sign-in: one user on one Mac
+- Sharing and teams: personal app
+- Billing and upgrade prompts: personal app
+- Onboarding tour: S-001 needs no setup, and S-034 covers empty states
+- Analytics: nothing leaves the Mac
