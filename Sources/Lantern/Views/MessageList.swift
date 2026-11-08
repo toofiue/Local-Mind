@@ -106,26 +106,24 @@ struct MessageRow: View {
 private struct EditMessageField: View {
     let message: Message
     @Environment(AppModel.self) private var model
-    @State private var draft = ""
-    @FocusState private var isFocused: Bool
+    @State private var draft: String
+    @State private var height: CGFloat = Space.lg
+
+    init(message: Message) {
+        self.message = message
+        _draft = State(initialValue: message.text)
+    }
 
     var body: some View {
-        TextField("Message", text: $draft, axis: .vertical)
-            .textFieldStyle(.plain)
-            .labelsHidden()
-            .focused($isFocused)
-            .onSubmit { model.saveEdit(message, text: draft) }
-            .onExitCommand { model.cancelEditing() }
+        // The native field leaves the cursor at the end instead of selecting everything.
+        ComposerField(text: $draft, height: $height, isEnabled: true, focusRequest: 1, maxLines: 8,
+                      onSubmit: { model.saveEdit(message, text: draft) },
+                      onEscape: { model.cancelEditing() })
+            .frame(height: height)
             .padding(.horizontal, Space.md)
             .padding(.vertical, Space.sm)
             .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: Radius.lg))
             .frame(maxWidth: Layout.column)
-            .task {
-                draft = message.text
-                // A row can't take focus until it has been laid out.
-                try? await Task.sleep(for: .milliseconds(50))
-                isFocused = true
-            }
     }
 }
 
