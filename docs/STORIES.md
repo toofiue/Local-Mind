@@ -371,7 +371,7 @@ UX:
 - States: if the main window was closed, it reopens first.
 - Words: "Open in Window"; tooltip "Continue this conversation in the main window (⌘↩)".
 - Access: works from the keyboard with ⌘↩.
-Status: todo
+Status: done
 
 ### S-024 Retry a reply
 As the user, I click Retry under the last reply to get a new one.

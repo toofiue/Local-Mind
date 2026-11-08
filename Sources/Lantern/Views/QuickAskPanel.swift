@@ -149,6 +149,15 @@ struct QuickAskView: View {
             if let conversation = quick.conversation {
                 Divider()
                 QuickAskConversation(conversation: conversation)
+                Divider()
+                HStack {
+                    Spacer()
+                    Button("Open in Window") { model.openQuickAskInWindow() }
+                        .keyboardShortcut(.return, modifiers: .command)
+                        .help("Continue this conversation in the main window (⌘↩)")
+                }
+                .padding(.horizontal, Space.lg)
+                .padding(.vertical, Space.sm)
             }
         }
         .frame(width: Layout.quickPanel)

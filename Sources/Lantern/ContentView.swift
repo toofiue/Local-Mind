@@ -3,6 +3,7 @@ import SwiftUI
 struct ContentView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.openSettings) private var openSettings
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         NavigationSplitView {
@@ -16,7 +17,9 @@ struct ContentView: View {
             QuickAskController.shared.configure(model: model)
             SelfTest.runIfRequested(model: model)
             Snapshot.runIfRequested(model: model, openSettings: openSettings)
-            guard !SelfTest.requested, !Snapshot.requested else { return }
+            model.openMainWindow = { openWindow(id: "main") }
+            guard !SelfTest.requested, !Snapshot.requested, !model.hasStarted else { return }
+            model.hasStarted = true
             GlobalHotKey.shared.onPress = { QuickAskController.shared.toggle() }
             GlobalHotKey.shared.register()
             model.repairInterruptedReplies()

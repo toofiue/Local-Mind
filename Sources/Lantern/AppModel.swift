@@ -47,6 +47,10 @@ final class AppModel {
     var draftModelName: String?
     let replies = ReplyWriter()
     let quickAsk = QuickAskState()
+    /// Reopens the main window after it was closed.
+    @ObservationIgnored var openMainWindow: () -> Void = {}
+    /// The window can reopen, but connecting and launch repair run once.
+    @ObservationIgnored var hasStarted = false
     var showingModelPicker = false
     /// The conversation whose sidebar row is being edited.
     var renamingID: UUID?

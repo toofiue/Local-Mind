@@ -1,7 +1,20 @@
-import Foundation
+import AppKit
 import LanternKit
 
 extension AppModel {
+    /// Hands the panel's conversation over to the main window.
+    func openQuickAskInWindow() {
+        guard let conversation = quickAsk.conversation else { return }
+        QuickAskController.shared.hide()
+        selection = conversation.uid
+        NSApp.activate()
+        if let window = NSApp.windows.first(where: { $0.canBecomeMain && !($0 is NSPanel) }) {
+            window.makeKeyAndOrderFront(nil)
+        } else {
+            openMainWindow()
+        }
+    }
+
     /// Sends the Quick Ask draft without touching the main window's selection.
     @discardableResult
     func quickSend() -> Bool {

@@ -404,6 +404,25 @@ enum SelfTest {
             model.quickAsk.notice = nil
         }
 
+        // S-023 opening in the window
+        do {
+            model.quickAsk.conversation = nil
+            model.quickAsk.draft = "Carry this on"
+            transport.script(ScriptedTransport.reply(text: ["Sure"]))
+            model.quickSend()
+            await model.waitForReply()
+            let conversation = model.quickAsk.conversation
+            QuickAskController.shared.show()
+            model.quickAsk.conversation = conversation
+            try? await Task.sleep(for: .milliseconds(200))
+            model.openQuickAskInWindow()
+            try? await Task.sleep(for: .milliseconds(300))
+            check("S-023 the conversation is selected", model.selectedConversation?.uid == conversation?.uid)
+            check("S-023 the panel closes", !QuickAskController.shared.isVisible)
+            let main = NSApp.windows.first { $0.canBecomeMain && !($0 is NSPanel) }
+            check("S-023 the main window comes forward", main?.isVisible == true && main?.isKeyWindow == true)
+        }
+
         // Launch repair
         let stale = Message(role: .assistant, text: "Cut", modelName: "first:1", sequence: 99, state: .writing)
         model.selectedConversation?.messages.append(stale)
