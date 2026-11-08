@@ -64,7 +64,11 @@ public enum AttachmentLoader {
         if let image = normalizedImage(data) {
             return LoadedAttachment(kind: .image, fileName: name, imageData: image)
         }
-        throw AttachmentError.unsupported(name)
+        guard !data.contains(0), let text = String(data: data, encoding: .utf8) else {
+            throw AttachmentError.unsupported(name)
+        }
+        guard !text.allSatisfy(\.isWhitespace) else { throw AttachmentError.noReadableText(name) }
+        return LoadedAttachment(kind: .text, fileName: name, text: text)
     }
 
     private static func loadPDF(name: String, data: Data) throws -> LoadedAttachment {

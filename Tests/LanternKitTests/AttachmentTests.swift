@@ -121,3 +121,24 @@ func readsContextLimit() async throws {
     let models = try await OllamaClient(transport: ScriptedTransport(installed: [installed])).models()
     #expect(models[0].contextLimit == 262_144)
 }
+
+@Test("S-018 a UTF-8 file is read as text")
+func readsText() throws {
+    let attachment = try AttachmentLoader.load(name: "main.swift", data: Data("print(\"héllo\")\n".utf8))
+    #expect(attachment.kind == .text)
+    #expect(attachment.text == "print(\"héllo\")\n")
+}
+
+@Test("S-018 binary files are refused", arguments: [Data([0x50, 0x4B, 0x03, 0x04, 0x00, 0x00]), Data([0xFF, 0xFE, 0xFD])])
+func refusesBinary(data: Data) {
+    #expect(throws: AttachmentError.unsupported("app.zip")) {
+        try AttachmentLoader.load(name: "app.zip", data: data)
+    }
+}
+
+@Test("S-018 an empty file has no readable text")
+func refusesEmpty() {
+    #expect(throws: AttachmentError.noReadableText("empty.txt")) {
+        try AttachmentLoader.load(name: "empty.txt", data: Data("  \n".utf8))
+    }
+}

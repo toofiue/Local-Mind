@@ -292,7 +292,7 @@ UX:
 - States: an unreadable file shows "Unable to read “app.zip”. Attach an image, PDF, or text file." and nothing attaches.
 - Words: as above; the chip's detail reads "Text".
 - Access: as S-017.
-Status: todo
+Status: done
 
 ### S-019 Remove an attachment before sending
 As the user, I click the X on an attachment to remove it from my message.

@@ -284,6 +284,27 @@ enum SelfTest {
             check("S-017 your message stays clean in the conversation", model.selectedConversation?.ordered.first?.text == "What happened to revenue?")
         }
 
+        // S-018 text files
+        do {
+            model.newConversation()
+            let folder = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString, directoryHint: .isDirectory)
+            try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            defer { try? FileManager.default.removeItem(at: folder) }
+            let binary = folder.appending(path: "app.zip")
+            try? Data([0x50, 0x4B, 0x03, 0x04, 0x00]).write(to: binary)
+            await model.addFiles([binary])
+            check("S-018 a binary file is refused by name", model.attachmentNotice == "Unable to read “app.zip”. Attach an image, PDF, or text file.", model.attachmentNotice ?? "nil")
+            let code = folder.appending(path: "main.swift")
+            try? Data("let answer = 42".utf8).write(to: code)
+            await model.addFiles([code])
+            check("S-018 a text file attaches", model.draftAttachments.first?.kind == .text)
+            transport.script(ScriptedTransport.reply(text: ["It's 42"]))
+            model.send("What is answer?")
+            await model.waitForReply()
+            let sent = transport.chatBodies.last ?? ""
+            check("S-018 the file reaches the model with its name", sent.contains("let answer = 42") && sent.contains("main.swift"))
+        }
+
         // Launch repair
         let stale = Message(role: .assistant, text: "Cut", modelName: "first:1", sequence: 99, state: .writing)
         model.selectedConversation?.messages.append(stale)
