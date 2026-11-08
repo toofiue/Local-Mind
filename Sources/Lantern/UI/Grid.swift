@@ -27,6 +27,10 @@ enum Layout {
     static let thumbnail: CGFloat = 48
     /// The widest a file chip gets.
     static let chip: CGFloat = 220
+    /// The width of the Quick Ask panel.
+    static let quickPanel: CGFloat = 640
+    /// The height of an empty Quick Ask panel, before it fits itself.
+    static let quickPanelStart: CGFloat = 56
 }
 
 enum Motion {

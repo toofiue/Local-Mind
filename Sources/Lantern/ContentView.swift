@@ -13,9 +13,12 @@ struct ContentView: View {
         }
         .task {
             SeedData.insertIfRequested(into: model)
+            QuickAskController.shared.configure(model: model)
             SelfTest.runIfRequested(model: model)
             Snapshot.runIfRequested(model: model, openSettings: openSettings)
             guard !SelfTest.requested, !Snapshot.requested else { return }
+            GlobalHotKey.shared.onPress = { QuickAskController.shared.toggle() }
+            GlobalHotKey.shared.register()
             model.repairInterruptedReplies()
             await model.connect()
         }

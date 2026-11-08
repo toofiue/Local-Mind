@@ -342,6 +342,26 @@ enum SelfTest {
             model.draftModelName = nil
         }
 
+        // S-021 Quick Ask panel
+        do {
+            let quick = QuickAskController.shared
+            quick.show()
+            try? await Task.sleep(for: .milliseconds(300))
+            check("S-021 the panel opens", quick.isVisible)
+            check("S-021 the panel takes keyboard focus", quick.window?.isKeyWindow == true)
+            check("S-021 the field has focus at once", quick.window?.firstResponder is NSTextView)
+            let main = NSApp.windows.first { $0.canBecomeMain && !$0.isSheet }
+            check("S-021 the main window isn't the key window", main?.isKeyWindow == false)
+            quick.toggle()
+            check("S-021 the shortcut again hides it", !quick.isVisible)
+            quick.show()
+            try? await Task.sleep(for: .milliseconds(200))
+            quick.window?.cancelOperation(nil)
+            check("S-021 Escape hides it", !quick.isVisible)
+            quick.hide()
+            main?.makeKeyAndOrderFront(nil)
+        }
+
         // Launch repair
         let stale = Message(role: .assistant, text: "Cut", modelName: "first:1", sequence: 99, state: .writing)
         model.selectedConversation?.messages.append(stale)

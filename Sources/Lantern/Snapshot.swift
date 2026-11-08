@@ -12,6 +12,7 @@ enum SnapshotPage: String, CaseIterable {
     case modelPicker = "model-picker"
     case sidebarSearch = "sidebar-search"
     case chatAttachments = "chat-attachments"
+    case quickPanel = "quick-panel"
 
     func apply(to model: AppModel) {
         model.draftAttachments = self == .chatAttachments ? SeedData.draftAttachments : []
@@ -20,7 +21,7 @@ enum SnapshotPage: String, CaseIterable {
         model.replies.activeReplyID = nil
         model.showingModelPicker = false
         switch self {
-        case .chat, .offline, .modelPicker, .sidebarSearch:
+        case .chat, .offline, .modelPicker, .sidebarSearch, .quickPanel:
             model.selection = SeedData.conversation(titled: SeedData.formatted, in: model)?.uid
         case .chatEmpty:
             model.selection = nil
@@ -72,11 +73,13 @@ enum Snapshot {
                 for page in SnapshotPage.allCases where only?.contains(page.rawValue) ?? true {
                     page.apply(to: model)
                     try? await Task.sleep(for: .seconds(1))
-                    let popover = page == .modelPicker
-                        ? NSApp.windows.first { String(describing: type(of: $0)).contains("Popover") && $0.isVisible }
+                    if page == .quickPanel { QuickAskController.shared.show(); try? await Task.sleep(for: .seconds(0.6)) }
+                    let popover = page == .quickPanel ? QuickAskController.shared.window
+                        : page == .modelPicker ? NSApp.windows.first { String(describing: type(of: $0)).contains("Popover") && $0.isVisible }
                         : nil
                     capture(to: "\(dir)/\(page.rawValue)-\(mode).png", window: popover)
                     model.showingModelPicker = false
+                    QuickAskController.shared.hide()
                 }
             }
             if only == nil || only?.contains("settings") == true {

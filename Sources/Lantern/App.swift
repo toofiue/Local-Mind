@@ -44,6 +44,8 @@ struct LanternApp: App {
                     .keyboardShortcut("f")
             }
             CommandMenu("Conversation") {
+                Button("Quick Ask") { QuickAskController.shared.toggle() }
+                    .keyboardShortcut(.space, modifiers: [.control, .option])
                 Button("Choose Model…") { model.showingModelPicker.toggle() }
                     .keyboardShortcut("m", modifiers: [.command, .shift])
                     .disabled(menu.isWriting)
@@ -88,7 +90,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate()
     }
 
-    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
+    // Quick Ask keeps working with the main window closed.
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
 
     /// The self-test's result becomes the exit code, after a normal quit.
     func applicationWillTerminate(_ notification: Notification) {

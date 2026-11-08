@@ -335,7 +335,13 @@ Acceptance:
 - [self] The field has focus as soon as the panel opens.
 - [self] Pressing the shortcut again or Escape hides the panel.
 - [self] The panel doesn't activate the main window.
-Status: todo
+UX:
+- Flow: ⌃⌥Space from any app, or Conversation > Quick Ask -> panel appears in the top third of the screen under the pointer, field focused. Way back: Escape, the shortcut again, or clicking away hides it.
+- Surface: non-activating panel (input people repeat beside other work), so the app you were in stays in front.
+- States: an open Quick Ask starts fresh each time unless a reply is still being written; if Ollama can't be reached it says so where the reply would be.
+- Words: placeholder "Ask anything"; the model's name at the trailing edge.
+- Access: focus is in the field the moment it opens; VoiceOver reads "Message".
+Status: done
 
 ### S-022 Get a streaming reply in the panel
 As the user, I type in the panel, press Return, and the reply streams right there.
@@ -345,6 +351,12 @@ Acceptance:
 - [self] The panel grows to fit the reply, then scrolls past a set height.
 - [unit] Each quick ask is saved as a normal Conversation.
 - [snap] The formatted reply and a Copy action show in the panel.
+UX:
+- Flow: type -> Return -> reply streams under the field, panel grows -> type again to follow up in the same conversation. Way back: Escape hides the panel and the reply keeps being written; Stop ends it.
+- Surface: the same panel, growing downward from a fixed top edge.
+- States: past 480 pt tall the reply scrolls; while another reply is being written elsewhere, Send is unavailable and the panel says "Lantern is finishing another reply."
+- Words: Copy and Retry as in the main window, "Stop".
+- Access: Return sends and Shift-Return adds a line, as in the main window.
 Status: todo
 
 ### S-023 Continue a quick ask in the main window
@@ -353,6 +365,12 @@ Screens: quick-panel, chat
 Depends: S-022
 Acceptance:
 - [self] The main window comes forward with that conversation selected, and the panel closes.
+UX:
+- Flow: Open in Window button or ⌘↩ -> main window comes forward with that conversation selected, panel hides. Way back: ⌃⌥Space opens a fresh Quick Ask.
+- Surface: a button in the panel's footer, shown once there's a conversation.
+- States: if the main window was closed, it reopens first.
+- Words: "Open in Window"; tooltip "Continue this conversation in the main window (⌘↩)".
+- Access: works from the keyboard with ⌘↩.
 Status: todo
 
 ### S-024 Retry a reply
@@ -371,6 +389,12 @@ Depends: S-024
 Acceptance:
 - [self] Edit puts the message in an inline field. Saving replaces it and generates a new reply.
 - [unit] Editing removes the reply that followed the old text.
+UX:
+- Flow: pencil below your last message, or Conversation > Edit Message (⇧⌘E) -> message becomes an inline field -> Return saves and writes a new reply. Way back: Escape keeps the original.
+- Surface: inline in the conversation (changes one value on screen).
+- States: only your latest message can be edited, and not while a reply is being written; an empty edit keeps the original; its attachments stay.
+- Words: "Edit Message"; tooltip "Change this message and write a new reply (⇧⌘E)".
+- Access: focus moves to the field and returns to the message field after saving.
 Status: todo
 
 ### S-026 Use the app from the keyboard
@@ -378,9 +402,15 @@ As the user, I move between conversations and send without touching the mouse.
 Screens: chat
 Depends: S-005
 Acceptance:
-- [self] Command-Up and Command-Down select the previous and next conversation.
+- [self] Command-[ and Command-] select the previous and next conversation, as do Command-Up and Command-Down in a one-line field.
 - [self] The message field regains focus after a conversation is selected.
-- [self] The File and Edit menus list New Conversation, Search Conversations, and Stop with their shortcuts.
+- [self] The menu bar lists New Conversation, Search Conversations, and Stop with their shortcuts.
+UX:
+- Flow: ⌘[ and ⌘], or Conversation > Previous and Next Conversation, from anywhere; ⌘↑ and ⌘↓ too when the message field holds one line. Focus lands in the message field. Way back: the opposite key.
+- Surface: menu commands.
+- States: at either end nothing moves; ⌘↓ from a new conversation selects the first one. In a multi-line draft ⌘↑ and ⌘↓ keep their normal text meaning.
+- Words: "Previous Conversation", "Next Conversation".
+- Access: the whole path works without the mouse.
 Status: todo
 
 ## M5 Models and memory

@@ -46,6 +46,7 @@ final class AppModel {
     var models: [OllamaModel] = []
     var draftModelName: String?
     let replies = ReplyWriter()
+    let quickAsk = QuickAskState()
     var showingModelPicker = false
     /// The conversation whose sidebar row is being edited.
     var renamingID: UUID?
@@ -138,11 +139,17 @@ final class AppModel {
 
     var currentModelName: String? {
         let installed = Set(models.map(\.name))
-        let remembered = Store.isOverridden ? nil : UserDefaults.standard.string(forKey: "lastModel")
-        let candidates = [selectedConversation?.modelName, draftModelName, remembered]
+        let candidates = [selectedConversation?.modelName, draftModelName]
         if let name = candidates.compactMap({ $0 }).first(where: installed.contains) { return name }
-        // With nothing to go on, the smallest model is the safest fit in memory.
-        return models.min { $0.size < $1.size }?.name ?? selectedConversation?.modelName
+        return defaultModelName ?? selectedConversation?.modelName
+    }
+
+    /// What a new conversation starts with: the last model used, or the
+    /// smallest, which is the safest fit in memory.
+    var defaultModelName: String? {
+        let remembered = Store.isOverridden ? nil : UserDefaults.standard.string(forKey: "lastModel")
+        if let remembered, models.contains(where: { $0.name == remembered }) { return remembered }
+        return models.min { $0.size < $1.size }?.name
     }
 
     func chooseModel(_ name: String) {

@@ -32,8 +32,9 @@ struct ComposerField: NSViewRepresentable {
     let focusRequest: Int
     let maxLines: Int
     let onSubmit: () -> Void
-    let onPasteFiles: ([URL]) -> Void
-    let onPasteImage: (Data) -> Void
+    var onPasteFiles: ([URL]) -> Void = { _ in }
+    var onPasteImage: (Data) -> Void = { _ in }
+    var onEscape: (() -> Void)?
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -102,6 +103,10 @@ struct ComposerField: NSViewRepresentable {
         }
 
         func textView(_ textView: NSTextView, doCommandBy selector: Selector) -> Bool {
+            if selector == #selector(NSResponder.cancelOperation(_:)) || selector == #selector(NSResponder.complete(_:)), let onEscape = parent.onEscape {
+                onEscape()
+                return true
+            }
             guard selector == #selector(NSResponder.insertNewline(_:)) else { return false }
             if NSApp.currentEvent?.modifierFlags.contains(.shift) == true {
                 textView.insertNewlineIgnoringFieldEditor(nil)
