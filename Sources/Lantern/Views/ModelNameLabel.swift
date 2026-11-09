@@ -10,13 +10,13 @@ struct ModelNameLabel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             if isCompact && model.modelNicknames[name] != nil {
-                Text(model.displayName(name)).font(.caption).fontWeight(.medium)
+                Text(model.displayName(name)).font(.system(size: 11, weight: .medium))
             } else {
                 Text(model.displayName(name))
             }
             if model.modelNicknames[name] != nil {
                 Text(name)
-                    .font(isCompact ? .system(.caption2).leading(.tight) : .caption2)
+                    .font(isCompact ? .system(size: 9) : .caption2)
                     .foregroundStyle(.secondary)
             }
         }
