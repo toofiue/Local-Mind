@@ -486,9 +486,15 @@ Screens: settings
 Depends: S-001
 Acceptance:
 - [unit] New conversations use the default model.
-- [unit] If the default model is removed, the first installed model is used instead.
+- [unit] If the default model is removed, the last used model, then the smallest installed, is used instead.
 - [snap] Settings shows the default model picker.
-Status: todo
+UX:
+- Flow: Settings > Models > Default model -> choose one -> the next new conversation and Quick Ask use it. Way back: choose Last Used.
+- Surface: Settings tab, one picker.
+- States: "Last Used" is the default; if the chosen model is gone, Lantern falls back to the last used model, then the smallest installed.
+- Words: "Default model", "Last Used".
+- Access: standard picker.
+Status: done
 
 ### S-032 Change the quick-ask shortcut
 As the user, I record a different global shortcut in Settings.
@@ -498,6 +504,12 @@ Acceptance:
 - [manual] The new shortcut opens the panel and the old one stops working.
 - [self] A shortcut already taken by the system shows a message.
 - [unit] The shortcut survives a restart.
+UX:
+- Flow: Settings > Quick Ask > click the shortcut -> "Type a Shortcut…" -> press keys -> it saves and takes effect at once. Way back: Escape cancels; Use Default restores ⌃⌥Space.
+- Surface: Settings tab, one recorder button.
+- States: a shortcut with no ⌘, ⌃, or ⌥ is refused; one macOS or another app uses shows a message and the old shortcut keeps working.
+- Words: "Include ⌘, ⌃, or ⌥ in the shortcut.", "macOS already uses that shortcut. Choose another.", "Another app already uses that shortcut. Choose another."
+- Access: the recorder is a button reachable with Tab; VoiceOver reads the current shortcut.
 Status: todo
 
 ### S-033 See reply speed
@@ -507,6 +519,12 @@ Depends: S-003
 Acceptance:
 - [unit] Tokens per second is `eval_count` divided by `eval_duration` from the final chunk, saved on the Message.
 - [snap] The speed shows in small text below finished replies.
+UX:
+- Flow: a reply finishes -> its speed appears in the row below it.
+- Surface: inline, small text beside Copy and Retry.
+- States: replies with no timing from Ollama, such as stopped ones, show nothing.
+- Words: "28 tokens per second".
+- Access: plain text VoiceOver can read.
 Status: todo
 
 ### S-034 Understand empty states
@@ -517,6 +535,12 @@ Acceptance:
 - [snap] A new conversation shows the model name and a focused message field.
 - [snap] With no models installed, the page shows the `ollama pull` command with a Copy button.
 - [snap] Search with no matches says so.
+UX:
+- Flow: with no models installed -> the page explains it and gives the command with Copy -> install in Terminal -> come back and the models appear.
+- Surface: the system empty-state view, inline on the conversation and Models pages.
+- States: Lantern checks for new models whenever you switch back to it.
+- Words: "No Models Installed", "Install one in Terminal. It appears here when you come back.", "ollama pull gemma4", "Copy", "Copied".
+- Access: the command is selectable text.
 Status: todo
 
 ### S-035 Recognize the app in the Dock

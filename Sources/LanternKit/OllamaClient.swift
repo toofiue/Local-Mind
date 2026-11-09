@@ -29,6 +29,17 @@ public struct OllamaModel: Sendable, Equatable, Identifiable {
     }
 }
 
+/// Which model a new conversation starts with.
+public enum DefaultModel {
+    /// The chosen model, then the last used, then the smallest, which is the safest fit in memory.
+    public static func resolve(chosen: String, remembered: String?, installed: [OllamaModel]) -> String? {
+        for candidate in [chosen, remembered ?? ""] where installed.contains(where: { $0.name == candidate }) {
+            return candidate
+        }
+        return installed.min { $0.size < $1.size }?.name
+    }
+}
+
 /// A model in memory right now.
 public struct LoadedModel: Sendable, Equatable {
     public let name: String

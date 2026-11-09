@@ -60,6 +60,15 @@ struct ModelsSettings: View {
     var body: some View {
         @Bindable var model = model
         Section {
+            Picker("Default model", selection: $model.chosenDefaultModel) {
+                Text("Last Used").tag("")
+                Divider()
+                ForEach(model.models) { item in
+                    Text(item.name).tag(item.name)
+                }
+            }
+        }
+        Section {
             Picker("Keep a model loaded for", selection: $model.keepLoadedMinutes) {
                 ForEach([1, 5, 15, 30], id: \.self) { minutes in
                     Text("^[\(minutes) minute](inflect: true)").tag(minutes)

@@ -540,6 +540,21 @@ enum SelfTest {
             model.keepLoadedMinutes = 5
         }
 
+        // S-031 the default model
+        do {
+            let previous = model.selection
+            defer { model.selection = previous }
+            model.chosenDefaultModel = "second:1"
+            model.newConversation()
+            check("S-031 a new conversation uses the default", model.currentModelName == "second:1")
+            check("S-031 Quick Ask uses the default", model.defaultModelName == "second:1")
+            model.chooseModel("first:1")
+            check("S-031 you can still pick another for one conversation", model.currentModelName == "first:1")
+            model.newConversation()
+            check("S-031 the next new conversation goes back to the default", model.currentModelName == "second:1")
+            model.chosenDefaultModel = ""
+        }
+
         // Launch repair
         let stale = Message(role: .assistant, text: "Cut", modelName: "first:1", sequence: 99, state: .writing)
         model.selectedConversation?.messages.append(stale)

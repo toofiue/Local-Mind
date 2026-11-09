@@ -74,6 +74,10 @@ final class AppModel {
     var searchRequest = 0
     /// Goes up whenever the message field should take focus.
     var focusRequest = 0
+    /// The model chosen in Settings. Empty means the last one used.
+    var chosenDefaultModel: String = UserDefaults.standard.string(forKey: "defaultModel") ?? "" {
+        didSet { if !Store.isOverridden { UserDefaults.standard.set(chosenDefaultModel, forKey: "defaultModel") } }
+    }
     /// How long a model stays in memory after its last reply. Test and snapshot runs leave it alone.
     var keepLoadedMinutes: Int = {
         let stored = UserDefaults.standard.integer(forKey: "keepLoadedMinutes")
@@ -169,8 +173,7 @@ final class AppModel {
     /// smallest, which is the safest fit in memory.
     var defaultModelName: String? {
         let remembered = Store.isOverridden ? nil : UserDefaults.standard.string(forKey: "lastModel")
-        if let remembered, models.contains(where: { $0.name == remembered }) { return remembered }
-        return models.min { $0.size < $1.size }?.name
+        return DefaultModel.resolve(chosen: chosenDefaultModel, remembered: remembered, installed: models)
     }
 
     func chooseModel(_ name: String) {
@@ -200,6 +203,7 @@ final class AppModel {
 
     func newConversation() {
         selection = nil
+        draftModelName = nil
         showingModels = false
     }
 
