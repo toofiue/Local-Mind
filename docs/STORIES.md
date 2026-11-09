@@ -559,6 +559,7 @@ Screens: chat
 Acceptance:
 - [snap] The model button and New Conversation are separate controls with the same look.
 - [manual] Scrolling back to the bottom by hand hides Jump to Latest.
+- Note: both scroll logs reach the new check at the real bottom, but a person still needs to confirm the button clears.
 Status: done
 
 ### S-037 Name a model
