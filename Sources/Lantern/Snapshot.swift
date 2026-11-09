@@ -14,6 +14,7 @@ enum SnapshotPage: String, CaseIterable {
     case chatAttachments = "chat-attachments"
     case quickPanel = "quick-panel"
     case models
+    case noModels = "no-models"
 
     func apply(to model: AppModel) {
         model.draftAttachments = self == .chatAttachments ? SeedData.draftAttachments : []
@@ -24,7 +25,7 @@ enum SnapshotPage: String, CaseIterable {
         switch self {
         case .chat, .offline, .modelPicker, .sidebarSearch, .quickPanel:
             model.selection = SeedData.conversation(titled: SeedData.formatted, in: model)?.uid
-        case .chatEmpty, .models:
+        case .chatEmpty, .models, .noModels:
             model.selection = nil
         case .chatAttachments:
             model.selection = SeedData.conversation(titled: SeedData.attached, in: model)?.uid
@@ -37,6 +38,7 @@ enum SnapshotPage: String, CaseIterable {
         }
         if self == .modelPicker { model.showingModelPicker = true }
         model.showingModels = self == .models
+        model.models = self == .noModels ? [] : SeedData.models
     }
 }
 

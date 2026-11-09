@@ -577,6 +577,14 @@ enum SelfTest {
             model.hotkeyMessage = nil
         }
 
+        // S-034 models appearing while Lantern was away
+        do {
+            let installed = model.models
+            model.models = []
+            await model.refreshInstalledModels()
+            check("S-034 coming back picks up installed models", model.models.map(\.name) == installed.map(\.name))
+        }
+
         // Launch repair
         let stale = Message(role: .assistant, text: "Cut", modelName: "first:1", sequence: 99, state: .writing)
         model.selectedConversation?.messages.append(stale)

@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct ContentView: View {
@@ -15,6 +16,9 @@ struct ContentView: View {
             } else {
                 ConversationPage()
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            Task { await model.refreshInstalledModels() }
         }
         .task {
             SeedData.insertIfRequested(into: model)

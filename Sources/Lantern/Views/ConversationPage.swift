@@ -9,6 +9,9 @@ struct ConversationPage: View {
             if let conversation = model.selectedConversation {
                 MessageList(conversation: conversation)
                     .id(conversation.uid)
+            } else if model.connection == .connected && model.models.isEmpty {
+                NoModelsView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ContentUnavailableView {
                     Label(ConversationTitle.placeholder, systemImage: "lightbulb")

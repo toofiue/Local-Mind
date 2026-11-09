@@ -9,6 +9,9 @@ struct ModelsPage: View {
         List(model.models) { item in
             ModelRow(item: item, loaded: model.loaded.first { $0.name == item.name })
         }
+        .overlay {
+            if model.models.isEmpty { NoModelsView() }
+        }
         .navigationTitle("Models")
     }
 }

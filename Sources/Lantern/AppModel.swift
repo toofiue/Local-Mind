@@ -176,6 +176,12 @@ final class AppModel {
         focusRequest += 1
     }
 
+    /// Picks up models installed or removed while Lantern was in the background.
+    func refreshInstalledModels() async {
+        guard connection == .connected else { return }
+        _ = await refreshModels()
+    }
+
     private func refreshModels() async -> Bool {
         guard let installed = try? await client.models() else { return false }
         models = installed

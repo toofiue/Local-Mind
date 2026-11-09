@@ -541,7 +541,7 @@ UX:
 - States: Lantern checks for new models whenever you switch back to it.
 - Words: "No Models Installed", "Install one in Terminal. It appears here when you come back.", "ollama pull gemma4", "Copy", "Copied".
 - Access: the command is selectable text.
-Status: todo
+Status: done
 
 ### S-035 Recognize the app in the Dock
 As the user, I see a Lantern icon in the Dock and menu bar.
