@@ -32,11 +32,10 @@ struct MessageList: View {
         .defaultScrollAnchor(.bottom)
         .scrollPosition($position)
         .onScrollGeometryChange(for: ScrollMetrics.self) { geometry in
-            let visibleBottom = geometry.contentOffset.y + geometry.containerSize.height
-            // Short conversations sit at the bottom with nothing to scroll.
-            let fits = geometry.contentSize.height <= geometry.containerSize.height
-            return ScrollMetrics(offset: geometry.contentOffset.y,
-                                 isAtBottom: fits || visibleBottom >= geometry.contentSize.height - Space.section)
+            // visibleRect accounts for the toolbar over the top of the list. Adding the
+            // offset to the container height comes up one toolbar short at the real bottom.
+            ScrollMetrics(offset: geometry.contentOffset.y,
+                          isAtBottom: geometry.visibleRect.maxY >= geometry.contentSize.height - Space.section)
         } action: { old, new in
             // The offset also shifts while a long list measures itself, so only real scrolling counts.
             if new.isAtBottom {

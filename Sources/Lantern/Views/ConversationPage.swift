@@ -33,6 +33,7 @@ struct ConversationPage: View {
             ToolbarItem(placement: .primaryAction) {
                 ModelPickerButton()
             }
+            ToolbarSpacer(.fixed, placement: .primaryAction)
             ToolbarItem(placement: .primaryAction) {
                 Button("New Conversation", systemImage: "square.and.pencil") { model.newConversation() }
                     .help("Start a conversation with the default model (⌘N)")

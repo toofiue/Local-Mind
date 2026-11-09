@@ -551,6 +551,71 @@ Acceptance:
 - [snap] The menu bar icon is a template image that adapts to the bar.
 Status: done
 
+## M7 Your models
+
+### S-036 Tell the toolbar controls apart and stop Jump to Latest lingering
+As the user, I see New Conversation and the model as separate controls, and Jump to Latest goes away when I scroll back to the bottom.
+Screens: chat
+Acceptance:
+- [snap] The model button and New Conversation are separate controls with the same look.
+- [manual] Scrolling back to the bottom by hand hides Jump to Latest.
+Status: done
+
+### S-037 Name a model
+As the user, I give a model my own name, and see it in conversations and Quick Ask with the original name in small text below where there's room.
+Screens: models, model-picker, chat
+Acceptance:
+- [unit] A name I set is saved, and an empty name restores the original.
+- [snap] The picker and Models page show my name with the original below it.
+- [self] Replies and Quick Ask show my name.
+UX:
+- Flow: pencil on a Models row -> field -> Return saves. Way back: Escape keeps the old name; saving an empty name restores the original.
+- Surface: inline in the row.
+- Words: "Name This Model"; field label "Model name".
+Status: todo
+
+### S-038 Change the model in Quick Ask
+As the user, I switch models from the Quick Ask panel.
+Screens: quick-panel
+Depends: S-021, S-037
+Acceptance:
+- [self] Choosing a model changes the one the next message uses, including in a conversation already started.
+- [self] The menu is unavailable while a reply is being written.
+UX:
+- Flow: click the model name in the panel -> menu -> choose. Way back: choose another.
+- Surface: a menu, so the panel keeps keyboard focus and stays open.
+Status: todo
+
+### S-039 Warn before a model that won't fit
+As the user, when a model is too big for the memory free right now, Lantern tells me which apps to close before it loads.
+Screens: chat
+Acceptance:
+- [unit] Fit is comfortable, needs closing apps, or too large, from the model's size and this Mac's memory.
+- [self] Sending is held with a warning, and Send Anyway goes ahead.
+- [self] A model already loaded is never warned about.
+UX:
+- Flow: send -> warning above the field naming what's using memory -> close apps, then Check Again; or Send Anyway. Way back: change the model.
+- Surface: inline above the field, in the main window and Quick Ask. Lantern never closes apps itself.
+- Words: "Check Again", "Send Anyway".
+- Privacy: memory and app names are read on this Mac and never leave it.
+Status: todo
+
+### S-040 Test what a model is good at
+As the user, I run a test on any model and see what it's suitable for and where it struggles.
+Screens: model-lab
+Depends: S-027, S-039
+Acceptance:
+- [unit] Each test is graded from the model's reply by a fixed rule.
+- [unit] Image and tool tests only run for models that support them.
+- [unit] The report turns scores into "Good for" and "Limits".
+- [self] A run saves its report, and Stop ends it.
+- [manual] A full run on a real model finishes and frees its memory.
+UX:
+- Flow: Test on a Models row -> page shows this Mac and the model's fit -> Run Test -> progress -> results. Way back: Models.
+- Surface: a page in the main window, since a run takes minutes.
+- States: only one thing runs at a time, so sending waits while a test runs.
+Status: todo
+
 ## Later
 Next after version one:
 - Projects with their own instructions and files
