@@ -15,6 +15,7 @@ struct NoModelsView: View {
                 Text(command)
                     .font(.system(.body, design: .monospaced))
                     .textSelection(.enabled)
+                    .fixedSize()
                 Button(didCopy ? "Copied" : "Copy") {
                     Clipboard.copy(command)
                     didCopy = true
