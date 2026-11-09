@@ -18,6 +18,12 @@ struct LanternApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @State private var model = AppModel(container: Store.makeContainer())
     @ObservedObject private var menu = MenuState.shared
+    @AppStorage("showMenuBarItem") private var showMenuBarItem = true
+
+    private var menuBarItemIsInserted: Binding<Bool> {
+        Binding(get: { showMenuBarItem && !SelfTest.requested && !Snapshot.requested },
+                set: { showMenuBarItem = $0 })
+    }
 
     var body: some Scene {
         Window("Lantern", id: "main") {
@@ -82,6 +88,12 @@ struct LanternApp: App {
                 Button("Delete") { model.requestDelete() }
                     .disabled(!menu.canDelete)
             }
+        }
+
+        MenuBarExtra(isInserted: menuBarItemIsInserted) {
+            LanternMenu(model: model)
+        } label: {
+            LanternMenuLabel(model: model)
         }
 
         Settings {

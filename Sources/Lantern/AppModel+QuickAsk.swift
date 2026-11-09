@@ -7,6 +7,11 @@ extension AppModel {
         guard let conversation = quickAsk.conversation else { return }
         QuickAskController.shared.hide()
         selection = conversation.uid
+        showMainWindow()
+    }
+
+    /// Brings the main window forward, reopening it if it was closed.
+    func showMainWindow() {
         NSApp.activate()
         if let window = NSApp.windows.first(where: { $0.canBecomeMain && !($0 is NSPanel) }) {
             window.makeKeyAndOrderFront(nil)

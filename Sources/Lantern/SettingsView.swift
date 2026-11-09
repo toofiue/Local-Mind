@@ -55,6 +55,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
 
 struct ModelsSettings: View {
     @Environment(AppModel.self) private var model
+    @AppStorage("showMenuBarItem") private var showMenuBarItem = true
 
     var body: some View {
         @Bindable var model = model
@@ -66,6 +67,9 @@ struct ModelsSettings: View {
             }
         } footer: {
             Text("After its last reply. Models use a lot of memory while loaded.")
+        }
+        Section {
+            Toggle("Show Lantern in the menu bar", isOn: $showMenuBarItem)
         }
     }
 }

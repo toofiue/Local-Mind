@@ -475,7 +475,7 @@ UX:
 - States: the bulb is filled while a model is loaded; "No Model Loaded" with Unload unavailable otherwise.
 - Words: "gemma4:12b-mlx · 7.68 GB", "Quick Ask", "Unload", "Open Lantern", "Quit Lantern"; Settings "Show Lantern in the menu bar".
 - Access: standard menu, works with the keyboard.
-Status: todo
+Status: done
 
 ## M6 Polish
 
