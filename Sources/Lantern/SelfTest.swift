@@ -605,6 +605,27 @@ enum SelfTest {
             check("S-037 an empty name restores the original", model.displayName("second:1") == "second:1")
         }
 
+        // S-038 changing the model in Quick Ask
+        do {
+            model.quickAsk.conversation = nil
+            model.chooseQuickModel("second:1")
+            check("S-038 the choice shows at once", model.quickModelName == "second:1")
+            model.quickAsk.draft = "Which model?"
+            transport.script(ScriptedTransport.reply(text: ["This one"]))
+            model.quickSend()
+            await model.waitForReply()
+            check("S-038 the message uses the chosen model", model.quickAsk.conversation?.ordered.last?.modelName == "second:1")
+            model.chooseQuickModel("first:1")
+            model.quickAsk.draft = "And now?"
+            transport.script(ScriptedTransport.reply(text: ["That one"]))
+            model.quickSend()
+            await model.waitForReply()
+            check("S-038 a conversation can switch models", model.quickAsk.conversation?.ordered.last?.modelName == "first:1")
+            QuickAskController.shared.show()
+            check("S-038 reopening goes back to the default", model.quickAsk.modelName == nil)
+            QuickAskController.shared.hide()
+        }
+
         // Launch repair
         let stale = Message(role: .assistant, text: "Cut", modelName: "first:1", sequence: 99, state: .writing)
         model.selectedConversation?.messages.append(stale)

@@ -584,7 +584,7 @@ Acceptance:
 UX:
 - Flow: click the model name in the panel -> menu -> choose. Way back: choose another.
 - Surface: a menu, so the panel keeps keyboard focus and stays open.
-Status: todo
+Status: done
 
 ### S-039 Warn before a model that won't fit
 As the user, when a model is too big for the memory free right now, Lantern tells me which apps to close before it loads.

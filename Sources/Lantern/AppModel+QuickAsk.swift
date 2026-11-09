@@ -20,6 +20,17 @@ extension AppModel {
         }
     }
 
+    var quickModelName: String? {
+        quickAsk.conversation?.modelName ?? quickAsk.modelName ?? defaultModelName
+    }
+
+    func chooseQuickModel(_ name: String) {
+        quickAsk.conversation?.modelName = name
+        quickAsk.modelName = name
+        remember(model: name)
+        quickAsk.focusRequest += 1
+    }
+
     /// Sends the Quick Ask draft without touching the main window's selection.
     @discardableResult
     func quickSend() -> Bool {
@@ -30,7 +41,7 @@ extension AppModel {
             quick.notice = "Lantern is finishing another reply."
             return false
         }
-        guard let modelName = quick.conversation?.modelName ?? defaultModelName else { return false }
+        guard let modelName = quickModelName else { return false }
 
         let conversation: Conversation
         if let existing = quick.conversation {

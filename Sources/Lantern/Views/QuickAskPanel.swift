@@ -10,6 +10,8 @@ final class QuickAskState {
     var focusRequest = 0
     /// The conversation this Quick Ask has started, once you've sent something.
     var conversation: Conversation?
+    /// The model picked for this Quick Ask, before anything has been sent.
+    var modelName: String?
     /// Why the last message couldn't be sent.
     var notice: String?
 }
@@ -76,6 +78,7 @@ final class QuickAskController {
         // Fresh each time, unless a reply is still being written here.
         let quick = model.quickAsk
         if let conversation = quick.conversation, !model.replies.isWriting(in: conversation) { quick.conversation = nil }
+        if quick.conversation == nil { quick.modelName = nil }
         quick.notice = nil
         panel.setFrame(startingFrame(height: panel.frame.height), display: true)
         panel.orderFrontRegardless()
@@ -125,9 +128,7 @@ struct QuickAskView: View {
                                 .allowsHitTesting(false)
                         }
                     }
-                Text((quick.conversation?.modelName ?? model.defaultModelName).map(model.displayName) ?? "No Models")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                QuickModelMenu()
                 if let conversation = quick.conversation, model.replies.isWriting(in: conversation) {
                     Button("Stop", systemImage: "stop.fill") { model.stop() }
                         .labelStyle(.iconOnly)
@@ -188,5 +189,29 @@ private struct QuickAskConversation: View {
         }
         .defaultScrollAnchor(.bottom)
         .frame(height: min(contentHeight, Layout.quickReply))
+    }
+}
+
+/// A menu rather than a popover, so the panel keeps keyboard focus and stays open.
+private struct QuickModelMenu: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        Menu {
+            ForEach(model.models) { item in
+                Toggle(isOn: Binding(get: { model.quickModelName == item.name },
+                                     set: { _ in model.chooseQuickModel(item.name) })) {
+                    Text(model.displayName(item.name))
+                    if model.modelNicknames[item.name] != nil { Text(item.name) }
+                }
+            }
+        } label: {
+            Text(model.quickModelName.map(model.displayName) ?? "No Models")
+                .font(.caption)
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        .disabled(model.isWriting || model.models.isEmpty)
+        .help("Choose which model answers here")
     }
 }
