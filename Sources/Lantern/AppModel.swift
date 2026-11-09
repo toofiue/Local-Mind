@@ -17,6 +17,7 @@ final class MenuState: ObservableObject {
     @Published private(set) var isPinned = false
     @Published private(set) var canDelete = false
     @Published private(set) var canEdit = false
+    @Published var quickAskHotkey = Hotkey.standard
 
     func update(isWriting: Bool, hasReply: Bool, hasSelection: Bool, isPinned: Bool, canDelete: Bool, canEdit: Bool) {
         if self.canEdit != canEdit { self.canEdit = canEdit }
@@ -74,6 +75,17 @@ final class AppModel {
     var searchRequest = 0
     /// Goes up whenever the message field should take focus.
     var focusRequest = 0
+    /// The system-wide shortcut for Quick Ask. Test and snapshot runs leave it alone.
+    var hotkey: Hotkey = AppModel.savedHotkey {
+        didSet {
+            MenuState.shared.quickAskHotkey = hotkey
+            if !Store.isOverridden, let data = try? JSONEncoder().encode(hotkey) {
+                UserDefaults.standard.set(data, forKey: "quickAskHotkey")
+            }
+        }
+    }
+    /// Why the last shortcut couldn't be used.
+    var hotkeyMessage: String?
     /// The model chosen in Settings. Empty means the last one used.
     var chosenDefaultModel: String = UserDefaults.standard.string(forKey: "defaultModel") ?? "" {
         didSet { if !Store.isOverridden { UserDefaults.standard.set(chosenDefaultModel, forKey: "defaultModel") } }
@@ -100,6 +112,7 @@ final class AppModel {
             base = url
         }
         client = OllamaClient(base: base)
+        MenuState.shared.quickAskHotkey = hotkey
         replies.onChange = { [weak self] in self?.syncMenu() }
         replies.onFinished = { [weak self] lostConnection in
             guard let self else { return }
@@ -111,6 +124,31 @@ final class AppModel {
     }
 
     var context: ModelContext { container.mainContext }
+
+    private static var savedHotkey: Hotkey {
+        guard let data = UserDefaults.standard.data(forKey: "quickAskHotkey"),
+              let saved = try? JSONDecoder().decode(Hotkey.self, from: data) else { return .standard }
+        return saved
+    }
+
+    /// Switches the shortcut, or says why it can't be used and keeps the old one.
+    func changeHotkey(_ new: Hotkey) {
+        hotkeyMessage = nil
+        guard new != hotkey else { return }
+        guard new.hasRequiredModifier else {
+            hotkeyMessage = "Include ⌘, ⌃, or ⌥ in the shortcut."
+            return
+        }
+        guard !GlobalHotKey.isReservedBySystem(new) else {
+            hotkeyMessage = "macOS already uses that shortcut. Choose another."
+            return
+        }
+        guard GlobalHotKey.shared.register(new) else {
+            hotkeyMessage = "Another app already uses that shortcut. Choose another."
+            return
+        }
+        hotkey = new
+    }
 
     // MARK: Connection
 

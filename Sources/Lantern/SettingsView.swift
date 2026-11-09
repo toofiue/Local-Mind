@@ -1,3 +1,6 @@
+import AppKit
+import Carbon.HIToolbox
+import LanternKit
 import SwiftUI
 
 /// The Settings window (Command-Comma). One tab per topic, at most about
@@ -23,6 +26,7 @@ struct SettingsView: View {
         Form {
             switch tab {
             case .models: ModelsSettings()
+            case .quickAsk: QuickAskSettings()
             case .appearance: AppearanceSettings()
             }
         }
@@ -34,13 +38,14 @@ struct SettingsView: View {
 
 /// The Settings tabs. Snapshot mode walks through every case.
 enum SettingsTab: String, CaseIterable, Identifiable {
-    case models, appearance
+    case models, quickAsk, appearance
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
         case .models: "Models"
+        case .quickAsk: "Quick Ask"
         case .appearance: "Appearance"
         }
     }
@@ -48,8 +53,71 @@ enum SettingsTab: String, CaseIterable, Identifiable {
     var symbol: String {
         switch self {
         case .models: "cpu"
+        case .quickAsk: "bolt"
         case .appearance: "paintpalette"
         }
+    }
+}
+
+struct QuickAskSettings: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        Section {
+            LabeledContent("Shortcut") {
+                HStack(spacing: Space.sm) {
+                    ShortcutRecorder()
+                    if model.hotkey != .standard {
+                        Button("Use Default") { model.changeHotkey(.standard) }
+                    }
+                }
+            }
+        } footer: {
+            if let message = model.hotkeyMessage {
+                Label(message, systemImage: "exclamationmark.triangle")
+            } else {
+                Text("Opens Quick Ask from any app while Lantern is running.")
+            }
+        }
+    }
+}
+
+/// A button that records the next key combination you press.
+private struct ShortcutRecorder: View {
+    @Environment(AppModel.self) private var model
+    @State private var monitor: Any?
+
+    var body: some View {
+        Button(monitor == nil ? model.hotkey.display : "Type a Shortcut…") {
+            if monitor == nil { startRecording() } else { stopRecording() }
+        }
+        .help("Change the shortcut that opens Quick Ask")
+        .onDisappear { stopRecording() }
+    }
+
+    private func startRecording() {
+        model.hotkeyMessage = nil
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            if Int(event.keyCode) != kVK_Escape {
+                model.changeHotkey(Hotkey(keyCode: Int(event.keyCode), modifiers: carbonModifiers(event.modifierFlags)))
+            }
+            stopRecording()
+            return nil
+        }
+    }
+
+    private func stopRecording() {
+        if let monitor { NSEvent.removeMonitor(monitor) }
+        monitor = nil
+    }
+
+    private func carbonModifiers(_ flags: NSEvent.ModifierFlags) -> Int {
+        var result = 0
+        if flags.contains(.command) { result |= cmdKey }
+        if flags.contains(.control) { result |= controlKey }
+        if flags.contains(.option) { result |= optionKey }
+        if flags.contains(.shift) { result |= shiftKey }
+        return result
     }
 }
 

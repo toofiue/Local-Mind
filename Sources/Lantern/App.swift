@@ -1,4 +1,6 @@
 import AppKit
+import Carbon.HIToolbox
+import LanternKit
 import SwiftData
 import SwiftUI
 
@@ -52,7 +54,7 @@ struct LanternApp: App {
             }
             CommandMenu("Conversation") {
                 Button("Quick Ask") { QuickAskController.shared.toggle() }
-                    .keyboardShortcut(.space, modifiers: [.control, .option])
+                    .keyboardShortcut(menu.quickAskHotkey.menuShortcut)
                 Button("Choose Model…") { model.showingModelPicker.toggle() }
                     .keyboardShortcut("m", modifiers: [.command, .shift])
                     .disabled(menu.isWriting)
@@ -103,6 +105,19 @@ struct LanternApp: App {
                 .themed()
         }
         .windowResizability(.contentSize)
+    }
+}
+
+extension Hotkey {
+    /// The same shortcut for a menu to display, if the key has a character.
+    var menuShortcut: KeyboardShortcut? {
+        guard let character else { return nil }
+        var flags: SwiftUI.EventModifiers = []
+        if modifiers & controlKey != 0 { flags.insert(.control) }
+        if modifiers & optionKey != 0 { flags.insert(.option) }
+        if modifiers & shiftKey != 0 { flags.insert(.shift) }
+        if modifiers & cmdKey != 0 { flags.insert(.command) }
+        return KeyboardShortcut(KeyEquivalent(character), modifiers: flags)
     }
 }
 

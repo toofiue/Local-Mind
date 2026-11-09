@@ -1,4 +1,5 @@
 import AppKit
+import Carbon.HIToolbox
 import SwiftData
 import LanternKit
 
@@ -553,6 +554,27 @@ enum SelfTest {
             model.newConversation()
             check("S-031 the next new conversation goes back to the default", model.currentModelName == "second:1")
             model.chosenDefaultModel = ""
+        }
+
+        // S-032 changing the shortcut
+        do {
+            let free = Hotkey(keyCode: kVK_ANSI_K, modifiers: controlKey | optionKey | shiftKey)
+            let other = Hotkey(keyCode: kVK_ANSI_J, modifiers: controlKey | optionKey | shiftKey)
+            model.changeHotkey(Hotkey(keyCode: kVK_ANSI_K, modifiers: shiftKey))
+            check("S-032 a shortcut with no modifier is refused", model.hotkeyMessage == "Include ⌘, ⌃, or ⌥ in the shortcut." && model.hotkey == .standard)
+            check("S-032 an unused shortcut isn't reported as taken", !GlobalHotKey.isReservedBySystem(free))
+            model.changeHotkey(free)
+            check("S-032 a new shortcut is accepted", model.hotkey == free && model.hotkeyMessage == nil)
+            check("S-032 the menu shows the new shortcut", MenuState.shared.quickAskHotkey == free)
+            let rival = GlobalHotKey()
+            check("S-032 the new shortcut is really held", !rival.register(free))
+            model.changeHotkey(other)
+            check("S-032 the old shortcut stops being held", rival.register(free))
+            rival.unregister()
+            print("INFO Command-Space reserved by macOS: \(GlobalHotKey.isReservedBySystem(Hotkey(keyCode: kVK_Space, modifiers: cmdKey)))")
+            GlobalHotKey.shared.unregister()
+            model.hotkey = .standard
+            model.hotkeyMessage = nil
         }
 
         // Launch repair

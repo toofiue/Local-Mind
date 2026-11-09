@@ -510,7 +510,7 @@ UX:
 - States: a shortcut with no ⌘, ⌃, or ⌥ is refused; one macOS or another app uses shows a message and the old shortcut keeps working.
 - Words: "Include ⌘, ⌃, or ⌥ in the shortcut.", "macOS already uses that shortcut. Choose another.", "Another app already uses that shortcut. Choose another."
 - Access: the recorder is a button reachable with Tab; VoiceOver reads the current shortcut.
-Status: todo
+Status: done
 
 ### S-033 See reply speed
 As the user, I see how fast a reply was generated, in tokens per second.

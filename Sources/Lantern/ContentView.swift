@@ -25,7 +25,9 @@ struct ContentView: View {
             guard !SelfTest.requested, !Snapshot.requested, !model.hasStarted else { return }
             model.hasStarted = true
             GlobalHotKey.shared.onPress = { QuickAskController.shared.toggle() }
-            GlobalHotKey.shared.register()
+            if !GlobalHotKey.shared.register(model.hotkey) {
+                model.hotkeyMessage = "Another app already uses \(model.hotkey.display). Choose another."
+            }
             model.repairInterruptedReplies()
             await model.connect()
             await model.monitorLoadedModels()
