@@ -22,7 +22,8 @@ struct LanternApp: App {
 
     private var menuBarItemIsInserted: Binding<Bool> {
         Binding(get: { showMenuBarItem && !SelfTest.requested && !Snapshot.requested },
-                set: { showMenuBarItem = $0 })
+                // Test runs hide the item, and macOS reports that back here. It isn't a choice to save.
+                set: { if !SelfTest.requested && !Snapshot.requested { showMenuBarItem = $0 } })
     }
 
     var body: some Scene {
