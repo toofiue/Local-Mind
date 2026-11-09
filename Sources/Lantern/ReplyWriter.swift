@@ -28,12 +28,12 @@ final class ReplyWriter {
     }
 
     func start(_ reply: Message, in conversation: Conversation, modelName: String,
-               turns: [ChatTurn], think: Bool, client: OllamaClient) {
+               turns: [ChatTurn], think: Bool, keepAlive: String, client: OllamaClient) {
         activeConversationID = conversation.uid
         activeModelName = modelName
         activeReplyID = reply.uid
         phase = .waiting
-        task = Task { await run(reply, in: conversation, modelName: modelName, turns: turns, think: think, client: client) }
+        task = Task { await run(reply, in: conversation, modelName: modelName, turns: turns, think: think, keepAlive: keepAlive, client: client) }
     }
 
     func stop() {
@@ -46,7 +46,7 @@ final class ReplyWriter {
     }
 
     private func run(_ reply: Message, in conversation: Conversation, modelName: String,
-                     turns: [ChatTurn], think: Bool, client: OllamaClient) async {
+                     turns: [ChatTurn], think: Bool, keepAlive: String, client: OllamaClient) async {
         var text = ""
         var thinking = ""
         var lastFlush = ContinuousClock.now
@@ -66,7 +66,7 @@ final class ReplyWriter {
             }
             if !loaded.contains(where: { $0.name == modelName }) { phase = .loading(modelName) }
 
-            for try await event in client.chat(model: modelName, turns: turns, think: think) {
+            for try await event in client.chat(model: modelName, turns: turns, think: think, keepAlive: keepAlive) {
                 phase = nil
                 switch event {
                 case .thinking(let chunk): thinking += chunk

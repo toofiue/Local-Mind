@@ -206,14 +206,15 @@ public struct OllamaClient: Sendable {
     }
 
     /// Streams one reply. Ending the consumer's task ends the request.
-    public func chat(model: String, turns: [ChatTurn], think: Bool) -> AsyncThrowingStream<ChatEvent, Error> {
+    public func chat(model: String, turns: [ChatTurn], think: Bool, keepAlive: String? = nil) -> AsyncThrowingStream<ChatEvent, Error> {
         struct Body: Encodable {
             let model: String
             let messages: [ChatTurn]
             let stream: Bool
             let think: Bool?
+            let keep_alive: String?
         }
-        var request = post("api/chat", Body(model: model, messages: turns, stream: true, think: think ? true : nil))
+        var request = post("api/chat", Body(model: model, messages: turns, stream: true, think: think ? true : nil, keep_alive: keepAlive))
         // A cold model can take a while to send its first byte.
         request.timeoutInterval = 600
         let lines = transport.lines(request)

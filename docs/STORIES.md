@@ -460,7 +460,7 @@ UX:
 - States: default 5 minutes; a model already loaded keeps its old timer until its next reply.
 - Words: "Keep a model loaded for" with "1 minute", "5 minutes", "15 minutes", "30 minutes", and the note "After its last reply. Models use a lot of memory while loaded."
 - Access: standard picker.
-Status: todo
+Status: done
 
 ### S-030 Check the model from the menu bar
 As the user, I glance at the menu bar and open a menu that shows the loaded model, with Ask and Unload.

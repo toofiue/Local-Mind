@@ -528,6 +528,18 @@ enum SelfTest {
             await model.refreshLoaded()
         }
 
+        // S-029 how long models stay loaded
+        do {
+            check("S-029 the default is 5 minutes", model.keepLoadedMinutes == 5)
+            model.keepLoadedMinutes = 15
+            model.newConversation()
+            transport.script(ScriptedTransport.reply(text: ["Ok"]))
+            model.send("Timer check")
+            await model.waitForReply()
+            check("S-029 the setting reaches the request", transport.chatBodies.last?.contains("\"keep_alive\":\"15m\"") == true)
+            model.keepLoadedMinutes = 5
+        }
+
         // Launch repair
         let stale = Message(role: .assistant, text: "Cut", modelName: "first:1", sequence: 99, state: .writing)
         model.selectedConversation?.messages.append(stale)

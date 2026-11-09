@@ -25,3 +25,11 @@ func unloadsModel() async throws {
     try await client.unload("a:1")
     #expect(try await client.loadedModels().isEmpty)
 }
+
+@Test("S-029 the keep-loaded time goes with each request")
+func sendsKeepAlive() async throws {
+    let transport = ScriptedTransport(installed: [])
+    transport.script(ScriptedTransport.reply(text: ["ok"]))
+    for try await _ in OllamaClient(transport: transport).chat(model: "m", turns: [], think: false, keepAlive: "15m") {}
+    #expect(transport.chatBodies[0].contains("\"keep_alive\":\"15m\""))
+}

@@ -74,6 +74,13 @@ final class AppModel {
     var searchRequest = 0
     /// Goes up whenever the message field should take focus.
     var focusRequest = 0
+    /// How long a model stays in memory after its last reply. Test and snapshot runs leave it alone.
+    var keepLoadedMinutes: Int = {
+        let stored = UserDefaults.standard.integer(forKey: "keepLoadedMinutes")
+        return stored > 0 ? stored : 5
+    }() {
+        didSet { if !Store.isOverridden { UserDefaults.standard.set(keepLoadedMinutes, forKey: "keepLoadedMinutes") } }
+    }
     /// Settings reopens on the last tab. Test and snapshot runs leave it alone.
     var settingsTab: SettingsTab = SettingsTab(rawValue: UserDefaults.standard.string(forKey: "settings.tab") ?? "") ?? .appearance {
         didSet { if !Store.isOverridden { UserDefaults.standard.set(settingsTab.rawValue, forKey: "settings.tab") } }
@@ -346,7 +353,7 @@ final class AppModel {
         save()
 
         let think = models.first { $0.name == modelName }?.supportsThinking ?? false
-        replies.start(reply, in: conversation, modelName: modelName, turns: turns, think: think, client: client)
+        replies.start(reply, in: conversation, modelName: modelName, turns: turns, think: think, keepAlive: "\(keepLoadedMinutes)m", client: client)
     }
 
     func save() {
