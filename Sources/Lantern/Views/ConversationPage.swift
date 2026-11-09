@@ -96,6 +96,11 @@ private struct Composer: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
+            if let warning = model.memoryWarning, warning.surface == .main {
+                MemoryWarningView(warning: warning) {
+                    if model.send(draft, skipMemoryCheck: true) { draft = "" }
+                }
+            }
             if let warning = model.attachmentLengthWarning {
                 Label(warning, systemImage: "exclamationmark.triangle")
                     .font(.callout)

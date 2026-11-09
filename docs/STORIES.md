@@ -598,7 +598,7 @@ UX:
 - Surface: inline above the field, in the main window and Quick Ask. Lantern never closes apps itself.
 - Words: "Check Again", "Send Anyway".
 - Privacy: memory and app names are read on this Mac and never leave it.
-Status: todo
+Status: done
 
 ### S-040 Test what a model is good at
 As the user, I run a test on any model and see what it's suitable for and where it struggles.

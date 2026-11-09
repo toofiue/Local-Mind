@@ -25,6 +25,7 @@ extension AppModel {
     }
 
     func chooseQuickModel(_ name: String) {
+        memoryWarning = nil
         quickAsk.conversation?.modelName = name
         quickAsk.modelName = name
         remember(model: name)
@@ -33,7 +34,7 @@ extension AppModel {
 
     /// Sends the Quick Ask draft without touching the main window's selection.
     @discardableResult
-    func quickSend() -> Bool {
+    func quickSend(skipMemoryCheck: Bool = false) -> Bool {
         let quick = quickAsk
         let text = quick.draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty, connection == .connected else { return false }
@@ -42,6 +43,12 @@ extension AppModel {
             return false
         }
         guard let modelName = quickModelName else { return false }
+
+        if !skipMemoryCheck, let warning = memoryWarningIfNeeded(for: modelName, surface: .quickAsk) {
+            memoryWarning = warning
+            return false
+        }
+        memoryWarning = nil
 
         let conversation: Conversation
         if let existing = quick.conversation {

@@ -90,6 +90,10 @@ final class AppModel {
     var modelNicknames: [String: String] = AppModel.savedNicknames {
         didSet { if !Store.isOverridden { UserDefaults.standard.set(modelNicknames, forKey: "modelNicknames") } }
     }
+    /// Why the last message is waiting: its model won't fit comfortably.
+    var memoryWarning: MemoryWarning?
+    @ObservationIgnored var readMemory: () -> MemorySnapshot = { SystemMonitor.memory() }
+    @ObservationIgnored var readTopApps: () -> [SystemMonitor.AppMemory] = { SystemMonitor.topApps() }
     /// The model chosen in Settings. Empty means the last one used.
     var chosenDefaultModel: String = UserDefaults.standard.string(forKey: "defaultModel") ?? "" {
         didSet { if !Store.isOverridden { UserDefaults.standard.set(chosenDefaultModel, forKey: "defaultModel") } }
@@ -241,6 +245,7 @@ final class AppModel {
     }
 
     func chooseModel(_ name: String) {
+        memoryWarning = nil
         if let selectedConversation {
             selectedConversation.modelName = name
             save()
@@ -358,13 +363,19 @@ final class AppModel {
 
     /// Returns false when the message couldn't be sent, so the field keeps its text.
     @discardableResult
-    func send(_ raw: String) -> Bool {
+    func send(_ raw: String, skipMemoryCheck: Bool = false) -> Bool {
         let text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty, !isWriting, connection == .connected, let modelName = currentModelName else { return false }
         if draftAttachments.contains(where: { $0.kind == .image }), let refusal = imageRefusal {
             attachmentNotice = refusal
             return false
         }
+
+        if !skipMemoryCheck, let warning = memoryWarningIfNeeded(for: modelName, surface: .main) {
+            memoryWarning = warning
+            return false
+        }
+        memoryWarning = nil
 
         let conversation: Conversation
         if let selectedConversation {

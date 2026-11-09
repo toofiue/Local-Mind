@@ -42,6 +42,8 @@ enum SelfTest {
         let transport = ScriptedTransport(installed: [first, second])
         model.client = OllamaClient(transport: transport)
         model.startOllama = {}
+        model.readMemory = { MemorySnapshot(totalBytes: 68_719_476_736, availableBytes: 34_359_738_368) }
+        model.readTopApps = { [] }
         model.startupWait = .milliseconds(600)
 
         // S-001 connecting
@@ -626,6 +628,42 @@ enum SelfTest {
             QuickAskController.shared.hide()
         }
 
+        // S-039 memory warnings
+        do {
+            let previous = model.selection
+            defer {
+                model.selection = previous
+                model.readMemory = { MemorySnapshot(totalBytes: 68_719_476_736, availableBytes: 34_359_738_368) }
+                model.readTopApps = { [] }
+            }
+            let gigabyte: Int64 = 1_073_741_824
+            model.models.append(OllamaModel(name: "big:1", size: 8 * gigabyte))
+            defer { model.models.removeAll { $0.name == "big:1" } }
+            model.readMemory = { MemorySnapshot(totalBytes: 16 * gigabyte, availableBytes: 4 * gigabyte) }
+            model.readTopApps = { [SystemMonitor.AppMemory(name: "Big Editor", bytes: 6 * gigabyte)] }
+            model.newConversation()
+            model.draftModelName = "big:1"
+            let conversations = (try? model.container.mainContext.fetchCount(FetchDescriptor<Conversation>())) ?? -1
+            check("S-039 sending is held", !model.send("Heavy question"))
+            check("S-039 nothing is created yet", (try? model.container.mainContext.fetchCount(FetchDescriptor<Conversation>())) == conversations)
+            check("S-039 the warning names the app using memory", model.memoryWarning?.appsSummary.contains("Big Editor") == true, model.memoryWarning?.appsSummary ?? "nil")
+            check("S-039 the warning names the model", model.memoryWarning?.message.contains("big:1") == true)
+            model.readMemory = { MemorySnapshot(totalBytes: 16 * gigabyte, availableBytes: 14 * gigabyte) }
+            model.recheckMemory()
+            check("S-039 Check Again clears it once there's room", model.memoryWarning == nil)
+            model.readMemory = { MemorySnapshot(totalBytes: 16 * gigabyte, availableBytes: 4 * gigabyte) }
+            transport.setLoaded(["big:1"])
+            await model.refreshLoaded()
+            check("S-039 a loaded model is never warned about", model.memoryWarningIfNeeded(for: "big:1", surface: .main) == nil)
+            transport.setLoaded([])
+            await model.refreshLoaded()
+            transport.script(ScriptedTransport.reply(text: ["Done"]))
+            check("S-039 Send Anyway goes ahead", model.send("Heavy question", skipMemoryCheck: true))
+            await model.waitForReply()
+            check("S-039 sending clears the warning", model.memoryWarning == nil)
+            model.draftModelName = nil
+        }
+
         // Launch repair
         let stale = Message(role: .assistant, text: "Cut", modelName: "first:1", sequence: 99, state: .writing)
         model.selectedConversation?.messages.append(stale)
@@ -647,7 +685,7 @@ enum SelfTest {
         check("LIVE the model is installed", model.models.contains { $0.name == modelName })
         model.newConversation()
         model.draftModelName = modelName
-        check("LIVE sends a message", model.send("Reply with exactly: ok"))
+        check("LIVE sends a message", model.send("Reply with exactly: ok", skipMemoryCheck: true))
         await model.waitForReply()
         let reply = model.latestReply
         check("LIVE the reply finishes", reply?.state == .complete, reply?.failureText ?? "")
@@ -656,7 +694,7 @@ enum SelfTest {
         print("LIVE reply: \(reply?.text ?? "") at \(Int(reply?.tokensPerSecond ?? 0)) tokens per second")
         model.quickAsk.conversation = nil
         model.quickAsk.draft = "Reply with exactly: quick ok"
-        check("LIVE Quick Ask sends", model.quickSend())
+        check("LIVE Quick Ask sends", model.quickSend(skipMemoryCheck: true))
         await model.waitForReply()
         let quickReply = model.quickAsk.conversation?.ordered.last
         check("LIVE Quick Ask gets a reply", quickReply?.state == .complete && !(quickReply?.text.isEmpty ?? true), quickReply?.failureText ?? "")

@@ -15,6 +15,7 @@ enum SnapshotPage: String, CaseIterable {
     case quickPanel = "quick-panel"
     case models
     case noModels = "no-models"
+    case memoryWarning = "memory-warning"
 
     func apply(to model: AppModel) {
         model.draftAttachments = self == .chatAttachments ? SeedData.draftAttachments : []
@@ -23,7 +24,7 @@ enum SnapshotPage: String, CaseIterable {
         model.replies.activeReplyID = nil
         model.showingModelPicker = false
         switch self {
-        case .chat, .offline, .modelPicker, .sidebarSearch, .quickPanel:
+        case .chat, .offline, .modelPicker, .sidebarSearch, .quickPanel, .memoryWarning:
             model.selection = SeedData.conversation(titled: SeedData.formatted, in: model)?.uid
         case .chatEmpty, .models, .noModels:
             model.selection = nil
@@ -38,6 +39,10 @@ enum SnapshotPage: String, CaseIterable {
         }
         if self == .modelPicker { model.showingModelPicker = true }
         model.showingModels = self == .models
+        model.memoryWarning = self != .memoryWarning ? nil : MemoryWarning(
+            modelName: "gemma4:latest", surface: .main,
+            message: "gemma4:latest needs about 9.93 GB, and 6.2 GB is free. Close other apps to keep your Mac responsive.",
+            appsSummary: "Using the most memory: Adobe Premiere Pro (5.1 GB), Google Chrome (2 GB)")
         model.models = self == .noModels ? [] : SeedData.models
     }
 }

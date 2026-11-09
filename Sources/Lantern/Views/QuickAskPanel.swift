@@ -139,6 +139,11 @@ struct QuickAskView: View {
             }
             .padding(Space.lg)
 
+            if let warning = model.memoryWarning, warning.surface == .quickAsk {
+                MemoryWarningView(warning: warning) { model.quickSend(skipMemoryCheck: true) }
+                    .padding([.horizontal, .bottom], Space.lg)
+            }
+
             if let notice = quick.notice {
                 Label(notice, systemImage: "exclamationmark.triangle")
                     .font(.callout)
