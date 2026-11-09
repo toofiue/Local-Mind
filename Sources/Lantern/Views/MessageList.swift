@@ -173,6 +173,11 @@ private struct ReplyRow: View {
                 .labelStyle(.iconOnly)
                 .buttonStyle(.borderless)
                 .foregroundStyle(.secondary)
+                if let speed = message.tokensPerSecond {
+                    Text("\(Int(speed.rounded())) tokens per second")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

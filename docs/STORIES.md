@@ -525,7 +525,7 @@ UX:
 - States: replies with no timing from Ollama, such as stopped ones, show nothing.
 - Words: "28 tokens per second".
 - Access: plain text VoiceOver can read.
-Status: todo
+Status: done
 
 ### S-034 Understand empty states
 As the user, I see helpful text when there are no conversations, no search results, or no models.

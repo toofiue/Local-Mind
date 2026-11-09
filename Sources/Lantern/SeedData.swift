@@ -114,6 +114,7 @@ enum SeedData {
             conversation.messages.append(Message(role: .user, text: title, modelName: name, sequence: 0))
             let message = Message(role: .assistant, text: reply, modelName: name, sequence: 1, state: state)
             message.thinking = thinking
+            if state == .complete { message.tokensPerSecond = 28 }
             conversation.messages.append(message)
         }
 
