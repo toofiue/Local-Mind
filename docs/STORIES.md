@@ -445,7 +445,7 @@ UX:
 - States: unavailable while that model is writing a reply, with a tooltip saying why; only loaded rows show it.
 - Words: "Unload"; tooltip "Free the memory this model is using".
 - Access: reachable with Tab; VoiceOver reads "Unload <model name>".
-Status: todo
+Status: done
 
 ### S-029 Unload models when idle
 As the user, I set how long a model stays loaded after I stop using it.

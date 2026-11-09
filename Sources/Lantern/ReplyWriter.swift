@@ -13,6 +13,7 @@ final class ReplyWriter {
     /// The reply being written. Snapshot mode sets it to show the writing state.
     var activeReplyID: UUID? { didSet { onChange() } }
     private(set) var activeConversationID: UUID?
+    private(set) var activeModelName: String?
     var phase: WritingPhase?
 
     @ObservationIgnored var onChange: () -> Void = {}
@@ -29,6 +30,7 @@ final class ReplyWriter {
     func start(_ reply: Message, in conversation: Conversation, modelName: String,
                turns: [ChatTurn], think: Bool, client: OllamaClient) {
         activeConversationID = conversation.uid
+        activeModelName = modelName
         activeReplyID = reply.uid
         phase = .waiting
         task = Task { await run(reply, in: conversation, modelName: modelName, turns: turns, think: think, client: client) }
@@ -95,6 +97,7 @@ final class ReplyWriter {
         conversation.updatedAt = .now
         try? reply.modelContext?.save()
         activeConversationID = nil
+        activeModelName = nil
         activeReplyID = nil
         phase = nil
         await onFinished(lostConnection)

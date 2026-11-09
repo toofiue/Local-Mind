@@ -16,3 +16,12 @@ func summarizesCapabilities() {
     #expect(model.capabilitySummary == "Images, Audio, Thinking, Tools")
     #expect(OllamaModel(name: "m", size: 1, capabilities: ["completion"]).capabilitySummary.isEmpty)
 }
+
+@Test("S-028 unloading removes the model from memory")
+func unloadsModel() async throws {
+    let transport = ScriptedTransport(installed: [])
+    transport.setLoaded(["a:1"])
+    let client = OllamaClient(transport: transport)
+    try await client.unload("a:1")
+    #expect(try await client.loadedModels().isEmpty)
+}

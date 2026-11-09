@@ -16,6 +16,7 @@ struct ModelsPage: View {
 private struct ModelRow: View {
     let item: OllamaModel
     let loaded: LoadedModel?
+    @Environment(AppModel.self) private var model
 
     var body: some View {
         HStack(spacing: Space.lg) {
@@ -28,7 +29,7 @@ private struct ModelRow: View {
             Spacer(minLength: Space.lg)
             if let loaded {
                 Label {
-                    Text("Loaded · \(loaded.memory, format: .byteCount(style: .memory))")
+                    Text("Loaded · \(loaded.memory, format: .byteCount(style: .file))")
                 } icon: {
                     Image(systemName: "memorychip.fill")
                 }
@@ -38,6 +39,12 @@ private struct ModelRow: View {
             Text(item.size, format: .byteCount(style: .file))
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
+            if loaded != nil {
+                Button("Unload") { Task { await model.unload(item.name) } }
+                    .disabled(!model.canUnload(item.name))
+                    .help(model.canUnload(item.name) ? "Free the memory this model is using" : "Unavailable while this model is writing a reply")
+                    .accessibilityLabel("Unload \(item.name)")
+            }
         }
         .padding(.vertical, Space.xs)
     }

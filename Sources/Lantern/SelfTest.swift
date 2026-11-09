@@ -501,6 +501,33 @@ enum SelfTest {
             transport.setLoaded([])
         }
 
+        // S-028 unloading
+        do {
+            transport.setLoaded(["first:1"])
+            await model.refreshLoaded()
+            await model.unload("first:1")
+            check("S-028 Unload frees the model", model.loaded.isEmpty)
+            check("S-028 Unload asks Ollama for keep_alive 0", transport.requests.last { $0.path.hasSuffix("/api/generate") }?.body.contains("\"keep_alive\":0") == true)
+
+            model.newConversation()
+            model.draftModelName = "first:1"
+            transport.script(ScriptedTransport.reply(text: Array(repeating: "x ", count: 100)), delay: .milliseconds(20))
+            model.send("Keep writing")
+            try? await Task.sleep(for: .milliseconds(150))
+            check("S-028 the writing model can't be unloaded", !model.canUnload("first:1"))
+            check("S-028 another model still can", model.canUnload("second:1"))
+            transport.setLoaded(["first:1"])
+            await model.refreshLoaded()
+            await model.unload("first:1")
+            check("S-028 and asking anyway changes nothing", model.loaded.map(\.name) == ["first:1"])
+            model.stop()
+            await model.waitForReply()
+            check("S-028 it can be unloaded once the reply ends", model.canUnload("first:1"))
+            model.draftModelName = nil
+            transport.setLoaded([])
+            await model.refreshLoaded()
+        }
+
         // Launch repair
         let stale = Message(role: .assistant, text: "Cut", modelName: "first:1", sequence: 99, state: .writing)
         model.selectedConversation?.messages.append(stale)

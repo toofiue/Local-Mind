@@ -202,6 +202,17 @@ final class AppModel {
         showingModels = true
     }
 
+    /// A model can't be unloaded while it's writing a reply.
+    func canUnload(_ name: String) -> Bool {
+        replies.activeModelName != name
+    }
+
+    func unload(_ name: String) async {
+        guard canUnload(name) else { return }
+        try? await client.unload(name)
+        await refreshLoaded()
+    }
+
     func refreshLoaded() async {
         if let current = try? await client.loadedModels() { loaded = current }
     }
