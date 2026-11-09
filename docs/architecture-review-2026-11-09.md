@@ -39,6 +39,10 @@ Still no `Strong` candidates. The code is 3,600 lines, and `AppModel` stayed at 
 
 `ReplyWriter` is extracted, as recommended above, and both the main window and Quick Ask use it. Still no `Strong` candidates: the app code is 4,200 lines and no file outside the self-test passes 340. `SelfTest.swift` is 529 lines and will want splitting by feature if it reaches 600.
 
+## Milestone 5 update
+
+Still no `Strong` candidates. `ReplyWriter` absorbed the new per-reply state, and the Models page and menu bar share one loaded-model list on `AppModel`. `SelfTest.swift` is close to the 600-line signal and is the first thing to split.
+
 ## Considered, not recommended
 
 - Splitting `Markdown.parse`: long, but one straight loop that's fully covered by tests.

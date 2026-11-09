@@ -469,6 +469,7 @@ Depends: S-021, S-028
 Acceptance:
 - [snap] The menu shows the loaded model and its memory, or "No model loaded".
 - [self] Ask opens the quick panel. Unload frees the model.
+- [manual] Not yet clicked by hand: the item exists, but this Mac's menu bar tucks it behind the » divider, out of reach of automated tests.
 UX:
 - Flow: click the lightbulb in the menu bar -> menu shows the loaded model -> Quick Ask, Unload, Open Lantern, or Quit. Way back: click away.
 - Surface: menu bar item with a menu. Everything in it is also in the main window, and Settings > Models can hide it.
