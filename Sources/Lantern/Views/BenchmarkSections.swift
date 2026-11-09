@@ -28,7 +28,6 @@ struct BenchmarkSections: View {
     var body: some View {
         Section {
             Text("Runs the actual published question sets and scores them the published way. Replies are generated without visible thinking, and published scores vary with how a test is run.")
-                .fixedSize(horizontal: false, vertical: true)
 
             ForEach(BenchmarkSuite.allCases) { SuiteRow(suite: $0) }
 
@@ -74,8 +73,6 @@ struct BenchmarkSections: View {
                     }
                 }
             }
-        } header: {
-            Text("Full Benchmark")
         }
 
         if let report, !isRunningHere {
@@ -117,7 +114,6 @@ private struct SuiteRow: View {
             Text(suite.scoring)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.vertical, Space.xs)
     }
@@ -151,7 +147,6 @@ private struct BenchmarkResultSection: View {
                 Text(note)
                     .font(.callout)
                     .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
                 if report.wasStopped {
                     Text("This run was stopped early.")
                         .font(.callout)
