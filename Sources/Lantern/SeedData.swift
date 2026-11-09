@@ -15,6 +15,23 @@ enum SeedData {
 
     static let attached = "What is in this screenshot?"
 
+    static var sampleLabReport: LabReport {
+        func row(_ id: String, _ area: LabArea, _ name: String, _ reply: String, _ passed: Bool, _ tokens: Int? = nil) -> LabCaseResult {
+            LabCaseResult(id: id, area: area, name: name, reply: reply, passed: passed, documentTokens: tokens)
+        }
+        return LabReport(modelName: "gemma4:12b-mlx", date: .now, tokensPerSecond: 28, loadSeconds: 10, memoryBytes: 7_800_000_000,
+                         swapGrowthBytes: 0, totalMemoryBytes: 17_179_869_184, supportsImages: true, supportsTools: true, results: [
+                            row("speed", .speed, "Write a paragraph", "The ocean stretches past the horizon.", true),
+                            row("r-1", .reasoning, "Trick question", "9", true), row("r-2", .reasoning, "Rates", "100", false),
+                            row("c-1", .code, "Read Python", "14", true),
+                            row("i-1", .instructions, "Exact format", "- apple", true),
+                            row("d-1", .data, "Extract to JSON", "{}", true),
+                            row("doc-1", .documents, "20,000 tokens", "7741 marigold", true, 20_000),
+                            row("img-1", .images, "See a color", "Red", true),
+                            row("tool-1", .tools, "Call a tool", "Called get_weather (city: Paris)", true),
+                         ])
+    }
+
     /// A small gradient, so snapshots and the self-test have a real image to use.
     static var sampleImage: Data {
         let size = 320

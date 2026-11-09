@@ -11,7 +11,9 @@ struct ContentView: View {
             ConversationSidebar()
                 .navigationSplitViewColumnWidth(min: 200, ideal: 260)
         } detail: {
-            if model.showingModels {
+            if let name = model.labModelName {
+                ModelLabPage(name: name)
+            } else if model.showingModels {
                 ModelsPage()
             } else {
                 ConversationPage()

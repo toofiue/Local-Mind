@@ -137,7 +137,7 @@ enum SelfTest {
         // S-005 persistence
         let uid = model.selectedConversation?.uid
         let messageCount = model.selectedConversation?.messages.count ?? 0
-        let reopened = try? ModelContainer(for: Conversation.self, Message.self, Attachment.self,
+        let reopened = try? ModelContainer(for: Conversation.self, Message.self, Attachment.self, ModelTestRun.self,
                                            configurations: ModelConfiguration(url: Store.url))
         let saved = (try? reopened?.mainContext.fetch(FetchDescriptor<Conversation>())) ?? []
         let found = saved.first { $0.uid == uid }
@@ -237,7 +237,7 @@ enum SelfTest {
             let question = model.selectedConversation?.ordered.first
             check("S-016 the image is stored with its message", question?.attachments.first?.imageData?.isEmpty == false)
 
-            let reopened = try? ModelContainer(for: Conversation.self, Message.self, Attachment.self,
+            let reopened = try? ModelContainer(for: Conversation.self, Message.self, Attachment.self, ModelTestRun.self,
                                                configurations: ModelConfiguration(url: Store.url))
             let saved = (try? reopened?.mainContext.fetch(FetchDescriptor<Attachment>())) ?? []
             check("S-016 images survive reopening the store", saved.contains { $0.imageData?.isEmpty == false })
@@ -662,6 +662,43 @@ enum SelfTest {
             await model.waitForReply()
             check("S-039 sending clears the warning", model.memoryWarning == nil)
             model.draftModelName = nil
+        }
+
+        // S-040 the Model Lab
+        do {
+            let previous = model.selection
+            defer { model.selection = previous }
+            transport.scriptLab { body in
+                if body.contains("17 sheep") { return "9" }
+                if body.contains("is_even") { return "def is_even(n):\\n    return n % 2 == 0" }
+                return "No idea"
+            }
+            model.openLab("first:1")
+            check("S-040 the page opens", model.labModelName == "first:1")
+            model.runLab("first:1")
+            check("S-040 a run starts", model.lab.modelName == "first:1")
+            check("S-040 nothing else can use the model meanwhile", model.isWriting && !model.canUnload("first:1"))
+            await model.lab.wait()
+            let report = model.labReports["first:1"]
+            check("S-040 a report is produced", report != nil)
+            check("S-040 grading tells right from wrong", report?.passed(in: .reasoning) == 1, "\(report?.passed(in: .reasoning) ?? -1)")
+            check("S-040 speed and load time are measured", report?.tokensPerSecond == 20 && report?.loadSeconds == 3)
+            check("S-040 the tool test runs for tool models only", report?.results(in: .tools).isEmpty == true)
+            check("S-040 the model is freed afterwards", transport.requests.last?.path.hasSuffix("/api/generate") == true || transport.requests.last?.path.hasSuffix("/api/ps") == true)
+            check("S-040 it can be used again", !model.isWriting)
+
+            model.labReports["first:1"] = nil
+            model.loadLabReport("first:1")
+            check("S-040 the report is saved", model.labReports["first:1"]?.results.count == report?.results.count)
+
+            let runs = (try? model.container.mainContext.fetchCount(FetchDescriptor<ModelTestRun>())) ?? -1
+            model.runLab("first:1")
+            model.lab.stop()
+            await model.lab.wait()
+            check("S-040 Stop ends a run without saving it", (try? model.container.mainContext.fetchCount(FetchDescriptor<ModelTestRun>())) == runs && !model.lab.isRunning)
+            model.closeLab()
+            check("S-040 Models takes you back", model.showingModels && model.labModelName == nil)
+            model.newConversation()
         }
 
         // Launch repair

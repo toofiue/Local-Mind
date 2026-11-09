@@ -39,6 +39,7 @@ final class AppModel {
     var selection: UUID? {
         didSet {
             showingModels = false
+            labModelName = nil
             selectedConversation = conversation(with: selection)
             syncMenu()
             focusRequest += 1
@@ -55,6 +56,11 @@ final class AppModel {
     var draftModelName: String?
     let replies = ReplyWriter()
     let quickAsk = QuickAskState()
+    let lab = ModelLabRunner()
+    /// The model whose Lab page is open.
+    var labModelName: String?
+    /// The latest Lab report for each model, once read.
+    var labReports: [String: LabReport] = [:]
     /// Reopens the main window after it was closed.
     @ObservationIgnored var openMainWindow: () -> Void = {}
     /// The window can reopen, but connecting and launch repair run once.
@@ -122,6 +128,11 @@ final class AppModel {
         client = OllamaClient(base: base)
         MenuState.shared.quickAskHotkey = hotkey
         replies.onChange = { [weak self] in self?.syncMenu() }
+        lab.onStateChange = { [weak self] in
+            self?.syncMenu()
+            Task { await self?.refreshLoaded() }
+        }
+        lab.onFinished = { [weak self] report in self?.saveLabReport(report) }
         replies.onFinished = { [weak self] lostConnection in
             guard let self else { return }
             if lostConnection, !(await self.refreshModels()) { self.connection = .failed }
@@ -272,6 +283,7 @@ final class AppModel {
 
     func newConversation() {
         selection = nil
+        labModelName = nil
         draftModelName = nil
         showingModels = false
     }
@@ -279,12 +291,13 @@ final class AppModel {
     func showModels() {
         // Clearing the selection lets a click on any conversation come back from this page.
         selection = nil
+        labModelName = nil
         showingModels = true
     }
 
     /// A model can't be unloaded while it's writing a reply.
     func canUnload(_ name: String) -> Bool {
-        replies.activeModelName != name
+        replies.activeModelName != name && lab.modelName != name
     }
 
     func unload(_ name: String) async {
@@ -359,7 +372,8 @@ final class AppModel {
         selectedConversation?.ordered.last { $0.role == .assistant }
     }
 
-    var isWriting: Bool { replies.isWriting }
+    /// True while a reply or a Lab run is using the model. Only one can at a time.
+    var isWriting: Bool { replies.isWriting || lab.isRunning }
 
     /// Returns false when the message couldn't be sent, so the field keeps its text.
     @discardableResult
@@ -412,6 +426,7 @@ final class AppModel {
 
     func stop() {
         replies.stop()
+        lab.stop()
     }
 
     func copyLatestReply() {
@@ -441,7 +456,7 @@ final class AppModel {
     }
 
     func syncMenu() {
-        MenuState.shared.update(isWriting: replies.isWriting,
+        MenuState.shared.update(isWriting: isWriting,
                                 hasReply: !(latestReply?.text.isEmpty ?? true),
                                 hasSelection: selectedConversation != nil,
                                 isPinned: selectedConversation?.isPinned ?? false,

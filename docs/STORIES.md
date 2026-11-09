@@ -614,7 +614,7 @@ UX:
 - Flow: Test on a Models row -> page shows this Mac and the model's fit -> Run Test -> progress -> results. Way back: Models.
 - Surface: a page in the main window, since a run takes minutes.
 - States: only one thing runs at a time, so sending waits while a test runs.
-Status: todo
+Status: done
 
 ## Later
 Next after version one:

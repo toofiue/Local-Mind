@@ -16,6 +16,7 @@ public final class ScriptedTransport: OllamaTransport {
         var delay: Duration = .zero
         var isDown = false
         var requests: [Recorded] = []
+        var labReply: (@Sendable (String) -> String)?
     }
 
     private let state = OSAllocatedUnfairLock(initialState: State())
@@ -28,6 +29,9 @@ public final class ScriptedTransport: OllamaTransport {
     public var chatBodies: [String] { requests.filter { $0.path.hasSuffix("/api/chat") }.map(\.body) }
 
     public func setLoaded(_ names: [String]) { state.withLock { $0.loaded = names } }
+    /// Answers non-streaming Lab requests. The closure gets the request body and returns the reply text.
+    public func scriptLab(_ reply: @escaping @Sendable (String) -> String) { state.withLock { $0.labReply = reply } }
+
     public func setDown(_ down: Bool) { state.withLock { $0.isDown = down } }
 
     public func script(_ lines: [String], delay: Duration = .zero) {
@@ -74,6 +78,14 @@ public final class ScriptedTransport: OllamaTransport {
                 let model = state.installed.first { $0.name == asked?["model"] as? String }
                 return try encode(["capabilities": Array(model?.capabilities ?? []),
                                    "model_info": ["test.context_length": model?.contextLimit ?? 0]] as [String: Any])
+            }
+            if path.hasSuffix("/api/chat"), let reply = state.labReply {
+                let body = request.httpBody.flatMap { String(data: $0, encoding: .utf8) } ?? ""
+                var message: [String: Any] = ["role": "assistant", "content": reply(body)]
+                if body.contains(ModelLab.weatherToolName) {
+                    message["tool_calls"] = [["function": ["name": ModelLab.weatherToolName, "arguments": ["city": "Paris"]]]]
+                }
+                return try encode(["message": message, "done": true, "eval_count": 40, "eval_duration": 2_000_000_000, "load_duration": 3_000_000_000] as [String: Any])
             }
             if path.hasSuffix("/api/generate") {
                 let asked = (try? JSONSerialization.jsonObject(with: request.httpBody ?? Data())) as? [String: Any]

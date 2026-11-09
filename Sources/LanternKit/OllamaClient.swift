@@ -252,6 +252,51 @@ public struct OllamaClient: Sendable {
         }
     }
 
+    /// Runs one Lab test to completion, with a fixed reply limit and no visible thinking.
+    public func labComplete(model: OllamaModel, labCase: LabCase) async throws -> LabResponse {
+        var message: [String: Any] = ["role": "user", "content": labCase.prompt]
+        if let image = labCase.imageBase64 { message["images"] = [image] }
+        var body: [String: Any] = ["model": model.name, "stream": false, "messages": [message],
+                                   "options": ["num_predict": 800]]
+        if model.supportsThinking { body["think"] = false }
+        if labCase.usesTool {
+            body["tools"] = [[
+                "type": "function",
+                "function": [
+                    "name": ModelLab.weatherToolName,
+                    "description": "Get the current weather for a city",
+                    "parameters": [
+                        "type": "object",
+                        "properties": ["city": ["type": "string", "description": "The city name"]],
+                        "required": ["city"],
+                    ] as [String: Any],
+                ] as [String: Any],
+            ]] as [[String: Any]]
+        }
+        var request = URLRequest(url: base.appending(path: "api/chat"))
+        request.httpMethod = "POST"
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        // A cold load plus a very long document can take minutes.
+        request.timeoutInterval = 600
+        return Self.labResponse(from: try await transport.send(request))
+    }
+
+    static func labResponse(from data: Data) -> LabResponse {
+        let object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] ?? [:]
+        let message = object["message"] as? [String: Any] ?? [:]
+        let calls = (message["tool_calls"] as? [[String: Any]] ?? []).compactMap { entry -> LabToolCall? in
+            guard let function = entry["function"] as? [String: Any], let name = function["name"] as? String else { return nil }
+            let arguments = (function["arguments"] as? [String: Any] ?? [:]).mapValues { "\($0)" }
+            return LabToolCall(name: name, arguments: arguments)
+        }
+        let evalCount = object["eval_count"] as? Double ?? 0
+        let evalDuration = object["eval_duration"] as? Double ?? 0
+        let load = object["load_duration"] as? Double ?? 0
+        return LabResponse(text: message["content"] as? String ?? "", toolCalls: calls, loadSeconds: load / 1_000_000_000,
+                           tokensPerSecond: evalDuration > 0 ? evalCount / (evalDuration / 1_000_000_000) : 0)
+    }
+
     private func get(_ path: String) -> URLRequest {
         var request = URLRequest(url: base.appending(path: path))
         request.timeoutInterval = 5

@@ -67,6 +67,8 @@ private struct ModelRow: View {
             Text(item.size, format: .byteCount(style: .file))
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
+            Button("Test") { model.openLab(item.name) }
+                .help("Find out what this model is good at")
             if loaded != nil {
                 Button("Unload") { Task { await model.unload(item.name) } }
                     .disabled(!model.canUnload(item.name))
