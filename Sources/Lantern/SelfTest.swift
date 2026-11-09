@@ -585,6 +585,26 @@ enum SelfTest {
             check("S-034 coming back picks up installed models", model.models.map(\.name) == installed.map(\.name))
         }
 
+        // S-037 naming a model
+        do {
+            let previous = model.selection
+            defer { model.selection = previous }
+            check("S-037 without a name, the original shows", model.displayName("first:1") == "first:1")
+            model.setNickname("  Fast One ", for: "first:1")
+            check("S-037 a name is saved, trimmed", model.displayName("first:1") == "Fast One")
+            model.setNickname("first:1", for: "first:1")
+            check("S-037 the original as a name is no name", model.modelNicknames["first:1"] == nil)
+            model.setNickname("Words Only", for: "second:1")
+            model.newConversation()
+            model.draftModelName = "second:1"
+            await model.addPastedImage(SeedData.sampleImage)
+            check("S-037 messages use your name", model.attachmentNotice == "Words Only can't read images. Choose a model that can.", model.attachmentNotice ?? "nil")
+            model.attachmentNotice = nil
+            model.draftModelName = nil
+            model.setNickname("", for: "second:1")
+            check("S-037 an empty name restores the original", model.displayName("second:1") == "second:1")
+        }
+
         // Launch repair
         let stale = Message(role: .assistant, text: "Cut", modelName: "first:1", sequence: 99, state: .writing)
         model.selectedConversation?.messages.append(stale)

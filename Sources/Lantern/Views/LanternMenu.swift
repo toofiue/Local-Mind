@@ -16,7 +16,7 @@ struct LanternMenu: View {
 
     var body: some View {
         if let loaded = model.loaded.first {
-            Text("\(loaded.name) · \(loaded.memory, format: .byteCount(style: .file))")
+            Text("\(model.displayName(loaded.name)) · \(loaded.memory, format: .byteCount(style: .file))")
         } else {
             Text("No Model Loaded")
         }

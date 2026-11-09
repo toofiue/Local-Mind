@@ -572,7 +572,7 @@ UX:
 - Flow: pencil on a Models row -> field -> Return saves. Way back: Escape keeps the old name; saving an empty name restores the original.
 - Surface: inline in the row.
 - Words: "Name This Model"; field label "Model name".
-Status: todo
+Status: done
 
 ### S-038 Change the model in Quick Ask
 As the user, I switch models from the Quick Ask panel.

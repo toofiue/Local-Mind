@@ -50,7 +50,7 @@ extension AppModel {
     /// Why the current model can't take images, or nil if it can.
     var imageRefusal: String? {
         guard let model = models.first(where: { $0.name == currentModelName }), !model.supportsImages else { return nil }
-        return "\(model.name) can't read images. Choose a model that can."
+        return "\(displayName(model.name)) can't read images. Choose a model that can."
     }
 
     func removeAttachment(_ id: UUID) {

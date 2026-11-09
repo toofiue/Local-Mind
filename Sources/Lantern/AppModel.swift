@@ -86,6 +86,10 @@ final class AppModel {
     }
     /// Why the last shortcut couldn't be used.
     var hotkeyMessage: String?
+    /// Names you've given models, by their Ollama name. Test and snapshot runs leave them alone.
+    var modelNicknames: [String: String] = AppModel.savedNicknames {
+        didSet { if !Store.isOverridden { UserDefaults.standard.set(modelNicknames, forKey: "modelNicknames") } }
+    }
     /// The model chosen in Settings. Empty means the last one used.
     var chosenDefaultModel: String = UserDefaults.standard.string(forKey: "defaultModel") ?? "" {
         didSet { if !Store.isOverridden { UserDefaults.standard.set(chosenDefaultModel, forKey: "defaultModel") } }
@@ -124,6 +128,22 @@ final class AppModel {
     }
 
     var context: ModelContext { container.mainContext }
+
+    private static var savedNicknames: [String: String] {
+        guard !Store.isOverridden else { return [:] }
+        return UserDefaults.standard.dictionary(forKey: "modelNicknames") as? [String: String] ?? [:]
+    }
+
+    /// The name to show for a model: yours if you've set one.
+    func displayName(_ model: String) -> String {
+        modelNicknames[model] ?? model
+    }
+
+    /// An empty name restores the original.
+    func setNickname(_ nickname: String, for model: String) {
+        let trimmed = nickname.trimmingCharacters(in: .whitespacesAndNewlines)
+        modelNicknames[model] = trimmed.isEmpty || trimmed == model ? nil : trimmed
+    }
 
     private static var savedHotkey: Hotkey {
         guard let data = UserDefaults.standard.data(forKey: "quickAskHotkey"),

@@ -125,7 +125,7 @@ struct QuickAskView: View {
                                 .allowsHitTesting(false)
                         }
                     }
-                Text(quick.conversation?.modelName ?? model.defaultModelName ?? "No Models")
+                Text((quick.conversation?.modelName ?? model.defaultModelName).map(model.displayName) ?? "No Models")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 if let conversation = quick.conversation, model.replies.isWriting(in: conversation) {

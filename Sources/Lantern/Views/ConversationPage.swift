@@ -168,8 +168,14 @@ private struct ModelPickerButton: View {
         Button {
             model.showingModelPicker.toggle()
         } label: {
-            Label(model.currentModelName ?? "No Models", systemImage: "cpu")
-                .labelStyle(.titleAndIcon)
+            HStack(spacing: Space.xs) {
+                Image(systemName: "cpu")
+                if let name = model.currentModelName {
+                    ModelNameLabel(name: name)
+                } else {
+                    Text("No Models")
+                }
+            }
         }
         .disabled(model.isWriting || model.models.isEmpty)
         .help("Choose which model writes the next reply (⇧⌘M)")
@@ -184,13 +190,19 @@ private struct ModelPicker: View {
     @State private var highlighted: String?
     @FocusState private var isFocused: Bool
 
+    /// Rows are 24 tall, plus 12 for a renamed model's second line.
+    private var pickerHeight: CGFloat {
+        let shown = model.models.prefix(8)
+        return CGFloat(shown.count) * 24 + CGFloat(shown.filter { model.modelNicknames[$0.name] != nil }.count) * 12 + 24
+    }
+
     var body: some View {
         List(model.models, selection: $highlighted) { item in
             HStack(spacing: Space.sm) {
                 Image(systemName: "checkmark")
                     .opacity(item.name == model.currentModelName ? 1 : 0)
                     .accessibilityHidden(true)
-                Text(item.name)
+                ModelNameLabel(name: item.name)
                 Spacer(minLength: Space.md)
                 Text(item.size, format: .byteCount(style: .file))
                     .foregroundStyle(.secondary)
@@ -204,7 +216,7 @@ private struct ModelPicker: View {
             if let highlighted { model.chooseModel(highlighted) }
             return .handled
         }
-        .frame(width: 320, height: CGFloat(min(model.models.count, 8)) * 24 + 24) // grid: ok rows are 24 tall
+        .frame(width: 320, height: pickerHeight) // grid: ok computed from the rows
         .onAppear {
             highlighted = model.currentModelName
             isFocused = true

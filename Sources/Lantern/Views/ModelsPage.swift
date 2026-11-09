@@ -20,15 +20,40 @@ private struct ModelRow: View {
     let item: OllamaModel
     let loaded: LoadedModel?
     @Environment(AppModel.self) private var model
+    @State private var isNaming = false
+    @State private var draft = ""
+    @FocusState private var fieldIsFocused: Bool
 
     var body: some View {
         HStack(spacing: Space.lg) {
             VStack(alignment: .leading, spacing: Space.xs) {
-                Text(item.name)
+                if isNaming {
+                    TextField("Model name", text: $draft, prompt: Text(item.name))
+                        .labelsHidden()
+                        .focused($fieldIsFocused)
+                        .onSubmit { save() }
+                        .onExitCommand { isNaming = false }
+                        .frame(maxWidth: Layout.chip)
+                        .task {
+                            // A list row can't take focus until it has been laid out.
+                            try? await Task.sleep(for: .milliseconds(50))
+                            fieldIsFocused = true
+                        }
+                } else {
+                    ModelNameLabel(name: item.name)
+                }
                 Text(item.capabilitySummary)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            Button("Name This Model", systemImage: "pencil") {
+                draft = model.modelNicknames[item.name] ?? ""
+                isNaming = true
+            }
+            .labelStyle(.iconOnly)
+            .buttonStyle(.borderless)
+            .foregroundStyle(.secondary)
+            .help("Give this model your own name")
             Spacer(minLength: Space.lg)
             if let loaded {
                 Label {
@@ -50,5 +75,10 @@ private struct ModelRow: View {
             }
         }
         .padding(.vertical, Space.xs)
+    }
+
+    private func save() {
+        model.setNickname(draft, for: item.name)
+        isNaming = false
     }
 }

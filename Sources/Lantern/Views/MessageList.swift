@@ -135,7 +135,7 @@ private struct ReplyRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.sm) {
-            Text(message.modelName)
+            Text(model.displayName(message.modelName))
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -184,7 +184,7 @@ private struct ReplyRow: View {
 
     private var progressText: String {
         if case .loading(let name) = model.replies.phase, model.replies.activeReplyID == message.uid {
-            return "Loading \(name)…"
+            return "Loading \(model.displayName(name))…"
         }
         return "Writing reply…"
     }
