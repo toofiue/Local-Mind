@@ -423,7 +423,13 @@ Acceptance:
 - [unit] Loaded state and memory size are read from `/api/ps`.
 - [snap] Rows show name, disk size, capabilities, and a Loaded badge with memory used.
 - [self] The page refreshes within two seconds of a model loading or unloading.
-Status: todo
+UX:
+- Flow: Models at the bottom of the sidebar, or Conversation > Models (⇧⌘L) -> page lists every installed model. Way back: click any conversation.
+- Surface: sidebar page (a place people come back to).
+- States: the loaded model shows a "Loaded" badge and its memory; the page refreshes every two seconds while it's open.
+- Words: "Models", "Loaded", capabilities as "Images, Audio, Thinking, Tools".
+- Access: the badge uses a word and an icon, not color alone; VoiceOver reads each row's name, size, and state.
+Status: done
 
 ### S-028 Unload a model
 As the user, I click Unload on the Models page to free its memory.
@@ -433,6 +439,12 @@ Acceptance:
 - [unit] Unload sends `keep_alive: 0` for that model.
 - [self] The Loaded badge disappears after unloading.
 - [self] While a reply is generating from that model, Unload is disabled.
+UX:
+- Flow: Unload on a loaded row -> badge disappears when the memory is free. Way back: the next message loads the model again.
+- Surface: inline button in the row (acts on one thing on screen).
+- States: unavailable while that model is writing a reply, with a tooltip saying why; only loaded rows show it.
+- Words: "Unload"; tooltip "Free the memory this model is using".
+- Access: reachable with Tab; VoiceOver reads "Unload <model name>".
 Status: todo
 
 ### S-029 Unload models when idle
@@ -442,6 +454,12 @@ Depends: S-003
 Acceptance:
 - [unit] Each chat request sends the `keep_alive` value from Settings.
 - [snap] Settings offers 1, 5, 15, and 30 minutes. The default is 5 minutes.
+UX:
+- Flow: Settings > Models -> choose a time -> applies to the next reply.
+- Surface: Settings tab, one picker.
+- States: default 5 minutes; a model already loaded keeps its old timer until its next reply.
+- Words: "Keep a model loaded for" with "1 minute", "5 minutes", "15 minutes", "30 minutes", and the note "After its last reply. Models use a lot of memory while loaded."
+- Access: standard picker.
 Status: todo
 
 ### S-030 Check the model from the menu bar
@@ -451,6 +469,12 @@ Depends: S-021, S-028
 Acceptance:
 - [snap] The menu shows the loaded model and its memory, or "No model loaded".
 - [self] Ask opens the quick panel. Unload frees the model.
+UX:
+- Flow: click the lightbulb in the menu bar -> menu shows the loaded model -> Quick Ask, Unload, Open Lantern, or Quit. Way back: click away.
+- Surface: menu bar item with a menu. Everything in it is also in the main window, and Settings > Models can hide it.
+- States: the bulb is filled while a model is loaded; "No Model Loaded" with Unload unavailable otherwise.
+- Words: "gemma4:12b-mlx · 7.68 GB", "Quick Ask", "Unload", "Open Lantern", "Quit Lantern"; Settings "Show Lantern in the menu bar".
+- Access: standard menu, works with the keyboard.
 Status: todo
 
 ## M6 Polish

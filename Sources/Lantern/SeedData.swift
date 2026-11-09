@@ -99,6 +99,7 @@ enum SeedData {
             return
         }
         model.models = models
+        model.loaded = [LoadedModel(name: "gemma4:12b-mlx", memory: 7_680_999_368)]
         model.connection = .connected
         let context = model.container.mainContext
         guard ((try? context.fetchCount(FetchDescriptor<Conversation>())) ?? 0) == 0 else { return }

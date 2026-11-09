@@ -49,6 +49,8 @@ struct LanternApp: App {
                 Button("Choose Model…") { model.showingModelPicker.toggle() }
                     .keyboardShortcut("m", modifiers: [.command, .shift])
                     .disabled(menu.isWriting)
+                Button("Models") { model.showModels() }
+                    .keyboardShortcut("l", modifiers: [.command, .shift])
                 Divider()
                 Button("Stop") { model.stop() }
                     .keyboardShortcut(".")

@@ -37,6 +37,7 @@ final class AppModel {
     /// nil means a new conversation that isn't saved yet.
     var selection: UUID? {
         didSet {
+            showingModels = false
             selectedConversation = conversation(with: selection)
             syncMenu()
             focusRequest += 1
@@ -46,6 +47,10 @@ final class AppModel {
 
     var connection: Connection = .connecting
     var models: [OllamaModel] = []
+    /// The models in memory right now.
+    var loaded: [LoadedModel] = []
+    /// True while the detail area shows the Models page.
+    var showingModels = false
     var draftModelName: String?
     let replies = ReplyWriter()
     let quickAsk = QuickAskState()
@@ -90,6 +95,7 @@ final class AppModel {
             if lostConnection, !(await self.refreshModels()) { self.connection = .failed }
             self.syncMenu()
             self.focusRequest += 1
+            await self.refreshLoaded()
         }
     }
 
@@ -187,6 +193,25 @@ final class AppModel {
 
     func newConversation() {
         selection = nil
+        showingModels = false
+    }
+
+    func showModels() {
+        // Clearing the selection lets a click on any conversation come back from this page.
+        selection = nil
+        showingModels = true
+    }
+
+    func refreshLoaded() async {
+        if let current = try? await client.loadedModels() { loaded = current }
+    }
+
+    /// Keeps the loaded state current for the Models page and the menu bar.
+    func monitorLoadedModels() async {
+        while !Task.isCancelled {
+            await refreshLoaded()
+            try? await Task.sleep(for: showingModels ? .seconds(2) : .seconds(5))
+        }
     }
 
     func togglePin(_ conversation: Conversation? = nil) {

@@ -10,7 +10,11 @@ struct ContentView: View {
             ConversationSidebar()
                 .navigationSplitViewColumnWidth(min: 200, ideal: 260)
         } detail: {
-            ConversationPage()
+            if model.showingModels {
+                ModelsPage()
+            } else {
+                ConversationPage()
+            }
         }
         .task {
             SeedData.insertIfRequested(into: model)
@@ -24,6 +28,7 @@ struct ContentView: View {
             GlobalHotKey.shared.register()
             model.repairInterruptedReplies()
             await model.connect()
+            await model.monitorLoadedModels()
         }
     }
 }

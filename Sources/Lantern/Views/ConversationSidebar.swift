@@ -38,6 +38,18 @@ struct ConversationSidebar: View {
         .searchable(text: $model.searchText, placement: .sidebar, prompt: "Search")
         .searchFocused($isSearching)
         .onChange(of: model.searchRequest) { isSearching = true }
+        .safeAreaInset(edge: .bottom) {
+            Button { model.showModels() } label: {
+                Label("Models", systemImage: "cpu")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(model.showingModels ? Palette.accentText : .secondary)
+            .padding(.horizontal, Space.lg)
+            .padding(.vertical, Space.md)
+            .help("See installed models and what's using memory (⇧⌘L)")
+        }
         .onDeleteCommand { model.requestDelete() }
         .confirmationDialog(
             "Delete “\(model.pendingDeletion?.title ?? "")”?",

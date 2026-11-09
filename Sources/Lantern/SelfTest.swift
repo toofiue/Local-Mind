@@ -475,6 +475,32 @@ enum SelfTest {
             check("S-026 the bottom stays put", model.selection == order.last)
         }
 
+        // S-027 the Models page
+        do {
+            let previous = model.selection
+            defer { model.selection = previous }
+            transport.setLoaded(["first:1"])
+            await model.refreshLoaded()
+            check("S-027 the loaded model is known", model.loaded.map(\.name) == ["first:1"])
+            model.showModels()
+            check("S-027 the page opens", model.showingModels && model.selection == nil)
+            model.newConversation()
+            check("S-027 New Conversation leaves it", !model.showingModels)
+            model.showModels()
+            if let previous { model.selection = previous }
+            check("S-027 picking a conversation leaves it", !model.showingModels)
+            transport.setLoaded([])
+            await model.refreshLoaded()
+            check("S-027 an unloaded model drops off", model.loaded.isEmpty)
+            model.newConversation()
+            transport.setLoaded(["first:1"])
+            transport.script(ScriptedTransport.reply(text: ["Ok"]))
+            model.send("Refresh check")
+            await model.waitForReply()
+            check("S-027 finishing a reply refreshes the state", !model.loaded.isEmpty)
+            transport.setLoaded([])
+        }
+
         // Launch repair
         let stale = Message(role: .assistant, text: "Cut", modelName: "first:1", sequence: 99, state: .writing)
         model.selectedConversation?.messages.append(stale)
