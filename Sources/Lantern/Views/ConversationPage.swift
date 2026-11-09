@@ -176,7 +176,7 @@ private struct ModelPickerButton: View {
             HStack(spacing: Space.xs) {
                 Image(systemName: "cpu")
                 if let name = model.currentModelName {
-                    ModelNameLabel(name: name)
+                    ModelNameLabel(name: name, isCompact: true)
                 } else {
                     Text("No Models")
                 }
