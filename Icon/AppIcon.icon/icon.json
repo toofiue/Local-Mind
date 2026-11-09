@@ -1,15 +1,16 @@
 {
   "fill" : {
-    "automatic-gradient" : "srgb:0.20000,0.42000,0.96000,1.00000"
+    "automatic-gradient" : "srgb:0.09000,0.14000,0.34000,1.00000"
   },
   "groups" : [
     {
       "layers" : [
+        { "glass" : true, "image-name" : "flame.svg", "name" : "flame" },
         { "glass" : true, "image-name" : "front.svg", "name" : "front" },
-        { "glass" : true, "image-name" : "back.svg", "name" : "back", "opacity" : 0.6 }
+        { "glass" : true, "image-name" : "back.svg", "name" : "back", "opacity" : 0.45 }
       ],
       "shadow" : { "kind" : "neutral", "opacity" : 0.5 },
-      "translucency" : { "enabled" : true, "value" : 0.5 }
+      "translucency" : { "enabled" : true, "value" : 0.4 }
     }
   ],
   "supported-platforms" : { "squares" : [ "macOS" ] }

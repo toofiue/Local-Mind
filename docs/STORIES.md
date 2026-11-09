@@ -549,7 +549,7 @@ Screens: menu-bar
 Acceptance:
 - [snap] The app icon renders in light, dark, and tinted looks.
 - [snap] The menu bar icon is a template image that adapts to the bar.
-Status: todo
+Status: done
 
 ## Later
 Next after version one:
