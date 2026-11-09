@@ -11,18 +11,16 @@ struct MemoryWarningView: View {
         VStack(alignment: .leading, spacing: Space.sm) {
             Label(warning.message, systemImage: "memorychip")
                 .font(.callout)
-                .fixedSize(horizontal: false, vertical: true)
+                .foregroundStyle(.secondary)
             if !warning.appsSummary.isEmpty {
                 Text(warning.appsSummary)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
             }
             HStack(spacing: Space.sm) {
                 Button("Check Again") { model.recheckMemory() }
                 Button(actionTitle, action: onContinue)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
