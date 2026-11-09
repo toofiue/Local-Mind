@@ -15,6 +15,16 @@ enum SeedData {
 
     static let attached = "What is in this screenshot?"
 
+    static var sampleBenchmarkReport: BenchmarkReport {
+        func suite(_ suite: BenchmarkSuite, _ passed: Int, _ failed: Int) -> BenchmarkSuiteResult {
+            let right = (0..<passed).map { BenchmarkItemResult(id: "\(suite.rawValue)-\($0)", passed: true, reply: "") }
+            let wrong = (0..<failed).map { BenchmarkItemResult(id: "\(suite.rawValue)-x\($0)", passed: false, reply: "The answer is 41.", detail: "Expected 42") }
+            return BenchmarkSuiteResult(suite: suite, items: right + wrong, planned: passed + failed)
+        }
+        return BenchmarkReport(modelName: "gemma4:12b-mlx", date: .now, seconds: 900, size: .sample50, wasStopped: false,
+                               suites: [suite(.gsm8k, 43, 7), suite(.ifeval, 36, 14)])
+    }
+
     static var sampleLabReport: LabReport {
         func row(_ id: String, _ area: LabArea, _ name: String, _ prompt: String, _ expected: String, _ reply: String, _ passed: Bool, _ tokens: Int? = nil) -> LabCaseResult {
             LabCaseResult(id: id, area: area, name: name, reply: reply, passed: passed, documentTokens: tokens, prompt: prompt, expected: expected)

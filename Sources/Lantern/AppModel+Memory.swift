@@ -2,7 +2,7 @@ import Foundation
 import LanternKit
 
 struct MemoryWarning: Equatable {
-    enum Surface { case main, quickAsk, lab }
+    enum Surface { case main, quickAsk, lab, benchmark }
 
     let modelName: String
     let surface: Surface

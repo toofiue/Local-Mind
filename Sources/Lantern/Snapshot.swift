@@ -18,6 +18,7 @@ enum SnapshotPage: String, CaseIterable {
     case memoryWarning = "memory-warning"
     case modelLab = "model-lab"
     case modelLabIntro = "model-lab-intro"
+    case modelBenchmark = "model-benchmark"
 
     func apply(to model: AppModel) {
         model.draftAttachments = self == .chatAttachments ? SeedData.draftAttachments : []
@@ -28,7 +29,7 @@ enum SnapshotPage: String, CaseIterable {
         switch self {
         case .chat, .offline, .modelPicker, .sidebarSearch, .quickPanel, .memoryWarning:
             model.selection = SeedData.conversation(titled: SeedData.formatted, in: model)?.uid
-        case .chatEmpty, .models, .noModels, .modelLab, .modelLabIntro:
+        case .chatEmpty, .models, .noModels, .modelLab, .modelLabIntro, .modelBenchmark:
             model.selection = nil
         case .chatAttachments:
             model.selection = SeedData.conversation(titled: SeedData.attached, in: model)?.uid
@@ -41,8 +42,12 @@ enum SnapshotPage: String, CaseIterable {
         }
         if self == .modelPicker { model.showingModelPicker = true }
         model.showingModels = self == .models
-        model.labModelName = self == .modelLab ? "gemma4:12b-mlx" : self == .modelLabIntro ? "gemma4:latest" : nil
-        if self == .modelLab { model.labReports["gemma4:12b-mlx"] = SeedData.sampleLabReport }
+        model.labModelName = self == .modelLab || self == .modelBenchmark ? "gemma4:12b-mlx" : self == .modelLabIntro ? "gemma4:latest" : nil
+        model.labTab = self == .modelBenchmark ? .benchmark : .quickCheck
+        if self == .modelLab || self == .modelBenchmark {
+            model.labReports["gemma4:12b-mlx"] = SeedData.sampleLabReport
+            model.benchmarkReports["gemma4:12b-mlx"] = SeedData.sampleBenchmarkReport
+        }
         model.memoryWarning = self != .memoryWarning ? nil : MemoryWarning(
             modelName: "gemma4:latest", surface: .main,
             message: "gemma4:latest needs about 9.93 GB, and 6.2 GB is free. Close other apps to keep your Mac responsive.",

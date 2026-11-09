@@ -7,6 +7,7 @@ extension AppModel {
         memoryWarning = nil
         selection = nil
         showingModels = false
+        labTab = .quickCheck
         labModelName = modelName
     }
 

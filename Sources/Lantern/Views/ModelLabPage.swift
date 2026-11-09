@@ -18,33 +18,19 @@ struct ModelLabPage: View {
     }
 
     var body: some View {
+        @Bindable var model = model
         Form {
-            Section { header }
-
-            if let warning = model.memoryWarning, warning.surface == .lab {
-                Section {
-                    MemoryWarningView(warning: warning, actionTitle: "Run Anyway") {
-                        model.runLab(name, skipMemoryCheck: true)
-                    }
-                }
-            }
-
-            if isRunningHere {
-                Section("Testing") { progress }
-            } else if let report {
-                LabResults(report: report)
-            } else {
-                Section("What Gets Tested") {
-                    ForEach(areas) { LabAreaIntro(area: $0) }
-                }
-            }
-
             Section {
-                Text("This is a quick check of this model on this Mac, using a few tests per area. It's modeled on published benchmarks, but its scores can't be compared with their published numbers.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-            } header: {
-                Text("About These Tests")
+                Picker("View", selection: $model.labTab) {
+                    ForEach(LabTab.allCases) { Text($0.rawValue).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+            }
+
+            switch model.labTab {
+            case .quickCheck: quickCheck
+            case .benchmark: BenchmarkSections(name: name)
             }
         }
         .formStyle(.grouped)
@@ -55,7 +41,41 @@ struct ModelLabPage: View {
                     .help("Back to all models")
             }
         }
-        .task { model.loadLabReport(name) }
+        .task {
+            model.loadLabReport(name)
+            model.loadBenchmarkReport(name)
+        }
+    }
+
+    @ViewBuilder
+    private var quickCheck: some View {
+        Section { header }
+
+        if let warning = model.memoryWarning, warning.surface == .lab {
+            Section {
+                MemoryWarningView(warning: warning, actionTitle: "Run Anyway") {
+                    model.runLab(name, skipMemoryCheck: true)
+                }
+            }
+        }
+
+        if isRunningHere {
+            Section("Testing") { progress }
+        } else if let report {
+            LabResults(report: report)
+        } else {
+            Section("What Gets Tested") {
+                ForEach(areas) { LabAreaIntro(area: $0) }
+            }
+        }
+
+        Section {
+            Text("A few tests per area, modeled on published benchmarks, so these scores can't be compared with their published numbers. For that, use Full Benchmark.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        } header: {
+            Text("About These Tests")
+        }
     }
 
     private var header: some View {
@@ -81,7 +101,7 @@ struct ModelLabPage: View {
             if isRunningHere {
                 Button("Stop") { model.lab.stop() }
             } else {
-                Button(report == nil ? "Run Test" : "Run Again") { model.runLab(name) }
+                Button(report == nil ? "Run Quick Check" : "Run Again") { model.runLab(name) }
                     .buttonStyle(.borderedProminent)
                     .disabled(model.isWriting || model.connection != .connected)
             }

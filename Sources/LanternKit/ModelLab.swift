@@ -134,6 +134,11 @@ public struct LabCase: Sendable, Identifiable {
     public let grade: @Sendable (LabResponse) -> Bool
 
     public var shownPrompt: String { promptSummary ?? prompt }
+
+    /// A bare request for a benchmark question, which is graded separately.
+    public static func plain(id: String, prompt: String) -> LabCase {
+        LabCase(id: id, area: .reasoning, name: id, prompt: prompt, expected: "", grade: { _ in true })
+    }
 }
 
 enum LabGrade {

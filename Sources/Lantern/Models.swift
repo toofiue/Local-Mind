@@ -100,3 +100,18 @@ final class ModelTestRun {
         self.payload = payload
     }
 }
+
+/// One finished Full Benchmark run. The report is stored whole, as JSON.
+@Model
+final class BenchmarkRun {
+    var uid: UUID = UUID()
+    var modelName: String = ""
+    var date: Date = Date.now
+    var payload: Data = Data()
+
+    init(modelName: String, date: Date, payload: Data) {
+        self.modelName = modelName
+        self.date = date
+        self.payload = payload
+    }
+}

@@ -31,6 +31,9 @@ enum SelfTest {
             if let live = ProcessInfo.processInfo.environment["APP_SELFTEST_LIVE"], !live.isEmpty {
                 await runLive(model, modelName: live)
             }
+            if let live = ProcessInfo.processInfo.environment["APP_BENCHMARK_LIVE"], !live.isEmpty {
+                await runBenchmarkLive(model, modelName: live)
+            }
             print(failures == 0 ? "SELFTEST PASS \(count) checks" : "SELFTEST FAIL \(failures) of \(count) checks")
             finish(code: failures == 0 ? 0 : 1)
         }
@@ -137,7 +140,7 @@ enum SelfTest {
         // S-005 persistence
         let uid = model.selectedConversation?.uid
         let messageCount = model.selectedConversation?.messages.count ?? 0
-        let reopened = try? ModelContainer(for: Conversation.self, Message.self, Attachment.self, ModelTestRun.self,
+        let reopened = try? ModelContainer(for: Conversation.self, Message.self, Attachment.self, ModelTestRun.self, BenchmarkRun.self,
                                            configurations: ModelConfiguration(url: Store.url))
         let saved = (try? reopened?.mainContext.fetch(FetchDescriptor<Conversation>())) ?? []
         let found = saved.first { $0.uid == uid }
@@ -237,7 +240,7 @@ enum SelfTest {
             let question = model.selectedConversation?.ordered.first
             check("S-016 the image is stored with its message", question?.attachments.first?.imageData?.isEmpty == false)
 
-            let reopened = try? ModelContainer(for: Conversation.self, Message.self, Attachment.self, ModelTestRun.self,
+            let reopened = try? ModelContainer(for: Conversation.self, Message.self, Attachment.self, ModelTestRun.self, BenchmarkRun.self,
                                                configurations: ModelConfiguration(url: Store.url))
             let saved = (try? reopened?.mainContext.fetch(FetchDescriptor<Attachment>())) ?? []
             check("S-016 images survive reopening the store", saved.contains { $0.imageData?.isEmpty == false })
@@ -701,6 +704,66 @@ enum SelfTest {
             model.newConversation()
         }
 
+        // S-044 the Full Benchmark
+        do {
+            let previous = model.selection
+            defer {
+                model.selection = previous
+                model.benchmarkLibrary.fixture = nil
+            }
+            let gsm = #"{"question":"Two plus two?","answer":"It is 4.\n#### 4"}"# + "\n" + #"{"question":"Three plus three?","answer":"It is 6.\n#### 6"}"#
+            let ifeval = #"{"key":1,"prompt":"Say hi without commas.","instruction_id_list":["punctuation:no_comma"],"kwargs":[{}]}"#
+            let humaneval = #"{"task_id":"HumanEval/0","prompt":"def f(x):\n","entry_point":"f","canonical_solution":"    return x\n","test":"def check(c):\n    assert c(2) == 2\n"}"#
+            model.benchmarkLibrary.fixture = { suite in
+                switch suite {
+                case .gsm8k: Data(gsm.utf8)
+                case .ifeval: Data(ifeval.utf8)
+                case .humaneval: Data(humaneval.utf8)
+                }
+            }
+            check("S-044 the sets count as downloaded", model.benchmarksAreDownloaded)
+            check("S-044 HumanEval is left out unless asked for", !model.benchmarkSuites(includingCode: false).contains(.humaneval))
+            transport.scriptLab { body in
+                if body.contains("Two plus two") { return "Answer: 4" }
+                if body.contains("Three plus three") { return "Answer: 7" }
+                if body.contains("without commas") { return "Hi there friend" }
+                return "```python\ndef f(x):\n    return x\n```"
+            }
+            model.runBenchmark("first:1", size: .sample50, includingCode: true)
+            check("S-044 a run starts", model.benchmark.modelName == "first:1" && model.isWriting)
+            await model.benchmark.wait()
+            let report = model.benchmarkReports["first:1"]
+            let suites = report?.suites ?? []
+            check("S-044 GSM8K is scored", suites.first { $0.suite == .gsm8k }?.passed == 1)
+            check("S-044 IFEval is scored", suites.first { $0.suite == .ifeval }?.passed == 1)
+            check("S-044 HumanEval runs the code for real", suites.first { $0.suite == .humaneval }?.passed == 1)
+            check("S-044 a sample isn't called complete", suites.first { $0.suite == .gsm8k }?.isComplete == false)
+            check("S-044 it can be used again", !model.isWriting)
+            model.benchmarkReports["first:1"] = nil
+            model.loadBenchmarkReport("first:1")
+            check("S-044 the report is saved", model.benchmarkReports["first:1"]?.suites.count == 3)
+        }
+
+        // S-044 what the sandbox allows
+        do {
+            let home = NSHomeDirectory()
+            let probe = home + "/lantern-sandbox-probe.txt"
+            func run(_ code: String, timeout: Double = 10) async -> Bool {
+                await Task.detached { CodeSandbox.passes(code, timeout: timeout) }.value
+            }
+            check("S-044 Python is available", CodeSandbox.isAvailable)
+            check("S-044 correct code passes", await run("assert sum(i * i for i in range(4)) == 14"))
+            check("S-044 a failed assertion fails", await !run("assert 1 == 2"))
+            check("S-044 network is blocked", await run("import socket\ntry:\n    socket.create_connection(('1.1.1.1', 53), timeout=2)\nexcept PermissionError:\n    raise SystemExit(0)\nraise SystemExit(1)"))
+            check("S-044 writing a file is blocked", await run("try:\n    open('\(probe)', 'w')\nexcept PermissionError:\n    raise SystemExit(0)\nraise SystemExit(1)"))
+            check("S-044 and nothing was written", !FileManager.default.fileExists(atPath: probe))
+            check("S-044 personal files can't be read", await run("import os\ntry:\n    os.listdir('\(home)/Documents')\nexcept PermissionError:\n    raise SystemExit(0)\nraise SystemExit(1)"))
+            check("S-044 new processes are blocked", await run("import os\ntry:\n    os.fork()\nexcept PermissionError:\n    raise SystemExit(0)\nos._exit(1)"))
+            let started = ContinuousClock.now
+            check("S-044 endless code is stopped", await !run("while True:\n    pass", timeout: 1.5))
+            check("S-044 and stopped on time", started.duration(to: .now) < .seconds(5))
+        }
+
         // Launch repair
         let stale = Message(role: .assistant, text: "Cut", modelName: "first:1", sequence: 99, state: .writing)
         model.selectedConversation?.messages.append(stale)
@@ -712,6 +775,50 @@ enum SelfTest {
         Clipboard.copy("copy check")
         check("S-009 Copy reaches the clipboard", NSPasteboard.general.string(forType: .string) == "copy check")
         if let clipboard { Clipboard.copy(clipboard) }
+    }
+
+    /// The real published files, then a few real questions from each through a real model.
+    private static func runBenchmarkLive(_ model: AppModel, modelName: String) async {
+        model.client = OllamaClient()
+        await model.connect()
+        await model.downloadBenchmarks()
+        check("BENCH the official files download and pass their checksums", !model.benchmarkDownloadFailed && model.benchmarksAreDownloaded)
+        for suite in BenchmarkSuite.allCases {
+            check("BENCH \(suite.title) has every question", model.benchmarkLibrary.items(suite).count == suite.itemCount, "\(model.benchmarkLibrary.items(suite).count)")
+        }
+        let known = "keywords:existence keywords:frequency keywords:forbidden_words keywords:letter_frequency language:response_language length_constraints:number_sentences length_constraints:number_paragraphs length_constraints:number_words length_constraints:nth_paragraph_first_word detectable_content:number_placeholders detectable_content:postscript detectable_format:number_bullet_lists detectable_format:constrained_response detectable_format:number_highlighted_sections detectable_format:multiple_sections detectable_format:json_format detectable_format:title combination:two_responses combination:repeat_prompt startend:end_checker startend:quotation change_case:capital_word_frequency change_case:english_capital change_case:english_lowercase punctuation:no_comma"
+        let knownRules = Set(known.split(separator: " ").map(String.init))
+        var usedRules = Set<String>()
+        for item in model.benchmarkLibrary.items(.ifeval) {
+            if case .ifeval(let rules) = item.kind { usedRules.formUnion(rules.map(\.id)) }
+        }
+        check("BENCH every IFEval rule in the file is implemented", usedRules == knownRules, usedRules.symmetricDifference(knownRules).joined(separator: ", "))
+
+        var solved = 0
+        var failedTasks: [String] = []
+        let lines = String(decoding: model.benchmarkLibrary.rawData(.humaneval) ?? Data(), as: UTF8.self).split(whereSeparator: \.isNewline)
+        for line in lines {
+            guard let task = (try? JSONSerialization.jsonObject(with: Data(line.utf8))) as? [String: Any],
+                  let prompt = task["prompt"] as? String, let solution = task["canonical_solution"] as? String,
+                  let test = task["test"] as? String, let entry = task["entry_point"] as? String,
+                  let id = task["task_id"] as? String else { continue }
+            let program = BenchmarkGrader.humanEvalProgram(functionPrompt: prompt, test: test, entryPoint: entry, reply: solution)
+            if await Task.detached(operation: { CodeSandbox.passes(program) }).value { solved += 1 } else { failedTasks.append(id) }
+        }
+        print("BENCH reference solutions passing in the sandbox: \(solved) of \(lines.count) \(failedTasks.prefix(8))")
+        check("BENCH every reference solution passes in the sandbox", solved == lines.count, failedTasks.joined(separator: ", "))
+
+        guard let installed = model.models.first(where: { $0.name == modelName }) else { return check("BENCH model", false) }
+        let plan = BenchmarkSuite.allCases.map { suite in
+            (suite: suite, items: BenchmarkLoader.sample(model.benchmarkLibrary.items(suite), count: 8))
+        }
+        model.benchmark.start(installed, plan: plan, size: .sample50, client: model.client)
+        await model.benchmark.wait()
+        for result in model.benchmarkReports[modelName]?.suites ?? [] {
+            print("BENCH \(result.suite.title): \(result.passed) of \(result.items.count)")
+            for item in result.items.filter({ !$0.passed }).prefix(4) { print("BENCH   fail \(item.id): \(item.detail ?? "") | \(item.reply.prefix(70).replacingOccurrences(of: "\n", with: " / "))") }
+        }
+        check("BENCH a real run finishes", model.benchmarkReports[modelName]?.suites.count == 3 && !model.isWriting)
     }
 
     /// One real round trip through Ollama. Unloads the model afterwards.

@@ -651,6 +651,23 @@ UX:
 - Words: results say plainly that this is a quick check, and that scores can't be compared with published benchmark numbers.
 Status: done
 
+### S-044 Run the real published benchmarks
+As the user, I run a model through the actual GSM8K, IFEval, and HumanEval question sets and get a score I can trust.
+Screens: model-lab
+Depends: S-040
+Acceptance:
+- [unit] Each set's published format is read correctly, and a file that isn't the exact expected one is rejected.
+- [unit] All 25 IFEval instruction types are checked, and strict scoring needs every rule met.
+- [unit] Samples pick the same questions for every model, and report a margin of error.
+- [self] Model-written code runs with no network, no file writes, no new processes, and no access to personal files, and is killed if it runs too long.
+- [self] Only complete sets are described as comparable to published scores.
+- [manual] A real sample finishes on a real model.
+UX:
+- Flow: Test page -> Download -> choose how many questions -> Run Benchmark -> results per set. Way back: Stop keeps what's scored so far.
+- Surface: a section on the Test page.
+- States: HumanEval is off until you turn it on, because it runs code a model wrote.
+Status: done
+
 ## Later
 Next after version one:
 - Projects with their own instructions and files

@@ -57,6 +57,13 @@ final class AppModel {
     let replies = ReplyWriter()
     let quickAsk = QuickAskState()
     let lab = ModelLabRunner()
+    let benchmark = BenchmarkRunner()
+    let benchmarkLibrary = BenchmarkLibrary()
+    var benchmarkReports: [String: BenchmarkReport] = [:]
+    /// Which tab the Test page is showing.
+    var labTab: LabTab = .quickCheck
+    var isDownloadingBenchmarks = false
+    var benchmarkDownloadFailed = false
     /// The model whose Lab page is open.
     var labModelName: String?
     /// The latest Lab report for each model, once read.
@@ -133,6 +140,11 @@ final class AppModel {
             Task { await self?.refreshLoaded() }
         }
         lab.onFinished = { [weak self] report in self?.saveLabReport(report) }
+        benchmark.onStateChange = { [weak self] in
+            self?.syncMenu()
+            Task { await self?.refreshLoaded() }
+        }
+        benchmark.onFinished = { [weak self] report in self?.saveBenchmarkReport(report) }
         replies.onFinished = { [weak self] lostConnection in
             guard let self else { return }
             if lostConnection, !(await self.refreshModels()) { self.connection = .failed }
@@ -297,7 +309,7 @@ final class AppModel {
 
     /// A model can't be unloaded while it's writing a reply.
     func canUnload(_ name: String) -> Bool {
-        replies.activeModelName != name && lab.modelName != name
+        replies.activeModelName != name && lab.modelName != name && benchmark.modelName != name
     }
 
     func unload(_ name: String) async {
@@ -373,7 +385,7 @@ final class AppModel {
     }
 
     /// True while a reply or a Lab run is using the model. Only one can at a time.
-    var isWriting: Bool { replies.isWriting || lab.isRunning }
+    var isWriting: Bool { replies.isWriting || lab.isRunning || benchmark.isRunning }
 
     /// Returns false when the message couldn't be sent, so the field keeps its text.
     @discardableResult
@@ -427,6 +439,7 @@ final class AppModel {
     func stop() {
         replies.stop()
         lab.stop()
+        benchmark.stop()
     }
 
     func copyLatestReply() {
