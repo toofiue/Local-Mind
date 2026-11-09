@@ -617,6 +617,40 @@ UX:
 - States: only one thing runs at a time, so sending waits while a test runs.
 Status: done
 
+### S-041 Show only my name for a model while chatting
+As the user, I see just my custom name in the toolbar, and the original name only where I'm choosing from all models.
+Screens: chat, model-picker
+Acceptance:
+- [snap] The toolbar shows one line: my custom name.
+- [snap] The picker shows my name with the original below it.
+Status: done
+
+### S-042 Manage models on a page designed for it
+As the user, I rename, test, and unload models from clear controls on a tidy page.
+Screens: models
+Depends: S-037
+Acceptance:
+- [snap] Models are grouped into In Memory and Installed, each row with its name, original name, size, abilities, and test result.
+- [self] Rename opens a sheet with the model's name; Save applies it, and Use Original removes it.
+UX:
+- Flow: the More menu or a right-click -> Rename… -> sheet -> Return saves. Way back: Cancel or Escape.
+- Surface: a sheet, a short task that finishes or cancels.
+- Words: "Name This Model", "Use Original", "Cancel", "Save".
+Status: done
+
+### S-043 See what each test measures and which standard it follows
+As the user, I see what's being tested, the rule that scores it, the standard it's based on, and what the model actually said.
+Screens: model-lab, model-lab-intro
+Depends: S-040
+Acceptance:
+- [unit] Every area states what it measures and how it's scored, and names its standard or says it has none.
+- [unit] Each result keeps what was asked and what was expected.
+- [unit] The long document test checks facts at the start, middle, and end.
+- [snap] Before a run the page lists every area; after a run it shows the overall score, then each area with its tests.
+UX:
+- Words: results say plainly that this is a quick check, and that scores can't be compared with published benchmark numbers.
+Status: done
+
 ## Later
 Next after version one:
 - Projects with their own instructions and files

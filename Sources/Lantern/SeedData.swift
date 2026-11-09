@@ -16,19 +16,21 @@ enum SeedData {
     static let attached = "What is in this screenshot?"
 
     static var sampleLabReport: LabReport {
-        func row(_ id: String, _ area: LabArea, _ name: String, _ reply: String, _ passed: Bool, _ tokens: Int? = nil) -> LabCaseResult {
-            LabCaseResult(id: id, area: area, name: name, reply: reply, passed: passed, documentTokens: tokens)
+        func row(_ id: String, _ area: LabArea, _ name: String, _ prompt: String, _ expected: String, _ reply: String, _ passed: Bool, _ tokens: Int? = nil) -> LabCaseResult {
+            LabCaseResult(id: id, area: area, name: name, reply: reply, passed: passed, documentTokens: tokens, prompt: prompt, expected: expected)
         }
-        return LabReport(modelName: "gemma4:12b-mlx", date: .now, tokensPerSecond: 28, loadSeconds: 10, memoryBytes: 7_800_000_000,
+        return LabReport(modelName: "gemma4:12b-mlx", date: .now, tokensPerSecond: 27, loadSeconds: 3, memoryBytes: 7_700_000_000,
                          swapGrowthBytes: 0, totalMemoryBytes: 17_179_869_184, supportsImages: true, supportsTools: true, results: [
-                            row("speed", .speed, "Write a paragraph", "The ocean stretches past the horizon.", true),
-                            row("r-1", .reasoning, "Trick question", "9", true), row("r-2", .reasoning, "Rates", "100", false),
-                            row("c-1", .code, "Read Python", "14", true),
-                            row("i-1", .instructions, "Exact format", "- apple", true),
-                            row("d-1", .data, "Extract to JSON", "{}", true),
-                            row("doc-1", .documents, "20,000 tokens", "7741 marigold", true, 20_000),
-                            row("img-1", .images, "See a color", "Red", true),
-                            row("tool-1", .tools, "Call a tool", "Called get_weather (city: Paris)", true),
+                            row("speed", .speed, "Write a paragraph", "Write one short paragraph about the ocean.", "Any complete reply.", "The ocean is a vast, shimmering expanse.", true),
+                            row("r-1", .reasoning, "Trick question", "A farmer has 17 sheep. All but 9 run away. How many are left?", "9", "9", true),
+                            row("r-2", .reasoning, "Arithmetic", "What is 37 times 43?", "1591", "1591", true),
+                            row("c-1", .code, "Read Python", "print(sum(i * i for i in range(4)))", "14", "14", true),
+                            row("c-2", .code, "Read string slicing", "print(\"lantern\"[::-1][:3])", "nre", "nret", false),
+                            row("i-1", .instructions, "Exact format", "List three fruits as exactly three lines.", "Exactly three lines", "- Apple", true),
+                            row("d-1", .data, "Extract to JSON", "Mira is 34 years old.", "Valid JSON", "{\"name\": \"Mira\", \"age\": 34}", true),
+                            row("doc-1", .documents, "20,000 tokens", "A 20,000-token document with three hidden facts.", "7741, harbor, and marigold", "7741, harbor, marigold", true, 20_000),
+                            row("img-1", .images, "See a color", "What color is the square?", "Red", "Red", true),
+                            row("tool-1", .tools, "Call a tool", "What's the weather in Paris?", "A call to get_weather with Paris", "Called get_weather (city: Paris)", true),
                          ])
     }
 

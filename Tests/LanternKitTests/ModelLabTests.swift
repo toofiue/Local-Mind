@@ -11,7 +11,7 @@ private let goodAnswers: [String: String] = [
     "c-write": "def is_even(n):\n    return n % 2 == 0",
     "i-bullets": "- apple\n- pear\n- plum", "i-short": "A small lantern glows softly.", "i-caps": "GOOD MORNING!", "i-avoid": "Waves roll across a vast blue expanse.",
     "d-object": "```json\n{\"name\": \"Mira\", \"age\": 34}\n```", "d-array": "[\"red\", \"green\", \"blue\"]",
-    "doc-2000": "7741 marigold", "doc-8000": "7741, marigold", "doc-20000": "7741 marigold",
+    "doc-2000": "7741 harbor marigold", "doc-8000": "7741, harbor, marigold", "doc-20000": "7741 harbor marigold",
     "img-color": "Red.", "img-digit": "7",
 ]
 
@@ -58,6 +58,9 @@ func buildsDocuments() {
     let text = ModelLab.document(tokens: 8_000)
     #expect(text.hasPrefix("The secret code is 7741."))
     #expect(text.contains("The closing word is marigold."))
+    let middle = try! #require(text.range(of: "The middle word is harbor."))
+    let position = Double(text.distance(from: text.startIndex, to: middle.lowerBound)) / Double(text.count)
+    #expect(position > 0.4 && position < 0.6)
     #expect(AttachmentPrompt.estimatedTokens(text) >= 8_000)
 }
 
@@ -119,4 +122,51 @@ func readsLabResponse() throws {
     #expect(response.toolCalls == [LabToolCall(name: "get_weather", arguments: ["city": "Paris"])])
     #expect(response.tokensPerSecond == 20)
     #expect(response.loadSeconds == 3)
+}
+
+@Test("S-043 every area explains itself and names its standard, or has none")
+func areasExplainThemselves() {
+    for area in LabArea.allCases {
+        #expect(!area.measures.isEmpty)
+        #expect(!area.scoring.isEmpty)
+        if area == .images {
+            #expect(area.standard == nil)
+        } else {
+            #expect(area.standard?.relation.isEmpty == false, "\(area) has no standard")
+        }
+    }
+}
+
+@Test("S-043 every test says what it expects")
+func casesStateExpectations() {
+    for labCase in ModelLab.cases(for: full) {
+        #expect(!labCase.expected.isEmpty, "\(labCase.id)")
+        #expect(!labCase.shownPrompt.isEmpty, "\(labCase.id)")
+    }
+}
+
+@Test("S-043 a long document isn't shown in full")
+func summarizesDocuments() throws {
+    let document = try #require(ModelLab.cases(for: full).first { $0.id == "doc-20000" })
+    #expect(document.shownPrompt.count < 200)
+    #expect(document.prompt.count > 70_000)
+}
+
+@Test("S-043 a document test needs all three facts")
+func requiresAllFacts() throws {
+    let document = try #require(ModelLab.cases(for: full).first { $0.id == "doc-2000" })
+    #expect(document.grade(LabResponse(text: "7741, harbor, marigold")))
+    #expect(!document.grade(LabResponse(text: "7741, marigold")))
+}
+
+@Test("S-043 ratings follow the score", arguments: [(1.0, LabRating.strong), (0.8, .strong), (0.6, .fair), (0.4, .weak)])
+func ratesShares(share: Double, rating: LabRating) {
+    #expect(LabRating(share: share) == rating)
+}
+
+@Test("S-043 a report saved before these fields existed still opens")
+func opensOlderReports() throws {
+    let json = #"{"id":"a","area":"code","name":"x","reply":"y","passed":true}"#
+    let result = try JSONDecoder().decode(LabCaseResult.self, from: Data(json.utf8))
+    #expect(result.prompt == nil)
 }

@@ -29,6 +29,8 @@ enum Layout {
     static let chip: CGFloat = 220
     /// The width of the Quick Ask panel.
     static let quickPanel: CGFloat = 640
+    /// The width of the Name This Model sheet.
+    static let renameSheet: CGFloat = 400
     /// The tallest a Quick Ask reply gets before it scrolls.
     static let quickReply: CGFloat = 480
     /// The height of an empty Quick Ask panel, before it fits itself.

@@ -1,22 +1,17 @@
 import SwiftUI
 
 /// A model's name, with the original in small text below it if you've renamed it.
+/// For places where you're choosing between models. Elsewhere only your name shows.
 struct ModelNameLabel: View {
     let name: String
-    /// Smaller text, so two lines fit inside a toolbar button.
-    var isCompact = false
     @Environment(AppModel.self) private var model
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            if isCompact && model.modelNicknames[name] != nil {
-                Text(model.displayName(name)).font(.system(size: 11, weight: .medium))
-            } else {
-                Text(model.displayName(name))
-            }
+            Text(model.displayName(name))
             if model.modelNicknames[name] != nil {
                 Text(name)
-                    .font(isCompact ? .system(size: 9) : .caption2)
+                    .font(.caption2)
                     .foregroundStyle(.secondary)
             }
         }

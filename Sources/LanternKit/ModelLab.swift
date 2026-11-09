@@ -23,6 +23,76 @@ public enum LabArea: String, Codable, CaseIterable, Sendable, Identifiable {
     }
 }
 
+/// A published way of testing models that an area is based on.
+public struct LabStandard: Sendable, Equatable {
+    public let name: String
+    public let url: URL
+    /// How closely Lantern follows it.
+    public let relation: String
+}
+
+public enum LabRating: String, Sendable {
+    case strong = "Strong", fair = "Fair", weak = "Weak"
+
+    public init(share: Double) {
+        self = share >= 0.8 ? .strong : share >= 0.5 ? .fair : .weak
+    }
+}
+
+extension LabArea {
+    /// What this area tells you about a model.
+    public var measures: String {
+        switch self {
+        case .speed: "How quickly the model loads and writes on this Mac."
+        case .reasoning: "Whether it can work through short math and logic problems."
+        case .code: "Whether it can read code, spot a bug, and write a small function."
+        case .instructions: "Whether it obeys exact rules about format and length."
+        case .data: "Whether it can return valid JSON that other software can read."
+        case .documents: "Whether it still remembers facts placed at the start, middle, and end of long text."
+        case .images: "Whether it can see a picture at all."
+        case .tools: "Whether it calls a tool correctly instead of guessing the answer."
+        }
+    }
+
+    /// How a reply in this area is scored.
+    public var scoring: String {
+        switch self {
+        case .speed: "Ollama's own counters: tokens written divided by generation time. Lantern calls 25 or more per second fast, 10 or more usable, and less than that slow."
+        case .reasoning: "Pass only if the final number or name exactly matches the known answer."
+        case .code: "Reading tests must match the known output. The written function is checked by pattern. Lantern never runs code a model wrote."
+        case .instructions: "A fixed rule checks the reply, such as counting its lines or words."
+        case .data: "The reply must parse as JSON and contain the right values."
+        case .documents: "Pass only if all three hidden facts come back correctly."
+        case .images: "Lantern draws the picture itself, so the right answer is known exactly."
+        case .tools: "Pass only if the model calls the right tool with the right argument."
+        }
+    }
+
+    public var standard: LabStandard? {
+        func standard(_ name: String, _ link: String, _ relation: String) -> LabStandard? {
+            URL(string: link).map { LabStandard(name: name, url: $0, relation: relation) }
+        }
+        switch self {
+        case .speed:
+            return standard("llama-bench", "https://github.com/ggml-org/llama.cpp/tree/master/tools/llama-bench", "Same measure: generated tokens per second.")
+        case .reasoning:
+            return standard("GSM8K", "https://arxiv.org/abs/2110.14168", "Modeled on it: short problems with one known answer. Five items of Lantern's own, not its dataset.")
+        case .code:
+            return standard("HumanEval", "https://arxiv.org/abs/2107.03374", "Lighter than it. HumanEval runs code against unit tests, and Lantern doesn't run model-written code.")
+        case .instructions:
+            return standard("IFEval", "https://arxiv.org/abs/2311.07911", "Same method: rules a program can verify. Four kinds of rule, out of IFEval's 25.")
+        case .data:
+            return standard("IFEval", "https://arxiv.org/abs/2311.07911", "Same method as IFEval's JSON format rule.")
+        case .documents:
+            return standard("Needle in a Haystack", "https://github.com/gkamradt/LLMTest_NeedleInAHaystack", "Same method: facts hidden in long filler text, at growing lengths.")
+        case .images:
+            return nil
+        case .tools:
+            return standard("Berkeley Function Calling Leaderboard", "https://gorilla.cs.berkeley.edu/leaderboard.html", "Modeled on it: right function, right arguments. One call, not its full set.")
+        }
+    }
+}
+
 public struct LabToolCall: Sendable, Equatable {
     public let name: String
     public let arguments: [String: String]
@@ -57,7 +127,13 @@ public struct LabCase: Sendable, Identifiable {
     public var imageBase64: String?
     public var usesTool = false
     public var documentTokens: Int?
+    /// A short stand-in for a prompt too long to show.
+    public var promptSummary: String?
+    /// The answer or rule the reply is graded against, in plain words.
+    public let expected: String
     public let grade: @Sendable (LabResponse) -> Bool
+
+    public var shownPrompt: String { promptSummary ?? prompt }
 }
 
 enum LabGrade {
@@ -103,62 +179,62 @@ public enum ModelLab {
 
     private static let baseCases: [LabCase] = [
         LabCase(id: "speed", area: .speed, name: "Write a paragraph", prompt: "Write one short paragraph about the ocean.",
-                grade: { !$0.text.isEmpty && $0.tokensPerSecond > 0 }),
+                expected: "Any complete reply. Speed is measured, not graded.", grade: { !$0.text.isEmpty && $0.tokensPerSecond > 0 }),
 
         LabCase(id: "r-sheep", area: .reasoning, name: "Trick question",
                 prompt: "A farmer has 17 sheep. All but 9 run away. How many sheep are left? Reply with only the number.",
-                grade: LabGrade.number(9)),
+                expected: "9", grade: LabGrade.number(9)),
         LabCase(id: "r-machines", area: .reasoning, name: "Rates",
                 prompt: "If 3 machines make 3 widgets in 3 minutes, how many minutes do 100 machines take to make 100 widgets? Reply with only the number.",
-                grade: LabGrade.number(3)),
+                expected: "3", grade: LabGrade.number(3)),
         LabCase(id: "r-multiply", area: .reasoning, name: "Arithmetic",
-                prompt: "What is 37 times 43? Reply with only the number.", grade: LabGrade.number(1_591)),
+                prompt: "What is 37 times 43? Reply with only the number.", expected: "1591", grade: LabGrade.number(1_591)),
         LabCase(id: "r-sequence", area: .reasoning, name: "Number pattern",
-                prompt: "What number comes next: 2, 6, 12, 20, 30? Reply with only the number.", grade: LabGrade.number(42)),
+                prompt: "What number comes next: 2, 6, 12, 20, 30? Reply with only the number.", expected: "42", grade: LabGrade.number(42)),
         LabCase(id: "r-shortest", area: .reasoning, name: "Logic",
                 prompt: "Anna is taller than Ben. Ben is taller than Cara. Who is the shortest? Reply with only the name.",
-                grade: LabGrade.hasWord("cara")),
+                expected: "Cara", grade: LabGrade.hasWord("cara")),
 
         LabCase(id: "c-sum", area: .code, name: "Read Python",
                 prompt: "What does this Python print? Reply with only the output.\n\nprint(sum(i * i for i in range(4)))",
-                grade: LabGrade.number(14)),
+                expected: "14", grade: LabGrade.number(14)),
         LabCase(id: "c-reverse", area: .code, name: "Read string slicing",
                 prompt: "What does this Python print? Reply with only the output.\n\nprint(\"lantern\"[::-1][:3])",
-                grade: LabGrade.hasWord("nre")),
+                expected: "nre", grade: LabGrade.hasWord("nre")),
         LabCase(id: "c-sort", area: .code, name: "Read Swift",
                 prompt: "What does this Swift print? Reply with only the output.\n\nprint([3, 1, 2].sorted()[1])",
-                grade: LabGrade.number(2)),
+                expected: "2", grade: LabGrade.number(2)),
         LabCase(id: "c-bug", area: .code, name: "Find a bug",
                 prompt: "This code should print the sum of the list. Which line number has the bug? Reply with only the number.\n\n1: total = 0\n2: for n in [1, 2, 3]:\n3:     total = n\n4: print(total)",
-                grade: LabGrade.number(3)),
+                expected: "3", grade: LabGrade.number(3)),
         LabCase(id: "c-write", area: .code, name: "Write a function",
                 prompt: "Write a Python function named is_even that returns True when n is even. Reply with only the code.",
-                grade: { reply in
+                expected: "A function named is_even that checks n % 2", grade: { reply in
                     let compact = reply.text.replacingOccurrences(of: " ", with: "")
                     return compact.contains("defis_even") && (compact.contains("%2") || compact.contains("&1"))
                 }),
 
         LabCase(id: "i-bullets", area: .instructions, name: "Exact format",
                 prompt: "List three fruits as exactly three lines, each starting with \"- \". Write nothing else.",
-                grade: { reply in
+                expected: "Exactly three lines, each starting with \"- \"", grade: { reply in
                     let lines = reply.text.split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
                     return lines.count == 3 && lines.allSatisfy { $0.hasPrefix("- ") }
                 }),
         LabCase(id: "i-short", area: .instructions, name: "Length limit",
                 prompt: "Describe a lantern in fewer than 12 words. Use the word lantern.",
-                grade: { reply in
+                expected: "Fewer than 12 words, including \"lantern\"", grade: { reply in
                     let words = LabGrade.words(reply.text)
                     return words.count < 12 && words.contains("lantern")
                 }),
         LabCase(id: "i-caps", area: .instructions, name: "Capitals only",
                 prompt: "Say good morning in all capital letters.",
-                grade: { reply in
+                expected: "Every letter capitalized", grade: { reply in
                     let letters = reply.text.filter(\.isLetter)
                     return !letters.isEmpty && letters == letters.uppercased()
                 }),
         LabCase(id: "i-avoid", area: .instructions, name: "Avoid a word",
                 prompt: "Describe the sea in one sentence without using the word \"the\".",
-                grade: { reply in
+                expected: "A sentence about the sea without the word \"the\"", grade: { reply in
                     let words = LabGrade.words(reply.text)
                     let onTopic = !Set(words).isDisjoint(with: ["sea", "ocean", "water", "waters", "waves", "wave", "tide", "tides", "blue", "salt"])
                     return words.count > 2 && !words.contains("the") && onTopic
@@ -166,13 +242,13 @@ public enum ModelLab {
 
         LabCase(id: "d-object", area: .data, name: "Extract to JSON",
                 prompt: "Turn this into a JSON object with the keys name and age. Reply with only the JSON.\n\nMira is 34 years old.",
-                grade: { reply in
+                expected: "Valid JSON: name is Mira, age is 34", grade: { reply in
                     guard let object = LabGrade.json(reply.text) as? [String: Any] else { return false }
                     return (object["name"] as? String)?.lowercased().contains("mira") == true && (object["age"] as? Int) == 34
                 }),
         LabCase(id: "d-array", area: .data, name: "JSON list",
                 prompt: "Reply with only a JSON array of the three primary colors of light, in lowercase.",
-                grade: { reply in
+                expected: "Valid JSON: red, green, and blue", grade: { reply in
                     guard let list = LabGrade.json(reply.text) as? [String] else { return false }
                     return Set(list) == ["red", "green", "blue"]
                 }),
@@ -181,33 +257,42 @@ public enum ModelLab {
     private static func documentCase(tokens: Int) -> LabCase {
         LabCase(id: "doc-\(tokens)", area: .documents, name: "\(tokens.formatted()) tokens",
                 prompt: document(tokens: tokens), documentTokens: tokens,
+                promptSummary: "A \(tokens.formatted())-token document with one fact at the start, one in the middle, and one at the end.",
+                expected: "7741, harbor, and marigold",
                 grade: { reply in
                     let words = LabGrade.words(reply.text)
-                    return words.contains("7741") && words.contains("marigold")
+                    return words.contains("7741") && words.contains("harbor") && words.contains("marigold")
                 })
     }
 
-    /// A long document with one fact at the very start and one at the very end.
+    /// A long document with one fact at the start, one in the middle, and one at the end.
+    /// Models often lose what's in the middle, so that position gets its own fact.
     static func document(tokens: Int) -> String {
         var body = "The secret code is 7741.\n"
         var line = 1
+        var placedMiddle = false
         while body.count < tokens * 4 {
+            if !placedMiddle, body.count >= tokens * 2 {
+                body += "The middle word is harbor.\n"
+                placedMiddle = true
+            }
             body += "Line \(line) of filler text about nothing in particular.\n"
             line += 1
         }
-        return body + "The closing word is marigold.\n\nReply with only: the secret code, then the closing word."
+        return body + "The closing word is marigold.\n\nReply with only: the secret code, the middle word, then the closing word."
     }
 
     private static let imageCases: [LabCase] = [
         LabCase(id: "img-color", area: .images, name: "See a color", prompt: "What color is the square in this image? Reply with one word.",
-                imageBase64: labImage(square: true), grade: LabGrade.hasWord("red")),
+                imageBase64: labImage(square: true), expected: "Red", grade: LabGrade.hasWord("red")),
         LabCase(id: "img-digit", area: .images, name: "Read a number", prompt: "What number is shown in this image? Reply with only the number.",
-                imageBase64: labImage(square: false), grade: LabGrade.number(7)),
+                imageBase64: labImage(square: false), expected: "7", grade: LabGrade.number(7)),
     ]
 
     private static let toolCase = LabCase(
         id: "tool-weather", area: .tools, name: "Call a tool",
         prompt: "What's the weather in Paris right now? Use the \(weatherToolName) tool.", usesTool: true,
+        expected: "A call to \(weatherToolName) with the city Paris",
         grade: { reply in
             guard let call = reply.toolCalls.first, call.name == weatherToolName else { return false }
             return call.arguments["city"]?.lowercased().contains("paris") == true
@@ -247,8 +332,14 @@ public struct LabCaseResult: Codable, Sendable, Identifiable, Equatable {
     public let reply: String
     public let passed: Bool
     public var documentTokens: Int?
+    /// What was asked and what was expected. Optional so earlier saved runs still open.
+    public var prompt: String?
+    public var expected: String?
 
-    public init(id: String, area: LabArea, name: String, reply: String, passed: Bool, documentTokens: Int? = nil) {
+    public init(id: String, area: LabArea, name: String, reply: String, passed: Bool, documentTokens: Int? = nil,
+                prompt: String? = nil, expected: String? = nil) {
+        self.prompt = prompt
+        self.expected = expected
         self.id = id
         self.area = area
         self.name = name
@@ -288,6 +379,17 @@ public struct LabReport: Codable, Sendable, Equatable {
     public func results(in area: LabArea) -> [LabCaseResult] { results.filter { $0.area == area } }
 
     public func passed(in area: LabArea) -> Int { results(in: area).filter(\.passed).count }
+
+    public var totalPassed: Int { results.filter(\.passed).count }
+
+    /// How this area went, or nil if it wasn't tested.
+    public func rating(in area: LabArea) -> LabRating? {
+        if area == .speed {
+            guard tokensPerSecond > 0 else { return nil }
+            return tokensPerSecond >= 25 ? .strong : tokensPerSecond >= 10 ? .fair : .weak
+        }
+        return share(area).map(LabRating.init(share:))
+    }
 
     private func share(_ area: LabArea) -> Double? {
         let total = results(in: area).count

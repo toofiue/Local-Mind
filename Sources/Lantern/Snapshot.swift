@@ -17,6 +17,7 @@ enum SnapshotPage: String, CaseIterable {
     case noModels = "no-models"
     case memoryWarning = "memory-warning"
     case modelLab = "model-lab"
+    case modelLabIntro = "model-lab-intro"
 
     func apply(to model: AppModel) {
         model.draftAttachments = self == .chatAttachments ? SeedData.draftAttachments : []
@@ -27,7 +28,7 @@ enum SnapshotPage: String, CaseIterable {
         switch self {
         case .chat, .offline, .modelPicker, .sidebarSearch, .quickPanel, .memoryWarning:
             model.selection = SeedData.conversation(titled: SeedData.formatted, in: model)?.uid
-        case .chatEmpty, .models, .noModels, .modelLab:
+        case .chatEmpty, .models, .noModels, .modelLab, .modelLabIntro:
             model.selection = nil
         case .chatAttachments:
             model.selection = SeedData.conversation(titled: SeedData.attached, in: model)?.uid
@@ -40,7 +41,7 @@ enum SnapshotPage: String, CaseIterable {
         }
         if self == .modelPicker { model.showingModelPicker = true }
         model.showingModels = self == .models
-        model.labModelName = self == .modelLab ? "gemma4:12b-mlx" : nil
+        model.labModelName = self == .modelLab ? "gemma4:12b-mlx" : self == .modelLabIntro ? "gemma4:latest" : nil
         if self == .modelLab { model.labReports["gemma4:12b-mlx"] = SeedData.sampleLabReport }
         model.memoryWarning = self != .memoryWarning ? nil : MemoryWarning(
             modelName: "gemma4:latest", surface: .main,

@@ -1,36 +1,53 @@
 import SwiftUI
 import LanternKit
 
-/// Tests one model and shows what it's good for.
+/// Tests one model, and explains what was tested and how it went.
 struct ModelLabPage: View {
     let name: String
     @Environment(AppModel.self) private var model
 
     private var isRunningHere: Bool { model.lab.modelName == name }
     private var installed: OllamaModel? { model.models.first { $0.name == name } }
+    private var report: LabReport? { model.labReports[name] }
+
+    /// The areas this model can be tested in.
+    private var areas: [LabArea] {
+        guard let installed else { return LabArea.allCases }
+        let tested = Set(ModelLab.cases(for: installed).map(\.area))
+        return LabArea.allCases.filter(tested.contains)
+    }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: Space.xxl) {
-                header
-                if let warning = model.memoryWarning, warning.surface == .lab {
+        Form {
+            Section { header }
+
+            if let warning = model.memoryWarning, warning.surface == .lab {
+                Section {
                     MemoryWarningView(warning: warning, actionTitle: "Run Anyway") {
                         model.runLab(name, skipMemoryCheck: true)
                     }
                 }
-                if isRunningHere {
-                    progress
-                } else if let report = model.labReports[name] {
-                    LabReportView(report: report)
-                } else {
-                    Text("Tests speed, reasoning, coding, following instructions, structured data, long documents, images, and tools. It takes a few minutes and uses this model's full memory.")
-                        .foregroundStyle(.secondary)
+            }
+
+            if isRunningHere {
+                Section("Testing") { progress }
+            } else if let report {
+                LabResults(report: report)
+            } else {
+                Section("What Gets Tested") {
+                    ForEach(areas) { LabAreaIntro(area: $0) }
                 }
             }
-            .frame(maxWidth: Layout.column, alignment: .leading)
-            .padding(Space.margin)
-            .frame(maxWidth: .infinity)
+
+            Section {
+                Text("This is a quick check of this model on this Mac, using a few tests per area. It's modeled on published benchmarks, but its scores can't be compared with their published numbers.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            } header: {
+                Text("About These Tests")
+            }
         }
+        .formStyle(.grouped)
         .navigationTitle(model.displayName(name))
         .toolbar {
             ToolbarItem(placement: .navigation) {
@@ -42,10 +59,20 @@ struct ModelLabPage: View {
     }
 
     private var header: some View {
-        HStack(alignment: .top, spacing: Space.lg) {
+        HStack(alignment: .center, spacing: Space.lg) {
             VStack(alignment: .leading, spacing: Space.xs) {
-                ModelNameLabel(name: name)
-                    .font(.title3)
+                if let report, !isRunningHere {
+                    Text("\(report.totalPassed) of \(report.results.count)")
+                        .font(.largeTitle.weight(.semibold))
+                        .monospacedDigit()
+                    Text("tests passed · \(report.date, format: .dateTime.day().month().hour().minute())")
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text(installed.map { "\(ModelLab.cases(for: $0).count) tests across \(areas.count) areas" } ?? "Model Test")
+                        .font(.title3.weight(.semibold))
+                    Text("Takes a few minutes and uses this model's full memory.")
+                        .foregroundStyle(.secondary)
+                }
                 Text(macSummary)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -54,11 +81,12 @@ struct ModelLabPage: View {
             if isRunningHere {
                 Button("Stop") { model.lab.stop() }
             } else {
-                Button(model.labReports[name] == nil ? "Run Test" : "Run Again") { model.runLab(name) }
+                Button(report == nil ? "Run Test" : "Run Again") { model.runLab(name) }
                     .buttonStyle(.borderedProminent)
                     .disabled(model.isWriting || model.connection != .connected)
             }
         }
+        .padding(.vertical, Space.xs)
     }
 
     private var macSummary: String {
@@ -66,98 +94,154 @@ struct ModelLabPage: View {
         let total = ByteCountFormatter.string(fromByteCount: memory.totalBytes, countStyle: .memory)
         let free = ByteCountFormatter.string(fromByteCount: memory.availableBytes, countStyle: .memory)
         let size = installed.map { ByteCountFormatter.string(fromByteCount: MemoryAdvisor.estimatedNeed(modelSize: $0.size), countStyle: .file) } ?? "?"
-        return "\(SystemMonitor.chipName) · \(total) memory, \(free) free · This model needs about \(size)"
+        return "\(SystemMonitor.chipName) · \(total) memory, \(free) free · needs about \(size)"
     }
 
     private var progress: some View {
         VStack(alignment: .leading, spacing: Space.sm) {
             ProgressView(value: Double(model.lab.completed), total: Double(max(model.lab.total, 1)))
-            Text("\(model.lab.currentTest) (\(model.lab.completed + 1) of \(model.lab.total))")
+            Text("\(model.lab.currentTest) · \(model.lab.completed + 1) of \(model.lab.total)")
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
     }
 }
 
-private struct LabReportView: View {
+private struct LabAreaIntro: View {
+    let area: LabArea
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Space.xs) {
+            Text(area.title)
+                .font(.headline)
+            Text(area.measures)
+            if let standard = area.standard {
+                Text("Based on \(standard.name)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                Text("No published standard applied")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, Space.xs)
+    }
+}
+
+private struct LabResults: View {
     let report: LabReport
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Space.xxl) {
-            if !report.goodFor.isEmpty {
-                section("Good For", items: report.goodFor, symbol: "checkmark.circle")
+        if !report.goodFor.isEmpty {
+            Section("Good For") {
+                ForEach(report.goodFor, id: \.self) { Label($0, systemImage: "checkmark.circle") }
             }
-            if !report.limits.isEmpty {
-                section("Limits", items: report.limits, symbol: "exclamationmark.triangle")
-            }
-            VStack(alignment: .leading, spacing: Space.sm) {
-                Text("Results")
-                    .font(.headline)
-                ForEach(LabArea.allCases) { area in
-                    if !report.results(in: area).isEmpty {
-                        AreaRow(area: area, report: report)
-                    }
-                }
-            }
-            Text("Tested \(report.date, format: .dateTime.day().month().hour().minute())")
-                .font(.caption)
-                .foregroundStyle(.secondary)
         }
-    }
-
-    private func section(_ title: String, items: [String], symbol: String) -> some View {
-        VStack(alignment: .leading, spacing: Space.sm) {
-            Text(title)
-                .font(.headline)
-            ForEach(items, id: \.self) { item in
-                Label(item, systemImage: symbol)
-                    .fixedSize(horizontal: false, vertical: true)
+        if !report.limits.isEmpty {
+            Section("Limits") {
+                ForEach(report.limits, id: \.self) { Label($0, systemImage: "exclamationmark.triangle") }
+            }
+        }
+        ForEach(LabArea.allCases) { area in
+            if !report.results(in: area).isEmpty {
+                LabAreaSection(area: area, report: report)
             }
         }
     }
 }
 
-private struct AreaRow: View {
+private struct LabAreaSection: View {
     let area: LabArea
     let report: LabReport
 
-    private var summary: String {
-        let results = report.results(in: area)
-        if area == .speed {
-            let memory = ByteCountFormatter.string(fromByteCount: report.memoryBytes, countStyle: .file)
-            return "\(Int(report.tokensPerSecond.rounded())) tokens per second · loads in \(Int(report.loadSeconds.rounded())) s · uses \(memory)"
+    var body: some View {
+        Section {
+            VStack(alignment: .leading, spacing: Space.sm) {
+                Text(area.measures)
+                Text(area.scoring)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                if let standard = area.standard {
+                    HStack(alignment: .firstTextBaseline, spacing: Space.xs) {
+                        Link(standard.name, destination: standard.url)
+                            .font(.callout)
+                        Text(standard.relation)
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                } else {
+                    Text("No published standard applied. This is a basic check that the model can see.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.vertical, Space.xs)
+
+            if area == .speed {
+                LabeledContent("Writing speed", value: "\(Int(report.tokensPerSecond.rounded())) tokens per second")
+                LabeledContent("Load time", value: "\(Int(report.loadSeconds.rounded())) seconds")
+                LabeledContent("Memory used", value: memoryUsed)
+            }
+
+            ForEach(report.results(in: area)) { LabTestRow(result: $0) }
+        } header: {
+            HStack {
+                Text(area.title)
+                Spacer()
+                if area != .speed {
+                    Text("\(report.passed(in: area)) of \(report.results(in: area).count)")
+                        .monospacedDigit()
+                }
+                if let rating = report.rating(in: area) {
+                    Text(rating.rawValue)
+                        .font(.caption)
+                        .padding(.horizontal, Space.sm)
+                        .padding(.vertical, 2)
+                        .background(.fill.tertiary, in: Capsule())
+                }
+            }
         }
-        return "\(report.passed(in: area)) of \(results.count)"
     }
+
+    private var memoryUsed: String {
+        let used = ByteCountFormatter.string(fromByteCount: report.memoryBytes, countStyle: .file)
+        guard report.totalMemoryBytes > 0 else { return used }
+        return "\(used), \(Int(Double(report.memoryBytes) / Double(report.totalMemoryBytes) * 100))% of this Mac"
+    }
+}
+
+/// One test: passed or failed, and on opening it, exactly what happened.
+private struct LabTestRow: View {
+    let result: LabCaseResult
 
     var body: some View {
         DisclosureGroup {
             VStack(alignment: .leading, spacing: Space.sm) {
-                ForEach(report.results(in: area)) { result in
-                    HStack(alignment: .firstTextBaseline, spacing: Space.sm) {
-                        Image(systemName: result.passed ? "checkmark" : "xmark")
-                            .foregroundStyle(.secondary)
-                            .accessibilityLabel(result.passed ? "Passed" : "Failed")
-                        VStack(alignment: .leading, spacing: 0) {
-                            Text(result.name)
-                            Text(result.reply)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(3)
-                                .textSelection(.enabled)
-                        }
-                    }
-                }
+                if let prompt = result.prompt { detail("Asked", prompt) }
+                if let expected = result.expected { detail("Expected", expected) }
+                detail("Model replied", result.reply.isEmpty ? "No reply" : result.reply)
             }
-            .padding(.top, Space.xs)
+            .padding(.vertical, Space.xs)
         } label: {
             HStack {
-                Text(area.title)
-                Spacer(minLength: Space.md)
-                Text(summary)
+                Label(result.name, systemImage: result.passed ? "checkmark.circle.fill" : "xmark.circle")
+                Spacer()
+                Text(result.passed ? "Passed" : "Failed")
                     .foregroundStyle(.secondary)
-                    .monospacedDigit()
             }
+        }
+    }
+
+    private func detail(_ title: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.callout)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }

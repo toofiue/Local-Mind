@@ -173,14 +173,8 @@ private struct ModelPickerButton: View {
         Button {
             model.showingModelPicker.toggle()
         } label: {
-            HStack(spacing: Space.xs) {
-                Image(systemName: "cpu")
-                if let name = model.currentModelName {
-                    ModelNameLabel(name: name, isCompact: true)
-                } else {
-                    Text("No Models")
-                }
-            }
+            Label(model.currentModelName.map(model.displayName) ?? "No Models", systemImage: "cpu")
+                .labelStyle(.titleAndIcon)
         }
         .disabled(model.isWriting || model.models.isEmpty)
         .help("Choose which model writes the next reply (⇧⌘M)")

@@ -61,13 +61,15 @@ final class ModelLabRunner {
                 swapAfter = max(swapAfter, swapUsed())
                 results.append(LabCaseResult(id: labCase.id, area: labCase.area, name: labCase.name,
                                              reply: replySummary(response), passed: labCase.grade(response),
-                                             documentTokens: labCase.documentTokens))
+                                             documentTokens: labCase.documentTokens,
+                                             prompt: labCase.shownPrompt, expected: labCase.expected))
             } catch is CancellationError {
                 break
             } catch {
                 results.append(LabCaseResult(id: labCase.id, area: labCase.area, name: labCase.name,
                                              reply: "The model couldn't answer this test.", passed: false,
-                                             documentTokens: labCase.documentTokens))
+                                             documentTokens: labCase.documentTokens,
+                                             prompt: labCase.shownPrompt, expected: labCase.expected))
             }
             completed += 1
         }
