@@ -43,6 +43,10 @@ Still no `Strong` candidates. The code is 3,600 lines, and `AppModel` stayed at 
 
 Still no `Strong` candidates. `ReplyWriter` absorbed the new per-reply state, and the Models page and menu bar share one loaded-model list on `AppModel`. `SelfTest.swift` is close to the 600-line signal and is the first thing to split.
 
+## Milestone 6 update
+
+Version one is complete with no `Strong` candidates. The app code is about 4,700 lines. Split `SelfTest.swift` by feature before adding more stories, because it has passed the 600-line signal.
+
 ## Considered, not recommended
 
 - Splitting `Markdown.parse`: long, but one straight loop that's fully covered by tests.

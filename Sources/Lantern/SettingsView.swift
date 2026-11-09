@@ -69,6 +69,7 @@ struct QuickAskSettings: View {
                     ShortcutRecorder()
                     if model.hotkey != .standard {
                         Button("Use Default") { model.changeHotkey(.standard) }
+                            .accessibilityLabel("Use Default")
                     }
                 }
             }
@@ -92,6 +93,8 @@ private struct ShortcutRecorder: View {
             if monitor == nil { startRecording() } else { stopRecording() }
         }
         .help("Change the shortcut that opens Quick Ask")
+        .accessibilityLabel("Shortcut")
+        .accessibilityValue(model.hotkey.display)
         .onDisappear { stopRecording() }
     }
 
