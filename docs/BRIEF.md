@@ -1,4 +1,4 @@
-# Lantern
+# Iris (formerly Lantern)
 
 A native Mac app for chatting with local Ollama models, made for one person who wants asking a private, offline model to become a daily habit.
 

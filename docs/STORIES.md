@@ -739,6 +739,15 @@ Acceptance:
 - [self] Test All Models runs the quick check on each model in turn, and Stop ends the queue.
 Status: done
 
+### S-053 Iris, with an aperture that shows the model
+As the user, I see the app as Iris, and the menu bar aperture tells me at a glance whether a model is on.
+Screens: menu bar, app icon
+Depends: S-024
+Acceptance:
+- [self] The aperture is closed with no model, half open while one loads, and open when one is in memory.
+- [self] Every visible name says Iris; settings and conversations carry over from Lantern.
+Status: done
+
 ## Later
 Next after version one:
 - Projects with their own instructions and files

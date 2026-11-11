@@ -39,7 +39,7 @@ extension AppModel {
         let text = quick.draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty, connection == .connected else { return false }
         guard !isWriting else {
-            quick.notice = "Lantern is finishing another reply."
+            quick.notice = "Iris is finishing another reply."
             return false
         }
         guard let modelName = quickModelName else { return false }

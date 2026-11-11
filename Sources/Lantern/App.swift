@@ -29,7 +29,7 @@ struct LanternApp: App {
     }
 
     var body: some Scene {
-        Window("Lantern", id: "main") {
+        Window("Iris", id: "main") {
             ContentView()
                 .environment(model)
                 .themed()

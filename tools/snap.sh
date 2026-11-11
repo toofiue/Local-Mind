@@ -3,7 +3,7 @@
 # Usage: tools/snap.sh            all pages
 #        APP_SNAPSHOT_PAGES=all,settings tools/snap.sh
 set -u
-app=~/Applications/Lantern.app/Contents/MacOS/Lantern
+app=~/Applications/Iris.app/Contents/MacOS/Iris
 store=/tmp/Lantern-test.store
 shots=/tmp/Lantern-shots
 # A crashed run leaves saved window state, and the next launch would wait on a "reopen windows?" alert.

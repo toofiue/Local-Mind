@@ -77,7 +77,7 @@ struct QuickAskSettings: View {
             if let message = model.hotkeyMessage {
                 Label(message, systemImage: "exclamationmark.triangle")
             } else {
-                Text("Opens Quick Ask from any app while Lantern is running.")
+                Text("Opens Quick Ask from any app while Iris is running.")
             }
         }
     }
@@ -149,7 +149,7 @@ struct ModelsSettings: View {
             Text("After its last reply. Models use a lot of memory while loaded.")
         }
         Section {
-            Toggle("Show Lantern in the menu bar", isOn: $showMenuBarItem)
+            Toggle("Show Iris in the menu bar", isOn: $showMenuBarItem)
         }
     }
 }

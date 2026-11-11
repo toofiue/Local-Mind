@@ -403,7 +403,7 @@ enum SelfTest {
             model.send("Busy now")
             try? await Task.sleep(for: .milliseconds(100))
             model.quickAsk.draft = "Too soon"
-            check("S-022 a second reply waits its turn", !model.quickSend() && model.quickAsk.notice == "Lantern is finishing another reply.")
+            check("S-022 a second reply waits its turn", !model.quickSend() && model.quickAsk.notice == "Iris is finishing another reply.")
             check("S-022 and keeps your text", model.quickAsk.draft == "Too soon")
             model.stop()
             await model.waitForReply()
@@ -858,6 +858,28 @@ enum SelfTest {
             model.stop()
             for _ in 0..<50 where model.lab.isRunning { try? await Task.sleep(for: .milliseconds(100)) }
             check("S-052 Stop ends the whole queue", !model.lab.isRunning && model.labQueue.isEmpty)
+        }
+
+        // S-053 the aperture
+        do {
+            let saved = model.loaded
+            defer { model.loaded = saved }
+            model.loaded = []
+            check("S-053 closed with no model", model.apertureState == .closed)
+            model.loaded = [LoadedModel(name: "first:1", memory: 1)]
+            check("S-053 open when a model is in memory", model.apertureState == .open)
+            check("S-053 the window is called Iris", Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String == "Iris")
+            try? FileManager.default.createDirectory(atPath: "/tmp/Lantern-shots", withIntermediateDirectories: true)
+            for state in ApertureIcon.State.allCases {
+                let image = ApertureIcon.image(state)
+                let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 72, pixelsHigh: 72, bitsPerSample: 8, samplesPerPixel: 4,
+                                           hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+                NSGraphicsContext.saveGraphicsState()
+                NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+                image.draw(in: NSRect(x: 0, y: 0, width: 72, height: 72))
+                NSGraphicsContext.restoreGraphicsState()
+                try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: "/tmp/Lantern-shots/aperture-\(state).png"))
+            }
         }
 
         // Launch repair

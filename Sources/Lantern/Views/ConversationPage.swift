@@ -14,7 +14,7 @@ struct ConversationPage: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ContentUnavailableView {
-                    Label(ConversationTitle.placeholder, systemImage: "lightbulb")
+                    Label(ConversationTitle.placeholder, systemImage: "camera.aperture")
                 } description: {
                     Text("Replies are written on this Mac by local models. Nothing leaves it.")
                 }

@@ -1,13 +1,22 @@
 import AppKit
 import SwiftUI
 
-/// The bulb in the menu bar, filled while a model is in memory.
+extension AppModel {
+    /// Open while a model is in memory, half open while one is loading for a reply or test.
+    var apertureState: ApertureIcon.State {
+        if !loaded.isEmpty { return .open }
+        return isWriting ? .opening : .closed
+    }
+}
+
+/// The aperture in the menu bar, which shows at a glance whether a model is on.
 struct LanternMenuLabel: View {
     let model: AppModel
 
     var body: some View {
-        Image(systemName: model.loaded.isEmpty ? "lightbulb" : "lightbulb.fill")
-            .accessibilityLabel("Lantern")
+        Image(nsImage: ApertureIcon.image(model.apertureState))
+            .accessibilityLabel(model.apertureState.label)
+            .help(model.apertureState.label)
     }
 }
 
@@ -27,7 +36,7 @@ struct LanternMenu: View {
         }
         .disabled(model.loaded.first.map { !model.canUnload($0.name) } ?? true)
         Divider()
-        Button("Open Lantern") { model.showMainWindow() }
-        Button("Quit Lantern") { NSApp.terminate(nil) }
+        Button("Open Iris") { model.showMainWindow() }
+        Button("Quit Iris") { NSApp.terminate(nil) }
     }
 }

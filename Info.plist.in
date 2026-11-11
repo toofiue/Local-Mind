@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
+<!-- Kept from when the app was called Lantern, so settings carry over. -->
 <key>CFBundleIdentifier</key><string>com.toofiuea.lantern</string>
-<key>CFBundleName</key><string>Lantern</string>
-<key>CFBundleDisplayName</key><string>Lantern</string>
-<key>CFBundleExecutable</key><string>Lantern</string>
+<key>CFBundleName</key><string>Iris</string>
+<key>CFBundleDisplayName</key><string>Iris</string>
+<key>CFBundleExecutable</key><string>Iris</string>
 <key>CFBundleIconFile</key><string>AppIcon</string>
 <key>CFBundleIconName</key><string>AppIcon</string>
 <key>CFBundlePackageType</key><string>APPL</string>

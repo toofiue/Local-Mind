@@ -1,5 +1,5 @@
 #!/bin/zsh
-# Builds Lantern and installs it to ~/Applications/Lantern.app.
+# Builds Iris and installs it to ~/Applications/Iris.app.
 # Build products live in ~/Library/Developer/Lantern, outside the repo
 # (and outside Dropbox or iCloud, which would try to sync them).
 #
@@ -8,7 +8,8 @@
 #        ./build.sh --open     install, then quit the running copy and open the new one
 set -euo pipefail
 here=${0:A:h}
-name="Lantern"
+name="Lantern"   # the Swift package and build folder
+app_name="Iris"  # what people see
 # SwiftUI's macros ship with Xcode, not the Command Line Tools.
 if [[ -z "${DEVELOPER_DIR:-}" && "$(xcode-select -p)" == /Library/Developer/CommandLineTools* && -d /Applications/Xcode.app ]]; then
   export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
@@ -36,11 +37,11 @@ if [[ -n "$stale" ]]; then
   exit 1
 fi
 
-app="$HOME/Applications/$name.app"
+app="$HOME/Applications/$app_name.app"
 mkdir -p "$HOME/Applications"
 rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
-cp "$bin" "$app/Contents/MacOS/$name"
+cp "$bin" "$app/Contents/MacOS/$app_name"
 sed -e "s/__BUILD__/$(date +%Y%m%d%H%M)/" "$here/Info.plist.in" > "$app/Contents/Info.plist"
 # The icon: Icon/AppIcon.icon -> Resources/Assets.car + AppIcon.icns, rebuilt when it changed.
 if [[ -d "$here/Icon/AppIcon.icon" ]]; then
@@ -55,7 +56,7 @@ codesign --force --sign "$identity" "$app" 2>&1 | grep -v "replacing existing si
 echo "installed $app (signed: ${identity})"
 
 if [[ " $* " == *" --open "* ]]; then
-  osascript -e "quit app \"$name\"" 2>/dev/null || true
+  osascript -e "quit app \"$app_name\"" 2>/dev/null || true
   sleep 0.5
   open "$app"
 fi

@@ -4,7 +4,7 @@ import LanternKit
 /// Writes an attachment to a temporary file, so Quick Look can show it.
 enum AttachmentPreview {
     private static var folder: URL {
-        FileManager.default.temporaryDirectory.appending(path: "Lantern Previews", directoryHint: .isDirectory)
+        FileManager.default.temporaryDirectory.appending(path: "Iris Previews", directoryHint: .isDirectory)
     }
 
     static func file(kind: AttachmentKind, fileName: String, imageData: Data?, audioData: Data?, fileData: Data?, text: String) -> URL? {
