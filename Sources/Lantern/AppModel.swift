@@ -89,6 +89,8 @@ final class AppModel {
     var isSelectingConversations = false {
         didSet { if !isSelectingConversations { multiSelection = [] } }
     }
+    /// True while a profile with a password waits to be unlocked. Nothing of its conversations shows.
+    var isLocked = ProfileStore.shared.current.hasPassword
     /// Text a starter button puts in the message box.
     var prefill: String?
     /// Bumped to empty the message box when New Conversation is chosen on a new conversation.

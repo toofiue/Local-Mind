@@ -137,20 +137,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
-/// Where the data lives: ~/Library/Application Support/Lantern/Lantern.store
+/// Where the data lives: ~/Library/Application Support/Lantern/Lantern.store for the first profile,
+/// and Profiles/<id>/Lantern.store beside it for each one added later (ProfileStore).
 enum Store {
     /// True when APP_STORE points somewhere else (tests, snapshots, seed data).
     static var isOverridden: Bool {
         !(ProcessInfo.processInfo.environment["APP_STORE"] ?? "").isEmpty
     }
 
+    /// The current profile's conversations.
     static var url: URL {
-        if let path = ProcessInfo.processInfo.environment["APP_STORE"], !path.isEmpty {
-            return URL(fileURLWithPath: path)
-        }
-        let dir = URL.applicationSupportDirectory.appending(path: "Lantern", directoryHint: .isDirectory)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        return dir.appending(path: "Lantern.store")
+        ProfileStore.shared.storeURL(for: ProfileStore.shared.current)
     }
 
     static func makeContainer() -> ModelContainer {

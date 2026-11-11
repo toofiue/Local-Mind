@@ -830,6 +830,17 @@ Acceptance:
 - [self] A second send while the warning shows goes ahead and loads the model.
 Status: done
 
+### S-063 Profiles, each with their own conversations
+As the user, I share my Mac and my models without sharing my conversations: each person has a profile with a name, an optional password, and their own conversations.
+Screens: sidebar, lock
+Depends: S-001
+Acceptance:
+- [unit] Passwords are kept only as a salted, slow hash.
+- [unit] The first profile keeps the existing conversations where they are; each new one gets its own folder.
+- [self] A new profile gets its own conversation store, and a wrong password doesn't unlock.
+- [snap] The sidebar's bottom row shows the profile, Models, and Settings; a locked profile shows only the lock screen.
+Status: done
+
 ## Later
 Next after version one:
 - Projects with their own instructions and files

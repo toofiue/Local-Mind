@@ -12,6 +12,7 @@ enum SnapshotPage: String, CaseIterable {
     case modelPicker = "model-picker"
     case sidebarSearch = "sidebar-search"
     case sidebarSelect = "sidebar-select"
+    case lock
     case chatAttachments = "chat-attachments"
     case quickPanel = "quick-panel"
     case models
@@ -30,7 +31,7 @@ enum SnapshotPage: String, CaseIterable {
         switch self {
         case .chat, .offline, .modelPicker, .sidebarSearch, .sidebarSelect, .quickPanel, .memoryWarning:
             model.selection = SeedData.conversation(titled: SeedData.formatted, in: model)?.uid
-        case .chatEmpty, .models, .noModels, .modelLab, .modelLabIntro, .modelBenchmark:
+        case .chatEmpty, .models, .noModels, .modelLab, .modelLabIntro, .modelBenchmark, .lock:
             model.selection = nil
         case .chatAttachments:
             model.selection = SeedData.conversation(titled: SeedData.attached, in: model)?.uid
@@ -43,6 +44,7 @@ enum SnapshotPage: String, CaseIterable {
         }
         if self == .modelPicker { model.showingModelPicker = true }
         model.isSelectingConversations = self == .sidebarSelect
+        model.isLocked = self == .lock
         if self == .sidebarSelect {
             model.multiSelection = Set([SeedData.formatted, SeedData.attached].compactMap { SeedData.conversation(titled: $0, in: model)?.uid })
         }

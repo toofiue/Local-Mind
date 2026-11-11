@@ -7,6 +7,20 @@ struct ContentView: View {
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
+        Group {
+            if model.isLocked {
+                LockView()
+            } else {
+                main
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            Task { await model.refreshInstalledModels() }
+        }
+        .task { await start() }
+    }
+
+    private var main: some View {
         NavigationSplitView {
             ConversationSidebar()
                 .navigationSplitViewColumnWidth(min: 200, ideal: 260)
@@ -19,10 +33,9 @@ struct ContentView: View {
                 ConversationPage()
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
-            Task { await model.refreshInstalledModels() }
-        }
-        .task {
+    }
+
+    private func start() async {
             SeedData.insertIfRequested(into: model)
             QuickAskController.shared.configure(model: model)
             SelfTest.runIfRequested(model: model)
@@ -37,6 +50,5 @@ struct ContentView: View {
             model.repairInterruptedReplies()
             await model.connect()
             await model.monitorLoadedModels()
-        }
     }
 }

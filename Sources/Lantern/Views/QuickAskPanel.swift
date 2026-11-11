@@ -75,6 +75,11 @@ final class QuickAskController {
 
     func show() {
         guard let panel, let model else { return }
+        // A locked profile's conversations stay hidden: open the window to unlock instead.
+        if model.isLocked {
+            model.showMainWindow()
+            return
+        }
         // Fresh each time, unless a reply is still being written here.
         let quick = model.quickAsk
         if let conversation = quick.conversation, !model.replies.isWriting(in: conversation) { quick.conversation = nil }

@@ -24,7 +24,8 @@ struct WelcomeView: View {
         case 17..<22: "Good evening"
         default: "Up late"
         }
-        let first = NSFullUserName().split(separator: " ").first.map(String.init) ?? ""
+        // The profile's own name, which starts as this Mac account's first name.
+        let first = ProfileStore.shared.current.name.split(separator: " ").first.map(String.init) ?? ""
         return first.isEmpty ? time : "\(time), \(first)"
     }
 }

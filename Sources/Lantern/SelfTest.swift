@@ -980,6 +980,24 @@ enum SelfTest {
             model.prefill = nil
         }
 
+        // S-063 profiles
+        do {
+            let profiles = ProfileStore.shared
+            let original = profiles.current
+            check("S-063 there is always a current profile", !original.name.isEmpty)
+            let guest = profiles.add(name: "Self Test Guest \(UUID().uuidString.prefix(4))", password: "letmein")
+            check("S-063 a profile can be added", guest != nil)
+            if let guest {
+                check("S-063 it has its own conversation store", profiles.storeURL(for: guest) != profiles.storeURL(for: original))
+                check("S-063 the right password opens it", profiles.checkPassword("letmein", for: guest.id))
+                check("S-063 a wrong password doesn't", !profiles.checkPassword("letmeout", for: guest.id))
+                check("S-063 a name can't be used twice", profiles.add(name: guest.name, password: "") == nil)
+                profiles.remove(guest.id)
+                check("S-063 a profile can be removed", !profiles.list.profiles.contains { $0.id == guest.id })
+            }
+            check("S-063 the original profile is still current", profiles.current.id == original.id)
+        }
+
         // Launch repair
         let stale = Message(role: .assistant, text: "Cut", modelName: "first:1", sequence: 99, state: .writing)
         model.selectedConversation?.messages.append(stale)

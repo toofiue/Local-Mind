@@ -50,16 +50,7 @@ struct ConversationSidebar: View {
             if model.isSelectingConversations {
                 SelectionBar(all: conversations.map(\.uid))
             } else {
-                Button { model.showModels() } label: {
-                    Label("Models", systemImage: "cpu")
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(model.showingModels ? Palette.accentText : .secondary)
-                .padding(.horizontal, Space.lg)
-                .padding(.vertical, Space.md)
-                .help("See installed models and what's using memory (⇧⌘L)")
+                SidebarFooter()
             }
         }
         .onExitCommand { model.isSelectingConversations = false }

@@ -220,14 +220,20 @@ private struct ModelPickerButton: View {
         Button {
             model.showingModelPicker.toggle()
         } label: {
-            Label {
-                Text(name.map(model.displayName) ?? "No Models")
-            } icon: {
-                // The aperture: open when this model is in memory and replies start at once.
+            // The aperture and the name share one center line; a long name is cut in the middle,
+            // which keeps both its family and its size readable.
+            HStack(alignment: .center, spacing: Space.sm) {
+                // Open when this model is in memory and replies start at once.
                 Image(nsImage: ApertureIcon.image(memory != nil ? .open : .closed))
+                    .resizable()
+                    .frame(width: 16, height: 16)
                     .foregroundStyle(memory != nil ? AnyShapeStyle(Palette.accentText) : AnyShapeStyle(.secondary))
+                Text(name.map(model.displayName) ?? "No Models")
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .frame(maxWidth: 200)
+                    .fixedSize(horizontal: name.map(model.displayName)?.count ?? 0 < 22, vertical: false)
             }
-            .labelStyle(.titleAndIcon)
         }
         .disabled(model.isWriting || model.models.isEmpty)
         .help(memory.map { "In memory (\(ByteCountFormatter.string(fromByteCount: $0, countStyle: .file))), so replies start at once. Click to choose another model (⇧⌘M)." }
