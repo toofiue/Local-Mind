@@ -703,7 +703,7 @@ Depends: S-039
 Acceptance:
 - [unit] A model that fits in free memory plus what macOS can easily reclaim isn't warned about.
 - [snap] The warning is one line with Send Anyway; the apps using the most memory are in its tooltip.
-Status: todo
+Status: done
 
 ## Later
 Next after version one:
