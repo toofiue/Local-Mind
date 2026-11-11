@@ -654,10 +654,6 @@ enum SelfTest {
             check("S-039 nothing is created yet", (try? model.container.mainContext.fetchCount(FetchDescriptor<Conversation>())) == conversations)
             check("S-039 the warning names the app using memory", model.memoryWarning?.appsSummary.contains("Big Editor") == true, model.memoryWarning?.appsSummary ?? "nil")
             check("S-039 the warning names the model", model.memoryWarning?.message.contains("big:1") == true)
-            model.readMemory = { MemorySnapshot(totalBytes: 16 * gigabyte, availableBytes: 14 * gigabyte) }
-            model.recheckMemory()
-            check("S-039 Check Again clears it once there's room", model.memoryWarning == nil)
-            model.readMemory = { MemorySnapshot(totalBytes: 16 * gigabyte, availableBytes: 4 * gigabyte) }
             transport.setLoaded(["big:1"])
             await model.refreshLoaded()
             check("S-039 a loaded model is never warned about", model.memoryWarningIfNeeded(for: "big:1", surface: .main) == nil)

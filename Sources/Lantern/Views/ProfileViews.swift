@@ -135,7 +135,7 @@ struct LockView: View {
             ProfileBadge(profile: profiles.current, size: 64)
             VStack(spacing: Space.xs) {
                 Text(profiles.current.name)
-                    .font(.system(.largeTitle, design: .serif))
+                    .font(TextStyle.display)
                 Text("Enter your password to see your conversations.")
                     .foregroundStyle(.secondary)
             }

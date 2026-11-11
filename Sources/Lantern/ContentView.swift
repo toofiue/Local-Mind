@@ -3,7 +3,6 @@ import SwiftUI
 
 struct ContentView: View {
     @Environment(AppModel.self) private var model
-    @Environment(\.openSettings) private var openSettings
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
@@ -44,7 +43,7 @@ struct ContentView: View {
             SeedData.insertIfRequested(into: model)
             QuickAskController.shared.configure(model: model)
             SelfTest.runIfRequested(model: model)
-            Snapshot.runIfRequested(model: model, openSettings: openSettings)
+            Snapshot.runIfRequested(model: model)
             model.openMainWindow = { openWindow(id: "main") }
             guard !SelfTest.requested, !Snapshot.requested, !model.hasStarted else { return }
             model.hasStarted = true

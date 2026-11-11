@@ -107,12 +107,6 @@ struct LanternApp: App {
             LanternMenuLabel(model: model)
         }
 
-        Settings {
-            SettingsView()
-                .environment(model)
-                .themed()
-        }
-        .windowResizability(.contentSize)
     }
 }
 

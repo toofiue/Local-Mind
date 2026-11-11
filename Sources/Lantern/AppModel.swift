@@ -146,10 +146,6 @@ final class AppModel {
     }() {
         didSet { if !Store.isOverridden { UserDefaults.standard.set(keepLoadedMinutes, forKey: "keepLoadedMinutes") } }
     }
-    /// Settings reopens on the last tab. Test and snapshot runs leave it alone.
-    var settingsTab: SettingsTab = SettingsTab(rawValue: UserDefaults.standard.string(forKey: "settings.tab") ?? "") ?? .appearance {
-        didSet { if !Store.isOverridden { UserDefaults.standard.set(settingsTab.rawValue, forKey: "settings.tab") } }
-    }
 
     @ObservationIgnored var startOllama: @MainActor () -> Void = { AppModel.openOllamaApp() }
     @ObservationIgnored var startupWait: Duration = .seconds(15)

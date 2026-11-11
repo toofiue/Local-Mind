@@ -9,7 +9,7 @@ struct WelcomeView: View {
             BrandMark()
                 .frame(width: 36, height: 36)
             Text(greeting)
-                .font(.system(size: 34, weight: .regular, design: .serif)) // grid: ok display type
+                .font(TextStyle.display)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
         }

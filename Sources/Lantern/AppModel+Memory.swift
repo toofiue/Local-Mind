@@ -36,10 +36,4 @@ extension AppModel {
         return MemoryWarning(modelName: modelName, surface: surface, message: message,
                              appsSummary: apps.isEmpty ? "" : "Using the most memory: \(apps)")
     }
-
-    /// Looks again after you've closed something. The warning clears if the model now fits.
-    func recheckMemory() {
-        guard let current = memoryWarning else { return }
-        memoryWarning = memoryWarningIfNeeded(for: current.modelName, surface: current.surface)
-    }
 }

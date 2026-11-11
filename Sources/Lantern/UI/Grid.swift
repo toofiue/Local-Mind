@@ -175,12 +175,8 @@ struct GridOverlay: View {
 enum TextStyle {
     /// The greeting and other once-per-page moments.
     static let display = Font.system(.largeTitle, design: .serif)
-    /// Page and panel titles.
-    static let title = Font.system(.title2, design: .serif)
     /// Big figures, like a score.
     static let figure = Font.system(.largeTitle, design: .serif)
     /// A row or card's name: body size, medium weight.
     static let heading = Font.body.weight(.medium)
-    /// Code and anything that must line up character by character.
-    static let code = Font.system(.body, design: .monospaced)
 }

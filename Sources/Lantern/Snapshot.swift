@@ -68,14 +68,14 @@ enum SnapshotPage: String, CaseIterable {
 /// Screenshot mode for agents.
 ///   APP_STORE=/tmp/test.store APP_SNAPSHOT=/tmp/shots ~/Applications/Lantern.app/Contents/MacOS/Lantern
 /// writes <page>-light.png and <page>-dark.png for every page, and
-/// settings-<tab>-light.png and settings-<tab>-dark.png for every Settings tab, then quits.
+/// settings-<section>-light.png and settings-<section>-dark.png for every Settings section, then quits.
 /// Each PNG gets a <page>-<mode>-layout.json with the grid probes (tools/check-layout.swift).
 /// APP_SNAPSHOT_PAGES=chat,offline limits the pages. Add "settings" to include Settings.
 /// Add APP_ACCENT=<id> to see the pages in another accent.
 enum Snapshot {
     static var requested: Bool { !(ProcessInfo.processInfo.environment["APP_SNAPSHOT"] ?? "").isEmpty }
 
-    static func runIfRequested(model: AppModel, openSettings: OpenSettingsAction) {
+    static func runIfRequested(model: AppModel) {
         let env = ProcessInfo.processInfo.environment
         guard let dir = env["APP_SNAPSHOT"], !dir.isEmpty else { return }
         // Snapshots never run against the real database.
@@ -114,17 +114,17 @@ enum Snapshot {
                 }
             }
             if only == nil || only?.contains("settings") == true {
-                let main = NSApp.windows.first { $0.canBecomeMain && !$0.isSheet }
-                openSettings()
-                try? await Task.sleep(for: .seconds(1))
+                // Each Settings section, as the board shows it in the main window.
                 for mode in ["light", "dark"] {
                     NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
-                    for tab in SettingsTab.allCases {
-                        model.settingsTab = tab
+                    SnapshotPage.chatEmpty.apply(to: model)
+                    for section in SettingsBoard.BoardSection.allCases {
+                        model.settingsSection = section
+                        model.showingSettings = true
                         try? await Task.sleep(for: .seconds(0.8))
-                        let settings = NSApp.windows.first { $0.isVisible && $0.canBecomeMain && $0 !== main && !$0.isSheet }
-                        capture(to: "\(dir)/settings-\(tab.rawValue)-\(mode).png", window: settings)
+                        capture(to: "\(dir)/settings-\(section.rawValue)-\(mode).png", window: nil)
                     }
+                    model.showingSettings = false
                 }
             }
             print("SNAPSHOT done \(dir)")

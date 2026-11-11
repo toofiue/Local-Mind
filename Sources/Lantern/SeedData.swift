@@ -87,8 +87,6 @@ enum SeedData {
         LoadedAttachment(kind: .image, fileName: "Screenshot.png", imageData: sampleImage)
     }
 
-    static var isRequested: Bool { ProcessInfo.processInfo.environment["APP_SEED"] == "1" && Store.isOverridden }
-
     static let models = [
         OllamaModel(name: "gemma4:latest", size: 9_461_576_343, capabilities: ["completion", "vision", "thinking"]),
         OllamaModel(name: "gemma4:12b-mlx", size: 7_680_999_368, capabilities: ["completion", "vision", "thinking"]),
