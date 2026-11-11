@@ -685,7 +685,7 @@ As the user, a message about a file that couldn't be attached disappears after a
 Screens: chat-attachments
 Acceptance:
 - [self] The message clears after 4 seconds, and a newer message gets its own 4 seconds.
-Status: todo
+Status: done
 
 ## Later
 Next after version one:
