@@ -35,6 +35,9 @@ struct ConversationSidebar: View {
                 Section("Recent") { rows(groups.recent) }
             }
         }
+        // See-through to the desktop, like Finder's and Mail's sidebars.
+        .scrollContentBackground(.hidden)
+        .background(DesktopTranslucency().ignoresSafeArea())
         .searchable(text: $model.searchText, placement: .sidebar, prompt: "Search")
         .searchFocused($isSearching)
         .onChange(of: model.searchRequest) { isSearching = true }

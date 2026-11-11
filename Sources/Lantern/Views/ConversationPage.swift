@@ -18,7 +18,6 @@ struct ConversationPage: View {
             ConnectionStatus()
             Composer()
         }
-        .background(Palette.canvas)
         .gridArea("conversation", inset: 0)
         .dropDestination(for: URL.self) { urls, _ in
             Task { await model.addFiles(urls) }

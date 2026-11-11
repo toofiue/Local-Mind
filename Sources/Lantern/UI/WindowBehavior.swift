@@ -75,3 +75,17 @@ private struct WindowHook: NSViewRepresentable {
         }
     }
 }
+
+/// The blurred desktop behind the window, in the sidebar material.
+/// It turns solid by itself when Reduce Transparency is on.
+struct DesktopTranslucency: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+        view.material = .sidebar
+        view.blendingMode = .behindWindow
+        view.state = .followsWindowActiveState
+        return view
+    }
+
+    func updateNSView(_ view: NSVisualEffectView, context: Context) {}
+}

@@ -25,8 +25,6 @@ struct ModelsPage: View {
             }
         }
         .formStyle(.grouped)
-        .scrollContentBackground(.hidden)
-        .background(Palette.canvas)
         .overlay {
             if model.models.isEmpty { NoModelsView() }
         }

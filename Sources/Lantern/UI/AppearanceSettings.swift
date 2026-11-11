@@ -114,7 +114,6 @@ private struct AccentPreview: View {
             .background(.fill.quaternary, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .padding(Space.md)
-        .background(Palette.canvas)
     }
 }
 
