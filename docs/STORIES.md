@@ -885,7 +885,15 @@ Screens: settings-appearance, settings-board
 Depends: S-067
 Acceptance:
 - [snap] Pickers and switches use the accent in every section; plain buttons are gray.
-- [snap] Accents: System, Clay, Ocean, Sage, Plum, Rose, Graphite. A saved accent that's gone falls back to System.
+- [snap] Accents: System, Clay, Azure, Lagoon, Emerald, Violet, Raspberry, Graphite. A saved accent that's gone falls back to System.
+Status: done
+
+### S-069 Thinking stays closed until you open it
+As the user, a reply's thinking stays folded away, even while the model is thinking; a "Thinking…" line shows it's working, and a click opens it.
+Screens: chat-thinking
+Depends: S-008
+Acceptance:
+- [snap] While a model thinks, its thinking is closed and the line reads "Thinking…".
 Status: done
 
 ## Later

@@ -230,10 +230,12 @@ private struct CopyReplyButton: View {
 private struct ThinkingSection: View {
     let text: String
     let isStreaming: Bool
+    /// Closed unless you open it, even while the model is still thinking.
     @State private var isOpen = Snapshot.requested
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        DisclosureGroup(isExpanded: Binding(get: { isStreaming || isOpen }, set: { isOpen = $0 })) {
+        DisclosureGroup(isExpanded: $isOpen) {
             ScrollView {
                 Text(text)
                     .font(.callout)
@@ -245,8 +247,17 @@ private struct ThinkingSection: View {
             .frame(maxHeight: 200)
             .padding(.top, Space.xs)
         } label: {
-            Text(isStreaming ? "Thinking…" : "Thinking")
-                .foregroundStyle(.secondary)
+            // The whole line opens it, not just the arrow.
+            Button { isOpen.toggle() } label: {
+                Text(isStreaming ? "Thinking…" : "Thought process")
+                    .foregroundStyle(.secondary)
+                    // A gentle pulse while it thinks, so it's clearly working; still with Reduce Motion.
+                    .phaseAnimator(isStreaming && !reduceMotion ? [1.0, 0.45] : [1.0]) { label, phase in
+                        label.opacity(phase)
+                    } animation: { _ in .easeInOut(duration: 0.8) }
+            }
+            .buttonStyle(.plain)
+            .help(isOpen ? "Hide the model's thinking" : "Show the model's thinking")
         }
     }
 }

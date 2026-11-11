@@ -31,13 +31,15 @@ struct Theme: Identifiable, Hashable {
     var onAccent: Color { darkText ? Color(hex: 0x16161C) : .white }
 
     static let all: [Theme] = [
-        // A short, muted set that suits the clay brand: no neon, nothing too close to Clay.
+        // A short set with energy: clear, saturated, and still polished. Each reads well as text,
+        // on a button fill with white, and in light and dark mode. Nothing sits too close to Clay.
         Theme(id: "system", name: "System", shades: nil),
         Theme(id: "clay", name: "Clay", shades: .init(light: 0xEBA68D, base: 0xD97757, deep: 0xB0553A)),
-        Theme(id: "ocean", name: "Ocean", shades: .init(light: 0x9BBBF0, base: 0x4A7BD0, deep: 0x2F5DAE)),
-        Theme(id: "sage", name: "Sage", shades: .init(light: 0xA9CBB0, base: 0x5F9470, deep: 0x41704F)),
-        Theme(id: "plum", name: "Plum", shades: .init(light: 0xC6B2E6, base: 0x8669BE, deep: 0x6A4EA3)),
-        Theme(id: "rose", name: "Rose", shades: .init(light: 0xEBA9B9, base: 0xC0607E, deep: 0xA14462)),
+        Theme(id: "azure", name: "Azure", shades: .init(light: 0x86B6FF, base: 0x2F7BF6, deep: 0x1D5FD6)),
+        Theme(id: "lagoon", name: "Lagoon", shades: .init(light: 0x5CDDF0, base: 0x00A3C4, deep: 0x007A94)),
+        Theme(id: "emerald", name: "Emerald", shades: .init(light: 0x6EDDB0, base: 0x0F9D6C, deep: 0x0B7A54)),
+        Theme(id: "violet", name: "Violet", shades: .init(light: 0xC2A9FF, base: 0x8257F2, deep: 0x6639DB)),
+        Theme(id: "raspberry", name: "Raspberry", shades: .init(light: 0xFF96B1, base: 0xE0436C, deep: 0xBF2952)),
         Theme(id: "graphite", name: "Graphite", shades: .init(light: 0xC7C7CC, base: 0x7C7C84, deep: 0x55555C)),
     ]
 }
