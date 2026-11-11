@@ -258,6 +258,26 @@ private struct ModelPicker: View {
     }
 
     var body: some View {
+        VStack(spacing: 0) {
+            list
+            Divider()
+            Button {
+                model.showingModelPicker = false
+                model.showModels()
+            } label: {
+                Label("Manage Models…", systemImage: "cpu")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, Space.lg)
+            .frame(height: 36)
+            .help("See every model, test them, and set the default (⇧⌘L)")
+        }
+    }
+
+    private var list: some View {
         List(model.models, selection: $highlighted) { item in
             HStack(spacing: Space.sm) {
                 Image(systemName: "checkmark")

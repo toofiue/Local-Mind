@@ -10,22 +10,20 @@ struct SettingsBoard: View {
     @State private var search = ""
 
     enum BoardSection: String, CaseIterable, Identifiable {
-        case profile, appearance, models, quickAsk
+        case profile, appearance, general
         var id: String { rawValue }
         var title: String {
             switch self {
             case .profile: "Profile"
             case .appearance: "Appearance"
-            case .models: "Models"
-            case .quickAsk: "Quick Ask"
+            case .general: "General"
             }
         }
         var symbol: String {
             switch self {
             case .profile: "person"
             case .appearance: "paintpalette"
-            case .models: "cpu"
-            case .quickAsk: "bolt"
+            case .general: "gearshape"
             }
         }
         /// Words that find this section in Search.
@@ -33,12 +31,11 @@ struct SettingsBoard: View {
             switch self {
             case .profile: ["name", "photo", "password", "lock", "account", "switch"]
             case .appearance: ["dark", "light", "theme", "color", "accent", "sidebar", "frost", "transparency"]
-            case .models: ["default", "memory", "loaded", "menu bar", "keep"]
-            case .quickAsk: ["shortcut", "hotkey", "keyboard", "panel"]
+            case .general: ["shortcut", "hotkey", "keyboard", "quick ask", "menu bar", "models", "default", "loaded"]
             }
         }
         /// The sidebar's groups, split by lines.
-        static let groups: [[BoardSection]] = [[.profile], [.appearance], [.models, .quickAsk]]
+        static let groups: [[BoardSection]] = [[.profile], [.appearance, .general]]
     }
 
     private func matches(_ item: BoardSection) -> Bool {
@@ -146,8 +143,7 @@ struct SettingsBoard: View {
         switch section {
         case .profile: ProfileSettings()
         case .appearance: AppearanceSettings()
-        case .models: ModelsSettings()
-        case .quickAsk: QuickAskSettings()
+        case .general: GeneralSettings()
         }
     }
 

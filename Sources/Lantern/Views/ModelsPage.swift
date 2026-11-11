@@ -59,6 +59,7 @@ struct ModelsPage: View {
                         .help("Run the quick check on every model, one at a time. This can take a while.")
                 }
             }
+            ModelDefaults()
             if model.lab.isRunning {
                 VStack(alignment: .leading, spacing: Space.xs) {
                     ProgressView(value: Double(model.lab.completed), total: Double(max(model.lab.total, 1)))
@@ -273,3 +274,40 @@ private struct RenameModelSheet: View {
     }
 }
 
+
+/// How models are used, kept with the models themselves: which one new conversations start with,
+/// and how long one stays in memory after replying.
+private struct ModelDefaults: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        @Bindable var model = model
+        HStack(spacing: Space.xl) {
+            HStack(spacing: Space.sm) {
+                Text("New conversations use").foregroundStyle(.secondary)
+                Picker("New conversations use", selection: $model.chosenDefaultModel) {
+                    Text("Last Used").tag("")
+                    Divider()
+                    ForEach(model.models) { item in
+                        Text(model.displayName(item.name)).tag(item.name)
+                    }
+                }
+                .labelsHidden()
+                .fixedSize()
+                .help("The model a new conversation starts with. Last Used picks the one you used most recently.")
+            }
+            HStack(spacing: Space.sm) {
+                Text("Keep loaded for").foregroundStyle(.secondary)
+                Picker("Keep loaded for", selection: $model.keepLoadedMinutes) {
+                    ForEach([1, 5, 15, 30], id: \.self) { minutes in
+                        Text("^[\(minutes) minute](inflect: true)").tag(minutes)
+                    }
+                }
+                .labelsHidden()
+                .fixedSize()
+                .help("How long a model stays in memory after its last reply. Loaded models answer at once but use a lot of memory.")
+            }
+        }
+        .font(.callout)
+    }
+}

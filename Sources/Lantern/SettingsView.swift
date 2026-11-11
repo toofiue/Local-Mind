@@ -25,8 +25,7 @@ struct SettingsView: View {
     private func page(_ tab: SettingsTab) -> some View {
         Group {
             switch tab {
-            case .models: ModelsSettings()
-            case .quickAsk: QuickAskSettings()
+            case .general: GeneralSettings()
             case .appearance: AppearanceSettings()
             }
         }
@@ -36,40 +35,52 @@ struct SettingsView: View {
 
 /// The Settings tabs. Snapshot mode walks through every case.
 enum SettingsTab: String, CaseIterable, Identifiable {
-    case models, quickAsk, appearance
+    case general, appearance
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
-        case .models: "Models"
-        case .quickAsk: "Quick Ask"
+        case .general: "General"
         case .appearance: "Appearance"
         }
     }
 
     var symbol: String {
         switch self {
-        case .models: "cpu"
-        case .quickAsk: "bolt"
+        case .general: "gearshape"
         case .appearance: "paintpalette"
         }
     }
 }
 
-struct QuickAskSettings: View {
+/// Settings > General: Quick Ask's shortcut and the menu bar item.
+/// The default model and how long models stay loaded live on the Models page, with the models.
+struct GeneralSettings: View {
     @Environment(AppModel.self) private var model
+    @AppStorage("showMenuBarItem") private var showMenuBarItem = true
 
     var body: some View {
-        SettingsPageLayout(title: "Quick Ask") {
-            SettingRow(title: "Shortcut",
-                       description: model.hotkeyMessage ?? "Opens Quick Ask from any app while Local Mind is running.",
-                       divider: false) {
+        SettingsPageLayout(title: "General") {
+            SettingRow(title: "Quick Ask shortcut",
+                       description: model.hotkeyMessage ?? "Opens Quick Ask from any app while Local Mind is running.") {
                 HStack(spacing: Space.sm) {
                     if model.hotkey != .standard {
                         Button("Use Default") { model.changeHotkey(.standard) }
                     }
                     ShortcutRecorder()
+                }
+            }
+            SettingRow(title: "Show in the menu bar",
+                       description: "An aperture that opens when a model is loaded, with Quick Ask and Unload.") {
+                Toggle("Show in the menu bar", isOn: $showMenuBarItem)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+            }
+            SettingRow(title: "Models", description: "The default model and how long models stay loaded are on the Models page.", divider: false) {
+                Button("Open Models") {
+                    model.showingSettings = false
+                    model.showModels()
                 }
             }
         }
@@ -117,38 +128,3 @@ private struct ShortcutRecorder: View {
     }
 }
 
-struct ModelsSettings: View {
-    @Environment(AppModel.self) private var model
-    @AppStorage("showMenuBarItem") private var showMenuBarItem = true
-
-    var body: some View {
-        @Bindable var model = model
-        SettingsPageLayout(title: "Models") {
-            SettingRow(title: "Default model", description: "Used for new conversations. Last Used picks the one you used most recently.") {
-                Picker("Default model", selection: $model.chosenDefaultModel) {
-                    Text("Last Used").tag("")
-                    Divider()
-                    ForEach(model.models) { item in
-                        Text(model.displayName(item.name)).tag(item.name)
-                    }
-                }
-                .labelsHidden()
-                .fixedSize()
-            }
-            SettingRow(title: "Keep a model loaded", description: "How long a model stays in memory after its last reply. Loaded models answer at once but use a lot of memory.") {
-                Picker("Keep a model loaded", selection: $model.keepLoadedMinutes) {
-                    ForEach([1, 5, 15, 30], id: \.self) { minutes in
-                        Text("^[\(minutes) minute](inflect: true)").tag(minutes)
-                    }
-                }
-                .labelsHidden()
-                .fixedSize()
-            }
-            SettingRow(title: "Show in the menu bar", description: "An aperture that opens when a model is loaded, with Quick Ask and Unload.", divider: false) {
-                Toggle("Show in the menu bar", isOn: $showMenuBarItem)
-                    .labelsHidden()
-                    .toggleStyle(.switch)
-            }
-        }
-    }
-}

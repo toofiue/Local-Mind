@@ -868,6 +868,16 @@ Acceptance:
 - [snap] Settings rows show a title, a description, and the control on the right, with a line between rows.
 Status: done
 
+### S-067 One place for models
+As the user, everything about models is on the Models page, including which model new conversations use and how long models stay loaded; Settings holds only Profile, Appearance, and General.
+Screens: models, settings-board, model-picker
+Depends: S-066
+Acceptance:
+- [snap] The Models page shows the default model and keep-loaded time under its title.
+- [snap] Settings has no Models section; General links to the Models page.
+- [snap] The model picker ends with Manage Models….
+Status: done
+
 ## Later
 Next after version one:
 - Projects with their own instructions and files

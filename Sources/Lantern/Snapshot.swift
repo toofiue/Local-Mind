@@ -47,7 +47,7 @@ enum SnapshotPage: String, CaseIterable {
         model.isSelectingConversations = self == .sidebarSelect
         model.isLocked = self == .lock
         model.showingSettings = self == .settingsBoard
-        if self == .settingsBoard { model.settingsBoardStart = .appearance }
+        if self == .settingsBoard { model.settingsBoardStart = .general }
         if self == .sidebarSelect {
             model.multiSelection = Set([SeedData.formatted, SeedData.attached].compactMap { SeedData.conversation(titled: $0, in: model)?.uid })
         }
