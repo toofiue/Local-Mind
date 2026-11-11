@@ -262,7 +262,7 @@ public struct OllamaClient: Sendable {
     /// Runs one Lab test to completion, with a fixed reply limit and no visible thinking.
     public func labComplete(model: OllamaModel, labCase: LabCase, maxTokens: Int = 800) async throws -> LabResponse {
         var message: [String: Any] = ["role": "user", "content": labCase.prompt]
-        if let image = labCase.imageBase64 { message["images"] = [image] }
+        if let media = labCase.imageBase64 ?? labCase.audioBase64 { message["images"] = [media] }
         var body: [String: Any] = ["model": model.name, "stream": false, "messages": [message],
                                    "options": ["num_predict": maxTokens]]
         if model.supportsThinking { body["think"] = false }

@@ -45,6 +45,7 @@ enum SelfTest {
         let transport = ScriptedTransport(installed: [first, second])
         model.client = OllamaClient(transport: transport)
         model.startOllama = {}
+        model.lab.renderAudio = { Dictionary(uniqueKeysWithValues: LabAudio.clips.map { ($0.id, "UklGRg==") }) }
         model.readMemory = { MemorySnapshot(totalBytes: 68_719_476_736, availableBytes: 34_359_738_368) }
         model.readTopApps = { [] }
         model.startupWait = .milliseconds(600)
@@ -819,6 +820,25 @@ enum SelfTest {
             check("S-049 an older PDF previews its text", older?.lastPathComponent == "old.txt" && (try? String(contentsOf: older!, encoding: .utf8)) == "Read text")
             let image = AttachmentPreview.file(kind: .image, fileName: "shot.png", imageData: SeedData.sampleImage, audioData: nil, fileData: nil, text: "")
             check("S-049 an image previews", image.map { FileManager.default.fileExists(atPath: $0.path) } == true)
+        }
+
+        // S-051 listening tests
+        do {
+            let previous = model.selection
+            defer { model.selection = previous }
+            let short = LabAudio.clips.first { $0.id == "a-short" }?.script ?? ""
+            transport.scriptLab { body in body.contains("Transcribe this recording") ? short : "No idea" }
+            model.runLab("first:1", skipMemoryCheck: true)
+            await model.lab.wait()
+            let audio = model.labReports["first:1"]?.results(in: .audio) ?? []
+            check("S-051 every clip is tested", audio.count == LabAudio.clips.count)
+            check("S-051 a matching transcript passes", audio.first { $0.id == "a-short" }?.passed == true)
+            check("S-051 a transcript of the wrong clip fails", audio.first { $0.id == "a-long" }?.passed == false)
+            check("S-051 results say how many words were right", audio.first { $0.id == "a-short" }?.reply.hasPrefix("100% of words right") == true)
+            model.runLab("second:1", skipMemoryCheck: true)
+            await model.lab.wait()
+            check("S-051 a model without audio isn't given audio tests", model.labReports["second:1"]?.results(in: .audio).isEmpty == true)
+            check("S-051 and its report says it can't listen", model.labReports["second:1"]?.limits.contains("Can't listen to audio.") == true)
         }
 
         // Launch repair

@@ -728,7 +728,7 @@ Depends: S-040, S-045
 Acceptance:
 - [unit] Transcripts are scored by word error rate, the standard measure for speech recognition.
 - [self] Audio tests run only for models that list audio.
-Status: todo
+Status: done
 
 ### S-052 See the best model for each job
 As the user, I see which model scored best in each area, and I can test every model in one go.

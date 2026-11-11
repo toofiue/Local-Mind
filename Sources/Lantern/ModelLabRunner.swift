@@ -12,18 +12,28 @@ final class ModelLabRunner {
 
     @ObservationIgnored var onFinished: (LabReport) -> Void = { _ in }
     @ObservationIgnored var onStateChange: () -> Void = {}
+    /// Makes the spoken clips. The self-test replaces it.
+    @ObservationIgnored var renderAudio: @Sendable () async -> [String: String] = {
+        await Task.detached { LabAudioRenderer.render() }.value
+    }
     @ObservationIgnored private var task: Task<Void, Never>?
 
     var isRunning: Bool { modelName != nil }
 
     func start(_ model: OllamaModel, client: OllamaClient, totalMemory: Int64, swapUsed: @escaping () -> Int64) {
         guard !isRunning else { return }
-        let cases = ModelLab.cases(for: model)
         modelName = model.name
         completed = 0
-        total = cases.count
+        total = ModelLab.cases(for: model).count + (model.supportsAudio ? LabAudio.clips.count : 0)
+        currentTest = model.supportsAudio ? "Preparing audio" : ""
         onStateChange()
-        task = Task { await run(model, cases: cases, client: client, totalMemory: totalMemory, swapUsed: swapUsed) }
+        let renderAudio = self.renderAudio
+        task = Task {
+            let audio = model.supportsAudio ? await renderAudio() : [:]
+            let cases = ModelLab.cases(for: model, audio: audio)
+            total = cases.count
+            await run(model, cases: cases, client: client, totalMemory: totalMemory, swapUsed: swapUsed)
+        }
     }
 
     func stop() {
@@ -50,7 +60,7 @@ final class ModelLabRunner {
             if Task.isCancelled { break }
             currentTest = "\(labCase.area.title): \(labCase.name)"
             do {
-                let response = try await client.labComplete(model: model, labCase: labCase)
+                let response = try await client.labComplete(model: model, labCase: labCase, maxTokens: labCase.maxTokens)
                 if labCase.area == .speed {
                     tokensPerSecond = response.tokensPerSecond
                     loadSeconds = response.loadSeconds
@@ -60,7 +70,7 @@ final class ModelLabRunner {
                 }
                 swapAfter = max(swapAfter, swapUsed())
                 results.append(LabCaseResult(id: labCase.id, area: labCase.area, name: labCase.name,
-                                             reply: replySummary(response), passed: labCase.grade(response),
+                                             reply: replySummary(response, for: labCase), passed: labCase.grade(response),
                                              documentTokens: labCase.documentTokens,
                                              prompt: labCase.shownPrompt, expected: labCase.expected))
             } catch is CancellationError {
@@ -81,11 +91,20 @@ final class ModelLabRunner {
             onFinished(LabReport(modelName: model.name, date: .now, tokensPerSecond: tokensPerSecond, loadSeconds: loadSeconds,
                                  memoryBytes: memory, swapGrowthBytes: swapAfter - swapBefore, totalMemoryBytes: totalMemory,
                                  supportsImages: model.supportsImages, supportsTools: model.capabilities.contains("tools"),
-                                 results: results))
+                                 results: results, supportsAudio: model.supportsAudio))
         }
         modelName = nil
         currentTest = ""
         onStateChange()
+    }
+
+    private func replySummary(_ response: LabResponse, for labCase: LabCase) -> String {
+        if labCase.area == .audio, labCase.audioBase64 != nil, let clip = LabAudio.clips.first(where: { $0.id == labCase.id }), clip.isTranscript {
+            let errors = LabAudio.wordErrorRate(reference: clip.script, hypothesis: response.text)
+            let right = max(0, Int(((1 - errors) * 100).rounded()))
+            return "\(right)% of words right. " + String(response.text.trimmingCharacters(in: .whitespacesAndNewlines).prefix(300))
+        }
+        return replySummary(response)
     }
 
     private func replySummary(_ response: LabResponse) -> String {

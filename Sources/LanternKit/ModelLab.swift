@@ -5,7 +5,7 @@ import ImageIO
 import UniformTypeIdentifiers
 
 public enum LabArea: String, Codable, CaseIterable, Sendable, Identifiable {
-    case speed, reasoning, code, instructions, data, documents, images, tools
+    case speed, reasoning, code, instructions, data, documents, images, audio, tools
 
     public var id: String { rawValue }
 
@@ -18,6 +18,7 @@ public enum LabArea: String, Codable, CaseIterable, Sendable, Identifiable {
         case .data: "Structured Data"
         case .documents: "Long Documents"
         case .images: "Images"
+        case .audio: "Listening"
         case .tools: "Using Tools"
         }
     }
@@ -50,6 +51,7 @@ extension LabArea {
         case .data: "Whether it can return valid JSON that other software can read."
         case .documents: "Whether it still remembers facts placed at the start, middle, and end of long text."
         case .images: "Whether it can see a picture at all."
+        case .audio: "How accurately it transcribes speech, across voices and lengths, and whether it understands what it hears."
         case .tools: "Whether it calls a tool correctly instead of guessing the answer."
         }
     }
@@ -64,6 +66,7 @@ extension LabArea {
         case .data: "The reply must parse as JSON and contain the right values."
         case .documents: "Pass only if all three hidden facts come back correctly."
         case .images: "Lantern draws the picture itself, so the right answer is known exactly."
+        case .audio: "macOS reads known text aloud. A transcript passes if at most 15% of its words are wrong, counting wrong, missing, and extra words. Numbers are left out, so how a model writes them can't count against it."
         case .tools: "Pass only if the model calls the right tool with the right argument."
         }
     }
@@ -87,6 +90,8 @@ extension LabArea {
             return standard("Needle in a Haystack", "https://github.com/gkamradt/LLMTest_NeedleInAHaystack", "Same method: facts hidden in long filler text, at growing lengths.")
         case .images:
             return nil
+        case .audio:
+            return standard("Open ASR Leaderboard", "https://huggingface.co/spaces/hf-audio/open_asr_leaderboard", "Same measure: word error rate. Lantern's clips are read by macOS voices, which are clearer than real recordings.")
         case .tools:
             return standard("Berkeley Function Calling Leaderboard", "https://gorilla.cs.berkeley.edu/leaderboard.html", "Modeled on it: right function, right arguments. One call, not its full set.")
         }
@@ -129,6 +134,10 @@ public struct LabCase: Sendable, Identifiable {
     public var documentTokens: Int?
     /// A short stand-in for a prompt too long to show.
     public var promptSummary: String?
+    /// 16 kHz WAV, sent the same way as images.
+    public var audioBase64: String?
+    /// Longest reply to allow. Transcripts of long recordings need more.
+    public var maxTokens = 800
     /// The answer or rule the reply is graded against, in plain words.
     public let expected: String
     public let grade: @Sendable (LabResponse) -> Bool
@@ -172,12 +181,16 @@ public enum ModelLab {
     public static let weatherToolName = "get_weather"
 
     /// The tests that apply to this model, cheapest first.
-    public static func cases(for model: OllamaModel) -> [LabCase] {
+    /// `audio` holds each clip's WAV by clip id, made by the app, since it takes macOS's voices.
+    public static func cases(for model: OllamaModel, audio: [String: String] = [:]) -> [LabCase] {
         var cases = baseCases
         var sizes = [2_000, 8_000]
         if model.contextLimit >= 20_000 { sizes.append(20_000) }
         cases += sizes.map(documentCase)
         if model.supportsImages { cases += imageCases }
+        if model.supportsAudio {
+            cases += LabAudio.clips.compactMap { clip in audio[clip.id].map { LabAudio.labCase(clip, audioBase64: $0) } }
+        }
         if model.capabilities.contains("tools") { cases.append(toolCase) }
         return cases
     }
@@ -365,10 +378,13 @@ public struct LabReport: Codable, Sendable, Equatable {
     public let totalMemoryBytes: Int64
     public let supportsImages: Bool
     public let supportsTools: Bool
+    /// Nil in reports saved before audio was tested.
+    public var supportsAudio: Bool?
     public let results: [LabCaseResult]
 
     public init(modelName: String, date: Date, tokensPerSecond: Double, loadSeconds: Double, memoryBytes: Int64,
-                swapGrowthBytes: Int64, totalMemoryBytes: Int64, supportsImages: Bool, supportsTools: Bool, results: [LabCaseResult]) {
+                swapGrowthBytes: Int64, totalMemoryBytes: Int64, supportsImages: Bool, supportsTools: Bool, results: [LabCaseResult], supportsAudio: Bool? = nil) {
+        self.supportsAudio = supportsAudio
         self.modelName = modelName
         self.date = date
         self.tokensPerSecond = tokensPerSecond
@@ -416,6 +432,7 @@ public struct LabReport: Codable, Sendable, Equatable {
             list.append(longest >= 20_000 ? "Long documents" : "Short documents")
         }
         if share(.images) == 1 { list.append("Reading images") }
+        if let score = share(.audio), score >= 0.8 { list.append("Transcribing audio") }
         if share(.tools) == 1 { list.append("Using tools") }
         return list
     }
@@ -434,6 +451,11 @@ public struct LabReport: Codable, Sendable, Equatable {
             list.append("Can't read images.")
         } else if let score = share(.images), score < 1 {
             list.append("Misread a test image.")
+        }
+        if supportsAudio == false {
+            list.append("Can't listen to audio.")
+        } else if let failed = results(in: .audio).first(where: { !$0.passed }) {
+            list.append("Struggled with audio: \(failed.name.lowercased()).")
         }
         if !supportsTools {
             list.append("Can't use tools.")
