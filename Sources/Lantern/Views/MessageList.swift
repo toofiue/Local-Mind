@@ -192,7 +192,7 @@ private struct ReplyRow: View {
     private var notice: (text: String, symbol: String)? {
         switch message.state {
         case .stopped: ("Stopped", "stop.circle")
-        case .interrupted: ("Interrupted. Iris lost its connection to Ollama.", "exclamationmark.triangle")
+        case .interrupted: ("Interrupted. Local Mind lost its connection to Ollama.", "exclamationmark.triangle")
         case .failed: (message.failureText, "exclamationmark.triangle")
         case .complete, .writing: nil
         }

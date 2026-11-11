@@ -4,4 +4,4 @@ set -u
 rm -rf ~/Library/Saved\ Application\ State/com.toofiuea.lantern.savedState
 store=/tmp/Lantern-self.store
 rm -f $store $store-shm $store-wal
-APP_STORE=$store ~/Applications/Iris.app/Contents/MacOS/Iris --selftest
+APP_STORE=$store "$HOME/Applications/Local Mind.app/Contents/MacOS/LocalMind" --selftest

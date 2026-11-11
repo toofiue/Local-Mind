@@ -3,9 +3,9 @@
 <plist version="1.0"><dict>
 <!-- Kept from when the app was called Lantern, so settings carry over. -->
 <key>CFBundleIdentifier</key><string>com.toofiuea.lantern</string>
-<key>CFBundleName</key><string>Iris</string>
-<key>CFBundleDisplayName</key><string>Iris</string>
-<key>CFBundleExecutable</key><string>Iris</string>
+<key>CFBundleName</key><string>Local Mind</string>
+<key>CFBundleDisplayName</key><string>Local Mind</string>
+<key>CFBundleExecutable</key><string>LocalMind</string>
 <key>CFBundleIconFile</key><string>AppIcon</string>
 <key>CFBundleIconName</key><string>AppIcon</string>
 <key>CFBundlePackageType</key><string>APPL</string>

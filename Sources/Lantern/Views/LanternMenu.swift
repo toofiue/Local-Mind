@@ -36,7 +36,7 @@ struct LanternMenu: View {
         }
         .disabled(model.loaded.first.map { !model.canUnload($0.name) } ?? true)
         Divider()
-        Button("Open Iris") { model.showMainWindow() }
-        Button("Quit Iris") { NSApp.terminate(nil) }
+        Button("Open Local Mind") { model.showMainWindow() }
+        Button("Quit Local Mind") { NSApp.terminate(nil) }
     }
 }

@@ -1,16 +1,15 @@
 {
   "fill" : {
-    "automatic-gradient" : "srgb:0.06000,0.09000,0.22000,1.00000"
+    "solid" : "srgb:0.95300,0.92900,0.89000,1.00000"
   },
   "groups" : [
     {
       "layers" : [
-        { "glass" : true, "image-name" : "blades.svg", "name" : "blades" },
-        { "glass" : true, "image-name" : "rim.svg", "name" : "rim", "opacity" : 0.7 },
-        { "glass" : false, "image-name" : "core.svg", "name" : "core" }
+        { "glass" : false, "image-name" : "pupil.svg", "name" : "pupil" },
+        { "glass" : false, "image-name" : "petals.svg", "name" : "petals" }
       ],
-      "shadow" : { "kind" : "neutral", "opacity" : 0.5 },
-      "translucency" : { "enabled" : true, "value" : 0.35 }
+      "shadow" : { "kind" : "neutral", "opacity" : 0.25 },
+      "translucency" : { "enabled" : false, "value" : 0 }
     }
   ],
   "supported-platforms" : { "squares" : [ "macOS" ] }

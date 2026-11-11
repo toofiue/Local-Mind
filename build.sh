@@ -1,5 +1,5 @@
 #!/bin/zsh
-# Builds Iris and installs it to ~/Applications/Iris.app.
+# Builds Local Mind and installs it to ~/Applications/Local Mind.app.
 # Build products live in ~/Library/Developer/Lantern, outside the repo
 # (and outside Dropbox or iCloud, which would try to sync them).
 #
@@ -9,7 +9,8 @@
 set -euo pipefail
 here=${0:A:h}
 name="Lantern"   # the Swift package and build folder
-app_name="Iris"  # what people see
+app_name="Local Mind"  # what people see
+exe_name="LocalMind"   # the program inside the app
 # SwiftUI's macros ship with Xcode, not the Command Line Tools.
 if [[ -z "${DEVELOPER_DIR:-}" && "$(xcode-select -p)" == /Library/Developer/CommandLineTools* && -d /Applications/Xcode.app ]]; then
   export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
@@ -41,7 +42,7 @@ app="$HOME/Applications/$app_name.app"
 mkdir -p "$HOME/Applications"
 rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
-cp "$bin" "$app/Contents/MacOS/$app_name"
+cp "$bin" "$app/Contents/MacOS/$exe_name"
 sed -e "s/__BUILD__/$(date +%Y%m%d%H%M)/" "$here/Info.plist.in" > "$app/Contents/Info.plist"
 # The icon: Icon/AppIcon.icon -> Resources/Assets.car + AppIcon.icns, rebuilt when it changed.
 if [[ -d "$here/Icon/AppIcon.icon" ]]; then

@@ -1,6 +1,6 @@
 import AppKit
 
-/// Iris's menu bar icon: an aperture that opens when a model is in memory.
+/// Local Mind's menu bar icon: an aperture that opens when a model is in memory.
 /// Closed means no model, half open means one is loading, open means ready.
 enum ApertureIcon {
     enum State: CaseIterable {
@@ -8,9 +8,9 @@ enum ApertureIcon {
 
         var label: String {
             switch self {
-            case .closed: "Iris, no model loaded"
-            case .opening: "Iris, loading a model"
-            case .open: "Iris, model ready"
+            case .closed: "Local Mind, no model loaded"
+            case .opening: "Local Mind, loading a model"
+            case .open: "Local Mind, model ready"
             }
         }
 

@@ -5,7 +5,7 @@ import LanternKit
 enum LabAudioRenderer {
     nonisolated static func render() -> [String: String] {
         var result: [String: String] = [:]
-        let folder = FileManager.default.temporaryDirectory.appending(path: "Iris Lab Audio", directoryHint: .isDirectory)
+        let folder = FileManager.default.temporaryDirectory.appending(path: "Local Mind Lab Audio", directoryHint: .isDirectory)
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
         for clip in LabAudio.clips {

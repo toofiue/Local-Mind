@@ -32,6 +32,7 @@ struct Theme: Identifiable, Hashable {
 
     static let all: [Theme] = [
         Theme(id: "system", name: "System", shades: nil),
+        Theme(id: "clay", name: "Clay", shades: .init(light: 0xEE9A84, base: 0xC8553D, deep: 0xA2402B)),
         Theme(id: "blue", name: "Blue", shades: .init(light: 0x7CC0FF, base: 0x0A84FF, deep: 0x0064D2)),
         Theme(id: "indigo", name: "Indigo", shades: .init(light: 0xA5ADFF, base: 0x5E6AD2, deep: 0x4650B8)),
         Theme(id: "violet", name: "Violet", shades: .init(light: 0xB9A6FF, base: 0x7B5CFF, deep: 0x6342E6)),
@@ -59,7 +60,7 @@ final class ThemeStore {
     /// only while the Mac's accent is Multicolor (System Settings >
     /// Appearance). Any other Mac accent wins. Example:
     /// Theme(id: "brand", name: "Brand", shades: .init(light: 0x8EEBC4, base: 0x2BC48A, deep: 0x0F7A55), darkText: true)
-    static let brand: Theme? = nil
+    static let brand: Theme? = Theme.all.first { $0.id == "clay" }
 
     var themeID: String {
         didSet { UserDefaults.standard.set(themeID, forKey: "appearance.accent") }

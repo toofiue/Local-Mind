@@ -748,6 +748,15 @@ Acceptance:
 - [self] Every visible name says Iris; settings and conversations carry over from Lantern.
 Status: done
 
+### S-054 Local Mind, in clay and cream
+As the user, I see the app as Local Mind, with a two-color clay and cream identity.
+Screens: app icon, all
+Depends: S-053
+Acceptance:
+- [self] Every visible name says Local Mind.
+- [self] Clay is the brand accent, shown when the accent follows the Mac.
+Status: done
+
 ## Later
 Next after version one:
 - Projects with their own instructions and files

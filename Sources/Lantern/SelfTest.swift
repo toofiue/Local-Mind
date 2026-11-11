@@ -403,7 +403,7 @@ enum SelfTest {
             model.send("Busy now")
             try? await Task.sleep(for: .milliseconds(100))
             model.quickAsk.draft = "Too soon"
-            check("S-022 a second reply waits its turn", !model.quickSend() && model.quickAsk.notice == "Iris is finishing another reply.")
+            check("S-022 a second reply waits its turn", !model.quickSend() && model.quickAsk.notice == "Local Mind is finishing another reply.")
             check("S-022 and keeps your text", model.quickAsk.draft == "Too soon")
             model.stop()
             await model.waitForReply()
@@ -868,7 +868,8 @@ enum SelfTest {
             check("S-053 closed with no model", model.apertureState == .closed)
             model.loaded = [LoadedModel(name: "first:1", memory: 1)]
             check("S-053 open when a model is in memory", model.apertureState == .open)
-            check("S-053 the window is called Iris", Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String == "Iris")
+            check("S-054 the app is called Local Mind", Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String == "Local Mind")
+            check("S-054 clay is the brand accent", ThemeStore.brand?.id == "clay")
             try? FileManager.default.createDirectory(atPath: "/tmp/Lantern-shots", withIntermediateDirectories: true)
             for state in ApertureIcon.State.allCases {
                 let image = ApertureIcon.image(state)
