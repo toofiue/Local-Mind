@@ -12,16 +12,24 @@ struct AppearanceSettings: View {
             .pickerStyle(.segmented)
             .help("System follows your Mac. Light or Dark applies to Local Mind only.")
             LabeledContent("Sidebar") {
-                Slider(value: $store.sidebarFrost, in: 0...1) {
-                    Text("Sidebar frost")
-                } minimumValueLabel: {
-                    Text("Clear").font(.caption).foregroundStyle(.secondary)
-                } maximumValueLabel: {
-                    Text("Frosted").font(.caption).foregroundStyle(.secondary)
+                HStack(spacing: Space.md) {
+                    // Snaps in 10% steps, like the Mac's brightness and volume.
+                    Slider(value: $store.sidebarFrost, in: 0...1, step: 0.1) {
+                        Text("Sidebar frost")
+                    } minimumValueLabel: {
+                        Text("Clear").font(.caption).foregroundStyle(.secondary)
+                    } maximumValueLabel: {
+                        Text("Frosted").font(.caption).foregroundStyle(.secondary)
+                    }
+                    .labelsHidden()
+                    .frame(maxWidth: 260)
+                    .help("How much of the desktop shows through the sidebar")
+                    .accessibilityValue("\(Int((store.sidebarFrost * 100).rounded())) percent frosted")
+                    Text(store.sidebarFrost, format: .percent.precision(.fractionLength(0)))
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                        .frame(width: 40, alignment: .trailing)
                 }
-                .labelsHidden()
-                .frame(maxWidth: 260)
-                .help("How much of the desktop shows through the sidebar")
             }
         }
         Section {

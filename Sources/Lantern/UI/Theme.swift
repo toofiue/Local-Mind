@@ -117,7 +117,9 @@ final class ThemeStore {
         themeID = ProcessInfo.processInfo.environment["APP_ACCENT"]
             ?? UserDefaults.standard.string(forKey: "appearance.accent") ?? Self.defaultID
         mode = Mode(rawValue: UserDefaults.standard.string(forKey: "appearance.mode") ?? "") ?? .system
-        sidebarFrost = UserDefaults.standard.object(forKey: "appearance.sidebarFrost") as? Double ?? Self.defaultFrost
+        let savedFrost = UserDefaults.standard.object(forKey: "appearance.sidebarFrost") as? Double ?? Self.defaultFrost
+        // Saved before the slider snapped to 10% steps: round to the nearest step.
+        sidebarFrost = (savedFrost * 10).rounded() / 10
         NotificationCenter.default.addObserver(forName: NSColor.systemColorsDidChangeNotification,
                                                object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.macIsMulticolor = ThemeStore.readMulticolor() }
