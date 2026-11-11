@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// One line saying a model won't fit comfortably, with a way to go ahead.
-/// Sending again checks again, so there's no separate button for that.
+/// Pressing Return or Send again while it shows sends anyway, the same as the button.
 struct MemoryWarningView: View {
     let warning: MemoryWarning
     var actionTitle = "Send Anyway"

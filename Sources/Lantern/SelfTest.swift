@@ -667,6 +667,14 @@ enum SelfTest {
             check("S-039 Send Anyway goes ahead", model.send("Heavy question", skipMemoryCheck: true))
             await model.waitForReply()
             check("S-039 sending clears the warning", model.memoryWarning == nil)
+
+            model.newConversation()
+            model.draftModelName = "big:1"
+            check("S-062 the first send shows the warning", !model.send("Second heavy question") && model.memoryWarning != nil)
+            transport.script(ScriptedTransport.reply(text: ["Done"]))
+            check("S-062 pressing Return again sends anyway", model.send("Second heavy question"))
+            await model.waitForReply()
+            check("S-062 and the warning goes away", model.memoryWarning == nil)
             model.draftModelName = nil
         }
 

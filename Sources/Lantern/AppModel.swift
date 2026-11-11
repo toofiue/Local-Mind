@@ -471,7 +471,9 @@ final class AppModel {
             return false
         }
 
-        if !skipMemoryCheck, let warning = memoryWarningIfNeeded(for: modelName, surface: .main) {
+        // Sending again while the warning shows means "send anyway", so Return works as well as the button.
+        let alreadyWarned = memoryWarning?.surface == .main && memoryWarning?.modelName == modelName
+        if !skipMemoryCheck, !alreadyWarned, let warning = memoryWarningIfNeeded(for: modelName, surface: .main) {
             memoryWarning = warning
             return false
         }

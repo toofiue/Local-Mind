@@ -822,6 +822,14 @@ Acceptance:
 - [self] A starter button fills the message box.
 Status: done
 
+### S-062 Send past the memory warning with Return
+As the user, when the memory warning shows, pressing Return or Send again sends my message anyway, the same as Send Anyway.
+Screens: memory-warning
+Depends: S-043
+Acceptance:
+- [self] A second send while the warning shows goes ahead and loads the model.
+Status: done
+
 ## Later
 Next after version one:
 - Projects with their own instructions and files

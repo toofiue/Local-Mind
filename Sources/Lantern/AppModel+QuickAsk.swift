@@ -44,7 +44,9 @@ extension AppModel {
         }
         guard let modelName = quickModelName else { return false }
 
-        if !skipMemoryCheck, let warning = memoryWarningIfNeeded(for: modelName, surface: .quickAsk) {
+        // Sending again while the warning shows means "send anyway".
+        let alreadyWarned = memoryWarning?.surface == .quickAsk && memoryWarning?.modelName == modelName
+        if !skipMemoryCheck, !alreadyWarned, let warning = memoryWarningIfNeeded(for: modelName, surface: .quickAsk) {
             memoryWarning = warning
             return false
         }
