@@ -35,6 +35,8 @@ struct ConversationPage: View {
             }
             ConnectionStatus()
             Composer()
+                // Its glass would show through the dimmed window around Settings.
+                .opacity(model.showingSettings ? 0 : 1)
             if isHome {
                 StarterRow()
                     .transition(.opacity)

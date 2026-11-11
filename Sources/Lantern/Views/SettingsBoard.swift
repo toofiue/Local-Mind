@@ -74,6 +74,7 @@ struct SettingsBoard: View {
                 Button("Close", systemImage: "xmark") { close() }
                     .labelStyle(.iconOnly)
                     .buttonStyle(.borderless)
+                    .foregroundStyle(.secondary)
                     .keyboardShortcut(.cancelAction)
                     .help("Close Settings (⎋)")
             }
@@ -85,6 +86,8 @@ struct SettingsBoard: View {
                 Divider()
                 page
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    // Settings controls stay neutral; the accent is for state, like a loaded model.
+                    .buttonStyle(.bordered)
             }
         }
         .background(.background)
@@ -141,7 +144,7 @@ struct SettingsBoard: View {
     @ViewBuilder private var page: some View {
         switch model.settingsSection {
         case .profile: ProfileSettings()
-        case .models: ModelsPage(inSettings: true)
+        case .models: ModelsSettings()
         case .appearance: AppearanceSettings()
         case .general: GeneralSettings()
         }

@@ -873,7 +873,8 @@ As the user, everything about models is in Settings > Models: my models, testing
 Screens: models, settings-board, model-picker
 Depends: S-066
 Acceptance:
-- [snap] The Models page shows the default model and keep-loaded time under its title.
+- [snap] Settings > Models shows the two defaults as rows, then one equal-height row per model with aligned size and score columns, then Best For as a short list.
+- [snap] Controls in Settings are neutral; the accent marks only a loaded model.
 - [self] Every way to Models (profile menu, ⇧⌘L, Manage Models…) opens Settings on Models.
 - [snap] The model picker ends with Manage Models….
 Status: done
