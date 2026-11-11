@@ -12,7 +12,8 @@ enum LabAudioRenderer {
             let spoken = folder.appending(path: clip.id + ".aiff")
             let say = Process()
             say.executableURL = URL(fileURLWithPath: "/usr/bin/say")
-            say.arguments = (clip.voice.map { ["-v", $0] } ?? []) + ["-o", spoken.path, clip.script]
+            say.arguments = (clip.voice.map { ["-v", $0] } ?? []) + (clip.rate.map { ["-r", String($0)] } ?? [])
+                + ["-o", spoken.path, clip.script]
             say.standardError = FileHandle.nullDevice
             guard (try? say.run()) != nil else { continue }
             say.waitUntilExit()

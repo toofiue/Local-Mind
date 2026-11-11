@@ -9,6 +9,8 @@ public enum LabAudio {
         /// A macOS voice, or nil for the system voice.
         public let voice: String?
         public let script: String
+        /// Words per minute, or nil for the voice's normal pace.
+        public var rate: Int? = nil
         /// For a question about the clip: what to ask and the one word that answers it.
         public var question: (prompt: String, answer: String)?
 
@@ -27,14 +29,30 @@ public enum LabAudio {
         "Building a habit is easier when the first step is very small. Instead of promising to read for an hour, read a single page before bed. Instead of running a long distance, put on your shoes and walk to the corner. Small steps feel easy, and easy steps are the ones people keep taking.",
     ]
 
+    /// More paragraphs, so the longest clip runs past four minutes without repeating itself.
+    static let moreParagraphs = [
+        "Rain had fallen all night on the mountain village, and by morning the narrow streets shone like polished stone. A baker opened his shutters, and the smell of cinnamon rolls reached the children waiting for the school bus at the corner.",
+        "The old bridge over the canal creaks whenever a cart rolls across it. Engineers have promised to repair it for years, but the town council keeps choosing new benches for the park instead, and nobody seems to mind very much.",
+        "My grandmother kept her recipes in a tin box painted with blue flowers. Each card was stained with butter and flour, and the handwriting changed over the decades from careful loops to quick, slanted notes in the margins.",
+        "At the edge of the desert, the wind carries sand across the highway in thin, shifting ribbons. Drivers slow down, turn on their lights, and follow the red glow of the truck ahead until the air clears near the mountains.",
+        "The orchestra tuned their instruments while the audience found their seats. A violinist adjusted her chair, the cellist closed his eyes, and the conductor waited in silence until the whole hall seemed to hold its breath.",
+        "Every spring, the river floods the low meadow and leaves behind a layer of dark, rich soil. Farmers wait until the ground is firm enough to walk on, then plant corn and squash in long rows that stretch toward the woods.",
+        "A lighthouse keeper once lived alone on the rocky island beyond the bay. He painted watercolors of passing ships, wrote long letters to his sister, and kept the great lamp burning through every storm of the winter.",
+        "The museum opened a new hall filled with ancient maps. Visitors leaned close to the glass, tracing coastlines that were drawn by hand, with sea monsters curling in the corners where the sailors had never traveled.",
+        "Learning a new language feels slow at first. You repeat the same simple phrases, forget words you knew yesterday, and blush when you order the wrong meal. Then one day a joke makes sense, and everything starts to change.",
+        "The mechanic wiped his hands on a cloth and listened to the engine for a long moment. He said the noise came from a loose belt, tightened it in a few minutes, and refused to charge more than the price of a coffee.",
+    ]
+
     public static let clips: [Clip] = [
         Clip(id: "a-short", name: "Short sentence", voice: nil,
              script: "Please remember to water the plants on the balcony before you leave for the weekend."),
         Clip(id: "a-british", name: "British voice", voice: "Daniel", script: paragraphs[2]),
         Clip(id: "a-indian", name: "Indian voice", voice: "Aman", script: paragraphs[3]),
-        Clip(id: "a-minute", name: "About half a minute", voice: nil, script: paragraphs[0]),
-        Clip(id: "a-long", name: "About two minutes", voice: nil, script: paragraphs[4...7].joined(separator: " ")),
-        Clip(id: "a-very-long", name: "About four minutes", voice: nil, script: paragraphs.joined(separator: " ")),
+        Clip(id: "a-fast", name: "Fast speech", voice: nil, script: paragraphs[5], rate: 320),
+        Clip(id: "a-minute", name: "About 20 seconds", voice: nil, script: paragraphs[0]),
+        Clip(id: "a-long", name: "About a minute", voice: nil, script: paragraphs[4...7].joined(separator: " ")),
+        Clip(id: "a-very-long", name: "About two minutes", voice: nil, script: paragraphs.joined(separator: " ")),
+        Clip(id: "a-longest", name: "Over four minutes", voice: nil, script: (paragraphs + moreParagraphs).joined(separator: " ")),
         Clip(id: "a-question", name: "Answer from audio", voice: nil, script: paragraphs[1],
              question: (prompt: "Listen to the recording, then answer in one word: what color was the boat?", answer: "green")),
     ]

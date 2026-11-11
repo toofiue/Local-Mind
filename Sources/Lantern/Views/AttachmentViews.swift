@@ -17,6 +17,29 @@ struct AttachmentTile: View {
     @State private var image: NSImage?
 
     var body: some View {
+        // A real button, so a click, the keyboard, and VoiceOver can all open the preview.
+        Button { onPreview?() } label: { content }
+            .buttonStyle(.plain)
+            .disabled(onPreview == nil)
+            .overlay(alignment: .topTrailing) {
+                if let onRemove {
+                    Button("Remove", systemImage: "xmark.circle.fill", action: onRemove)
+                        .labelStyle(.iconOnly)
+                        .buttonStyle(.borderless)
+                        .foregroundStyle(.primary)
+                        // A backing keeps it visible on any picture.
+                        .background(.regularMaterial, in: Circle())
+                        .padding(Space.xs)
+                        .help("Remove this attachment")
+                        .accessibilityLabel("Remove \(fileName)")
+                }
+            }
+            .onAppear {
+                if image == nil, let imageData { image = NSImage(data: imageData) }
+            }
+    }
+
+    private var content: some View {
         Group {
             if kind == .image {
                 Group {
@@ -54,26 +77,7 @@ struct AttachmentTile: View {
                 .help("\(fileName). Click to preview.")
             }
         }
-        .overlay(alignment: .topTrailing) {
-            if let onRemove {
-                Button("Remove", systemImage: "xmark.circle.fill", action: onRemove)
-                    .labelStyle(.iconOnly)
-                    .buttonStyle(.borderless)
-                    .foregroundStyle(.primary)
-                    // A backing keeps it visible on any picture.
-                    .background(.regularMaterial, in: Circle())
-                    .padding(Space.xs)
-                    .help("Remove this attachment")
-                    .accessibilityLabel("Remove \(fileName)")
-            }
-        }
         .contentShape(Rectangle())
-        .onTapGesture { onPreview?() }
-        .accessibilityAddTraits(onPreview == nil ? [] : .isButton)
-        .accessibilityAction(named: "Preview") { onPreview?() }
-        .onAppear {
-            if image == nil, let imageData { image = NSImage(data: imageData) }
-        }
     }
 
     private var symbol: String {
