@@ -173,10 +173,7 @@ private struct ReplyRow: View {
 
             if !isWriting {
                 HStack(spacing: Space.xs) {
-                    if !message.text.isEmpty {
-                        CopyReplyButton(text: message.text)
-                        ReadAloudButton(message: message)
-                    }
+                    if !message.text.isEmpty { CopyReplyButton(text: message.text) }
                     if isLatestReply {
                         Button("Retry", systemImage: "arrow.clockwise") { model.retry(message.conversation) }
                             .help("Replace this reply with a new one (⌘R)")
@@ -262,20 +259,5 @@ private struct ThinkingSection: View {
             .buttonStyle(.plain)
             .help(isOpen ? "Hide the model's thinking" : "Show the model's thinking")
         }
-    }
-}
-/// Reads the reply aloud with the Mac's voice; click again to stop.
-private struct ReadAloudButton: View {
-    let message: Message
-    private var reader = ReadAloud.shared
-
-    init(message: Message) { self.message = message }
-
-    var body: some View {
-        let speaking = reader.speakingID == message.uid
-        Button(speaking ? "Stop Reading" : "Read Aloud", systemImage: speaking ? "stop.circle" : "speaker.wave.2") {
-            reader.toggle(message.uid, markdown: message.text)
-        }
-        .help(speaking ? "Stop reading" : "Read this reply aloud")
     }
 }

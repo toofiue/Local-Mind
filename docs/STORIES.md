@@ -914,22 +914,6 @@ Acceptance:
 - [self] Importing restores what's missing and skips what's already here.
 Status: done
 
-### S-072 Speak a message
-As the user, I click the microphone and talk; my words appear in the message box as I speak, recognized on this Mac.
-Screens: chat
-Depends: S-001
-Acceptance:
-- [manual] Dictation writes into the message box and stops when clicked again; nothing is sent until Send.
-Status: todo
-
-### S-073 Listen to a reply
-As the user, I click the speaker on a reply to hear it in the Mac's best voice, and click again to stop.
-Screens: chat
-Depends: S-001
-Acceptance:
-- [unit] What's read has no Markdown symbols, tables are read as cells, and code is mentioned, not read.
-Status: done
-
 ## Later
 Next after version one:
 - Projects with their own instructions and files

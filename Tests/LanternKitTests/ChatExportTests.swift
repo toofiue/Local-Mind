@@ -29,20 +29,3 @@ func backupRoundTrips() throws {
     #expect(restored.conversations == backup.conversations)
     #expect(restored.conversations[0].messages[1].attachments[0].fileData == Data([1, 2]))
 }
-
-@Test("S-073 read-aloud text has no Markdown symbols or code")
-func speaksPlainText() {
-    let text = ChatExport.speakable("""
-    ## Actors
-    An **actor** protects its `state`.
-    - First point
-    ```swift
-    actor Counter {}
-    ```
-    | Type | Safe |
-    |---|---|
-    | Actor | Yes |
-    See [the docs](https://swift.org).
-    """)
-    #expect(text == "Actors An actor protects its state. First point There's a code example here. Type, Safe. Actor, Yes. See the docs.")
-}

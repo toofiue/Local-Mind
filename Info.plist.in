@@ -14,7 +14,5 @@
 <key>LSMinimumSystemVersion</key><string>26.0</string>
 <key>LSApplicationCategoryType</key><string>public.app-category.productivity</string>
 <key>NSHighResolutionCapable</key><true/>
-<key>NSMicrophoneUsageDescription</key><string>Local Mind listens only while you dictate a message. Audio stays on this Mac.</string>
-<key>NSSpeechRecognitionUsageDescription</key><string>Local Mind turns your speech into text on this Mac, so you can speak your messages.</string>
 <key>NSPrincipalClass</key><string>NSApplication</string>
 </dict></plist>

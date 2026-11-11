@@ -181,8 +181,6 @@ private struct Composer: View {
                 .padding(.vertical, Space.xs)
                 .gridProbe("message-field", area: "conversation", edge: nil)
 
-            DictationButton(draft: $draft)
-
             if model.selectedConversation.map(model.isWriting(in:)) ?? false {
                 Button("Stop", systemImage: "stop.fill") { model.stop() }
                     .labelStyle(.iconOnly)
@@ -321,44 +319,5 @@ private struct ModelPicker: View {
             highlighted = model.currentModelName
             isFocused = true
         }
-    }
-}
-
-/// Speak instead of typing: Apple's on-device recognition writes your words into the message box.
-/// Click again to stop; nothing is sent until you press Send.
-struct DictationButton: View {
-    @Binding var draft: String
-    @Environment(AppModel.self) private var model
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    private var dictation = Dictation.shared
-
-    init(draft: Binding<String>) { _draft = draft }
-
-    var body: some View {
-        Button {
-            if dictation.isListening {
-                dictation.stop()
-            } else {
-                let before = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-                dictation.start { heard in
-                    draft = before.isEmpty ? heard : before + " " + heard
-                }
-            }
-        } label: {
-            Label(dictation.isListening ? "Stop Dictation" : "Dictate",
-                  systemImage: dictation.isListening ? "waveform" : "mic")
-                .labelStyle(.iconOnly)
-                .foregroundStyle(dictation.isListening ? AnyShapeStyle(Palette.accentText) : AnyShapeStyle(.secondary))
-                .symbolEffect(.variableColor.iterative, isActive: dictation.isListening && !reduceMotion)
-                .frame(width: Space.xl)
-                .padding(.vertical, Space.xs)
-        }
-        .buttonStyle(.borderless)
-        .keyboardShortcut("d", modifiers: [.command, .shift])
-        .help(dictation.isListening ? "Stop listening (⇧⌘D)" : "Speak your message. It stays on this Mac (⇧⌘D)")
-        .onChange(of: dictation.problem) {
-            if let problem = dictation.problem { model.attachmentNotice = problem }
-        }
-        .onDisappear { if dictation.isListening { dictation.stop() } }
     }
 }

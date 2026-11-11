@@ -118,35 +118,4 @@ public enum ChatExport {
         }
         return lines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines) + "\n"
     }
-
-    /// What a voice should read: the words, without Markdown symbols, tables, or code.
-    public static func speakable(_ markdown: String) -> String {
-        var out: [String] = []
-        var inCode = false
-        for raw in markdown.components(separatedBy: "\n") {
-            let line = raw.trimmingCharacters(in: .whitespaces)
-            if line.hasPrefix("```") {
-                if !inCode { out.append("There's a code example here.") }
-                inCode.toggle()
-                continue
-            }
-            if inCode || line.isEmpty { continue }
-            if line.hasPrefix("|") {
-                // Table rows: read the cells, skip the divider row.
-                if line.allSatisfy({ "|-: ".contains($0) }) { continue }
-                out.append(line.split(separator: "|").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }.joined(separator: ", ") + ".")
-                continue
-            }
-            var text = line
-            while let first = text.first, "#>-*+".contains(first) { text.removeFirst() }
-            if let dot = text.firstIndex(of: "."), text[..<dot].allSatisfy(\.isNumber), !text[..<dot].isEmpty {
-                text = String(text[text.index(after: dot)...])
-            }
-            for symbol in ["**", "__", "`", "*", "_"] { text = text.replacingOccurrences(of: symbol, with: "") }
-            // [label](link) reads as just the label.
-            text = text.replacingOccurrences(of: #"\[([^\]]+)\]\([^)]*\)"#, with: "$1", options: .regularExpression)
-            out.append(text.trimmingCharacters(in: .whitespaces))
-        }
-        return out.filter { !$0.isEmpty }.joined(separator: " ")
-    }
 }

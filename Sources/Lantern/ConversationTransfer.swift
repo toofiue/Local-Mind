@@ -76,10 +76,10 @@ extension AppModel {
                 text.append(NSAttributedString(string: "Attached: \(file.fileName)\n", attributes: [.font: NSFont.systemFont(ofSize: 11), .foregroundColor: NSColor.secondaryLabelColor]))
             }
             let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
-            var styled = (try? AttributedString(markdown: message.text, options: options)) ?? AttributedString(message.text)
-            styled.font = body
+            let styled = (try? AttributedString(markdown: message.text, options: options)) ?? AttributedString(message.text)
             let line = NSMutableAttributedString(styled)
-            line.addAttributes([.paragraphStyle: paragraph, .foregroundColor: NSColor.black], range: NSRange(location: 0, length: line.length))
+            line.addAttributes([.font: body, .paragraphStyle: paragraph, .foregroundColor: NSColor.black],
+                               range: NSRange(location: 0, length: line.length))
             text.append(line)
             text.append(NSAttributedString(string: "\n\n"))
         }
