@@ -83,8 +83,16 @@ final class AppModel {
     var pendingDeletion: Conversation?
     /// Several conversations waiting for one confirmation.
     var pendingDeletions: [Conversation] = []
-    /// Conversations picked with Command- or Shift-click. Empty when one or none is picked.
+    /// Conversations ticked while picking several to delete.
     var multiSelection: Set<UUID> = []
+    /// True while the sidebar shows checkmarks for picking several conversations.
+    var isSelectingConversations = false {
+        didSet { if !isSelectingConversations { multiSelection = [] } }
+    }
+    /// Unsent text and files, kept per conversation ("new" for a new one), so each chat keeps its own draft.
+    var unsentDrafts: [String: UnsentDraft] = [:]
+    /// Conversations whose message waits for the reply in another chat to finish.
+    var queuedReplies: [(conversation: UUID, modelName: String)] = []
     var searchText = ""
     /// Files attached to the message being written.
     var draftAttachments: [LoadedAttachment] = []
@@ -167,6 +175,7 @@ final class AppModel {
             self.syncMenu()
             self.focusRequest += 1
             await self.refreshLoaded()
+            self.startNextQueuedReply()
         }
     }
 
@@ -313,7 +322,7 @@ final class AppModel {
 
     // MARK: Conversations
 
-    private func conversation(with uid: UUID?) -> Conversation? {
+    func conversation(with uid: UUID?) -> Conversation? {
         guard let uid else { return nil }
         var descriptor = FetchDescriptor<Conversation>(predicate: #Predicate { $0.uid == uid })
         descriptor.fetchLimit = 1
@@ -369,8 +378,8 @@ final class AppModel {
 
     /// Asks for confirmation. A reply can't be deleted while it's being written.
     func requestDelete(_ conversation: Conversation? = nil) {
-        // With several picked, Delete applies to all of them, unless a row outside them was right-clicked.
-        if multiSelection.count > 1, conversation.map({ multiSelection.contains($0.uid) }) ?? true {
+        // While picking, Delete applies to the ticked ones, unless a row outside them was right-clicked.
+        if isSelectingConversations, !multiSelection.isEmpty, conversation.map({ multiSelection.contains($0.uid) }) ?? true {
             let all = (try? context.fetch(FetchDescriptor<Conversation>())) ?? []
             pendingDeletions = all.filter { multiSelection.contains($0.uid) && !isWriting(in: $0) }
             return
@@ -387,7 +396,8 @@ final class AppModel {
         let all = (try? context.fetch(FetchDescriptor<Conversation>())) ?? []
         let groups = ConversationGroups.split(all, isPinned: \.isPinned, updatedAt: \.updatedAt)
         let order = (groups.pinned + groups.recent).map(\.uid)
-        multiSelection = []
+        isSelectingConversations = false
+        queuedReplies.removeAll { doomed.contains($0.conversation) }
         if let current = selection, doomed.contains(current) {
             let index = order.firstIndex(of: current) ?? 0
             selection = order[index...].first { !doomed.contains($0) } ?? order[..<index].last { !doomed.contains($0) }
@@ -441,7 +451,11 @@ final class AppModel {
     @discardableResult
     func send(_ raw: String, skipMemoryCheck: Bool = false) -> Bool {
         let text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty, !isWriting, connection == .connected, let modelName = currentModelName else { return false }
+        // A reply in another chat doesn't block sending here: the message waits its turn.
+        // Tests and benchmarks use the whole model, so they still do.
+        guard !text.isEmpty, !lab.isRunning, !benchmark.isRunning, connection == .connected,
+              let modelName = currentModelName else { return false }
+        if let selectedConversation, isWriting(in: selectedConversation) { return false }
         if draftAttachments.contains(where: { $0.kind == .image }), let refusal = imageRefusal {
             attachmentNotice = refusal
             return false
@@ -475,8 +489,35 @@ final class AppModel {
         draftAttachments = []
         attachmentNotice = nil
         remember(model: modelName)
-        startReply(in: conversation, modelName: modelName)
+        if replies.isWriting {
+            conversation.updatedAt = .now
+            save()
+            if !isQueued(conversation.uid) { queuedReplies.append((conversation.uid, modelName)) }
+        } else {
+            startReply(in: conversation, modelName: modelName)
+        }
         return true
+    }
+
+    func isQueued(_ conversation: UUID?) -> Bool {
+        queuedReplies.contains { $0.conversation == conversation }
+    }
+
+    /// Starts the oldest waiting message once the reply before it is done.
+    func startNextQueuedReply() {
+        guard !replies.isWriting, !queuedReplies.isEmpty else { return }
+        let next = queuedReplies.removeFirst()
+        guard let conversation = conversation(with: next.conversation) else { return startNextQueuedReply() }
+        startReply(in: conversation, modelName: next.modelName)
+    }
+
+    /// Keeps the draft of the conversation being left, and returns the one being opened.
+    func swapDraft(leaving old: UUID?, text: String, opening new: UUID?) -> String {
+        let oldKey = old?.uuidString ?? "new", newKey = new?.uuidString ?? "new"
+        unsentDrafts[oldKey] = text.isEmpty && draftAttachments.isEmpty ? nil : UnsentDraft(text: text, attachments: draftAttachments)
+        let restored = unsentDrafts.removeValue(forKey: newKey)
+        draftAttachments = restored?.attachments ?? []
+        return restored?.text ?? ""
     }
 
     /// Replaces the latest reply with a new one.
@@ -538,4 +579,10 @@ enum Clipboard {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
     }
+}
+
+/// A message being written but not sent yet.
+struct UnsentDraft {
+    var text: String
+    var attachments: [LoadedAttachment]
 }

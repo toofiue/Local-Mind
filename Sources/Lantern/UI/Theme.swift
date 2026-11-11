@@ -32,7 +32,7 @@ struct Theme: Identifiable, Hashable {
 
     static let all: [Theme] = [
         Theme(id: "system", name: "System", shades: nil),
-        Theme(id: "clay", name: "Clay", shades: .init(light: 0xEE9A84, base: 0xC8553D, deep: 0xA2402B)),
+        Theme(id: "clay", name: "Clay", shades: .init(light: 0xEBA68D, base: 0xD97757, deep: 0xB0553A)),
         Theme(id: "blue", name: "Blue", shades: .init(light: 0x7CC0FF, base: 0x0A84FF, deep: 0x0064D2)),
         Theme(id: "indigo", name: "Indigo", shades: .init(light: 0xA5ADFF, base: 0x5E6AD2, deep: 0x4650B8)),
         Theme(id: "violet", name: "Violet", shades: .init(light: 0xB9A6FF, base: 0x7B5CFF, deep: 0x6342E6)),

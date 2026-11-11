@@ -101,6 +101,15 @@ private struct Composer: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
+            if model.isQueued(model.selection) {
+                Label("Sends as soon as the reply in your other chat finishes", systemImage: "clock")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            } else if model.replies.isWriting, !(model.selectedConversation.map(model.isWriting(in:)) ?? false) {
+                Label("Another chat is replying. A message you send here waits its turn.", systemImage: "clock")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
             if !model.draftAttachments.isEmpty { DraftAttachmentRow() }
             HStack(alignment: .bottom, spacing: Space.sm) {
             Button("Attach Files", systemImage: "paperclip") { model.chooseFiles() }
@@ -128,7 +137,7 @@ private struct Composer: View {
                 .padding(.vertical, Space.xs)
                 .gridProbe("message-field", area: "conversation", edge: nil)
 
-            if model.isWriting {
+            if model.selectedConversation.map(model.isWriting(in:)) ?? false {
                 Button("Stop", systemImage: "stop.fill") { model.stop() }
                     .labelStyle(.iconOnly)
                     .buttonStyle(.borderedProminent)
@@ -153,6 +162,9 @@ private struct Composer: View {
         .padding(.bottom, Space.margin)
         .padding(.top, Space.sm)
         .frame(maxWidth: .infinity)
+        .onChange(of: model.selection) { old, new in
+            draft = model.swapDraft(leaving: old, text: draft, opening: new)
+        }
     }
 
     private func submit() {

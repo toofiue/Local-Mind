@@ -776,7 +776,7 @@ Acceptance:
 Status: done
 
 ### S-057 Delete several conversations at once
-As the user, I Command- or Shift-click conversations and delete them together after one confirmation.
+As the user, I choose Select Multiple on any conversation, tick the ones I want, and delete them together after one confirmation.
 Screens: sidebar
 Depends: S-014
 Acceptance:
@@ -791,6 +791,16 @@ Depends: S-052, S-053
 Acceptance:
 - [snap] Every card is the same height, and a model in memory is outlined in the accent.
 - [snap] The toolbar's model button shows an open aperture when the model is in memory.
+Status: done
+
+### S-059 A way home, a draft per chat, and messages that wait their turn
+As the user, I get back to a new conversation from anywhere, each chat keeps its own unsent text, and I can send in one chat while another is replying.
+Screens: sidebar, chat
+Depends: S-057
+Acceptance:
+- [self] Switching chats keeps each one's unsent text and files.
+- [self] A message sent while another chat is replying waits, then starts by itself.
+- [snap] New Conversation sits at the top of the sidebar and is highlighted while you're there.
 Status: done
 
 ## Later

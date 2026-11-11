@@ -912,6 +912,7 @@ enum SelfTest {
             try? context.save()
             let before = (try? context.fetchCount(FetchDescriptor<Conversation>())) ?? 0
             model.selection = made[0].uid
+            model.isSelectingConversations = true
             model.multiSelection = Set(made.prefix(2).map { $0.uid })
             model.requestDelete()
             check("S-057 Delete with several picked asks once for all of them", model.pendingDeletions.count == 2 && model.pendingDeletion == nil)
@@ -920,6 +921,35 @@ enum SelfTest {
             check("S-057 they're all removed", after == before - 2, "\(before) to \(after)")
             check("S-057 the next conversation left is shown", model.selection != nil && model.selection != made[0].uid && model.selection != made[1].uid)
             model.delete([made[2]])
+        }
+
+        // S-059 drafts per chat and waiting messages
+        do {
+            let context = model.container.mainContext
+            let other = Conversation(modelName: "first:1")
+            other.title = "Draft test"
+            context.insert(other)
+            try? context.save()
+            _ = model.swapDraft(leaving: nil, text: "half a thought", opening: other.uid)
+            let back = model.swapDraft(leaving: other.uid, text: "", opening: nil)
+            check("S-059 a chat keeps its own unsent text", back == "half a thought")
+            _ = model.swapDraft(leaving: nil, text: "", opening: nil)
+
+            transport.script(ScriptedTransport.reply(text: Array(repeating: "x ", count: 60)), delay: .milliseconds(20))
+            model.selection = nil
+            check("S-059 the first message starts a reply", model.send("First question"))
+            try? await Task.sleep(for: .milliseconds(100))
+            let first = model.selection
+            model.selection = other.uid
+            check("S-059 another chat can send while one is replying", model.send("Second question"))
+            check("S-059 and its message waits its turn", model.isQueued(other.uid))
+            for _ in 0..<100 where model.replies.isWriting || !model.queuedReplies.isEmpty {
+                try? await Task.sleep(for: .milliseconds(100))
+            }
+            for _ in 0..<50 where model.replies.isWriting { try? await Task.sleep(for: .milliseconds(100)) }
+            check("S-059 the waiting message gets its reply", other.ordered.last?.role == .assistant)
+            if let first, let done = model.conversation(with: first) { model.delete(done) }
+            model.delete(other)
         }
 
         // Launch repair

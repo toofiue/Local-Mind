@@ -24,10 +24,22 @@ struct ConversationSidebar: View {
         let groups = ConversationGroups.split(conversations, isPinned: \.isPinned, updatedAt: \.updatedAt)
         let found = isFiltering ? results : []
         List(selection: Binding(
-            get: { model.multiSelection.isEmpty ? Set(model.selection.map { [$0] } ?? []) : model.multiSelection },
+            get: { model.isSelectingConversations ? model.multiSelection : Set(model.selection.map { [$0] } ?? []) },
             set: { picked in
-                model.multiSelection = picked.count > 1 ? picked : []
-                if picked.count == 1 { model.selection = picked.first }
+                if model.isSelectingConversations {
+                    // A plain click ticks or unticks one row, like a checkbox.
+                    if picked.count == 1, let one = picked.first {
+                        if model.multiSelection.contains(one) { model.multiSelection.remove(one) } else { model.multiSelection.insert(one) }
+                    } else {
+                        model.multiSelection = picked
+                    }
+                } else if picked.count > 1 {
+                    // Command- or Shift-click starts picking several.
+                    model.isSelectingConversations = true
+                    model.multiSelection = picked
+                } else {
+                    model.selection = picked.first
+                }
             })) {
             if isFiltering {
                 ForEach(found, id: \.conversation.uid) { result in
@@ -46,18 +58,26 @@ struct ConversationSidebar: View {
         .searchable(text: $model.searchText, placement: .sidebar, prompt: "Search")
         .searchFocused($isSearching)
         .onChange(of: model.searchRequest) { isSearching = true }
-        .safeAreaInset(edge: .bottom) {
-            Button { model.showModels() } label: {
-                Label("Models", systemImage: "cpu")
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(model.showingModels ? Palette.accentText : .secondary)
-            .padding(.horizontal, Space.lg)
-            .padding(.vertical, Space.md)
-            .help("See installed models and what's using memory (⇧⌘L)")
+        .safeAreaInset(edge: .top) {
+            HomeRow()
         }
+        .safeAreaInset(edge: .bottom) {
+            if model.isSelectingConversations {
+                SelectionBar(all: conversations.map(\.uid))
+            } else {
+                Button { model.showModels() } label: {
+                    Label("Models", systemImage: "cpu")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(model.showingModels ? Palette.accentText : .secondary)
+                .padding(.horizontal, Space.lg)
+                .padding(.vertical, Space.md)
+                .help("See installed models and what's using memory (⇧⌘L)")
+            }
+        }
+        .onExitCommand { model.isSelectingConversations = false }
         .onDeleteCommand { model.requestDelete() }
         .confirmationDialog(
             "Delete “\(model.pendingDeletion?.title ?? "")”?",
@@ -70,10 +90,12 @@ struct ConversationSidebar: View {
             Text("You can't undo this action.")
         }
         .confirmationDialog(
-            "Delete \(model.pendingDeletions.count) conversations?",
+            model.pendingDeletions.count == 1 ? "Delete “\(model.pendingDeletions.first?.title ?? "")”?"
+                : "Delete \(model.pendingDeletions.count) conversations?",
             isPresented: Binding(get: { !model.pendingDeletions.isEmpty }, set: { if !$0 { model.pendingDeletions = [] } })
         ) {
-            Button("Delete \(model.pendingDeletions.count) Conversations", role: .destructive) { model.delete(model.pendingDeletions) }
+            Button(model.pendingDeletions.count == 1 ? "Delete" : "Delete \(model.pendingDeletions.count) Conversations",
+                   role: .destructive) { model.delete(model.pendingDeletions) }
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("You can't undo this action.")
@@ -109,6 +131,13 @@ private struct ConversationRow: View {
     @FocusState private var isEditing: Bool
 
     var body: some View {
+        HStack(spacing: Space.sm) {
+        if model.isSelectingConversations {
+            Image(systemName: model.multiSelection.contains(conversation.uid) ? "checkmark.circle.fill" : "circle")
+                .foregroundStyle(model.multiSelection.contains(conversation.uid) ? AnyShapeStyle(.tint) : AnyShapeStyle(.tertiary))
+                .font(.title3)
+                .accessibilityHidden(true)
+        }
         VStack(alignment: .leading, spacing: Space.xs) {
             if model.renamingID == conversation.uid {
                 TextField("Title", text: $draft)
@@ -141,18 +170,84 @@ private struct ConversationRow: View {
                     .foregroundStyle(.secondary)
             }
         }
+        }
         .help(conversation.title)
         .tag(conversation.uid)
+        .accessibilityAddTraits(model.isSelectingConversations && model.multiSelection.contains(conversation.uid) ? .isSelected : [])
         .contextMenu {
             Button("Rename") { model.startRenaming(conversation) }
             Button(conversation.isPinned ? "Unpin" : "Pin") { model.togglePin(conversation) }
+            Button("Select Multiple") {
+                model.isSelectingConversations = true
+                model.multiSelection = [conversation.uid]
+            }
             Divider()
-            if model.multiSelection.count > 1, model.multiSelection.contains(conversation.uid) {
-                Button("Delete \(model.multiSelection.count) Conversations", role: .destructive) { model.requestDelete(conversation) }
+            if model.isSelectingConversations, model.multiSelection.contains(conversation.uid) {
+                Button(model.multiSelection.count == 1 ? "Delete" : "Delete \(model.multiSelection.count) Conversations",
+                       role: .destructive) { model.requestDelete(conversation) }
             } else {
                 Button("Delete", role: .destructive) { model.requestDelete(conversation) }
                     .disabled(model.isWriting(in: conversation))
             }
         }
+    }
+}
+
+/// The way home: a new conversation, from any page. Highlighted while you're there.
+private struct HomeRow: View {
+    @Environment(AppModel.self) private var model
+
+    private var isHome: Bool { model.selection == nil && !model.showingModels && model.labModelName == nil }
+
+    var body: some View {
+        Button { model.newConversation() } label: {
+            Label("New Conversation", systemImage: "square.and.pencil")
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, Space.sm)
+                .frame(minHeight: 28)
+                .background(isHome ? AnyShapeStyle(.fill.secondary) : AnyShapeStyle(.clear),
+                            in: RoundedRectangle(cornerRadius: Radius.md))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, Space.sm)
+        .padding(.bottom, Space.xs)
+        .help("Start a new conversation (⌘N)")
+    }
+}
+
+/// Shown at the bottom of the sidebar while picking several conversations.
+private struct SelectionBar: View {
+    let all: [UUID]
+    @Environment(AppModel.self) private var model
+
+    private var count: Int { model.multiSelection.count }
+    private var everything: Bool { !all.isEmpty && count == all.count }
+
+    var body: some View {
+        VStack(spacing: Space.sm) {
+            HStack {
+                Text(count == 0 ? "Select Conversations" : "\(count) Selected")
+                    .font(.callout.weight(.medium))
+                Spacer()
+                Button(everything ? "Deselect All" : "Select All") {
+                    model.multiSelection = everything ? [] : Set(all)
+                }
+                .buttonStyle(.borderless)
+            }
+            HStack {
+                Button("Cancel") { model.isSelectingConversations = false }
+                    .keyboardShortcut(.cancelAction)
+                Spacer()
+                Button("Delete", role: .destructive) { model.requestDelete() }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.red)
+                    .disabled(count == 0)
+                    .help("Delete the selected conversations")
+            }
+        }
+        .padding(Space.md)
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: Radius.lg))
+        .padding(Space.sm)
     }
 }

@@ -2,7 +2,7 @@
 Two colors only. Usage: python3 tools/make_aperture_svg.py Icon/AppIcon.icon/Assets"""
 import math, sys, os
 
-CLAY = "#C8553D"
+CLAY = "#D97757"
 C = 512.0
 R = 318.0          # outer edge of the petals
 INNER = 128.0      # the opening in the middle
