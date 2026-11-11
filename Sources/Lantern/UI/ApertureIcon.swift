@@ -17,7 +17,8 @@ enum ApertureIcon {
         /// How far the hexagonal opening reaches, as a share of the blade radius.
         fileprivate var opening: CGFloat {
             switch self {
-            case .closed: 0
+            // Not quite zero, so the blades spiral like a shut lens instead of meeting like pie slices.
+            case .closed: 0.12
             case .opening: 0.3
             case .open: 0.6
             }
@@ -43,7 +44,7 @@ enum ApertureIcon {
             // The blades: a disc with a hexagonal hole.
             let shape = CGMutablePath()
             shape.addEllipse(in: CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2))
-            if hex > 0 { shape.addLines(between: corners); shape.closeSubpath() }
+            if state != .closed { shape.addLines(between: corners); shape.closeSubpath() }
             context.addPath(shape)
             context.setFillColor(NSColor.black.cgColor)
             context.fillPath(using: .evenOdd)
