@@ -766,6 +766,15 @@ Acceptance:
 - [snap] The Appearance preview shows a small Local Mind window in the chosen color.
 Status: done
 
+### S-056 Choose light or dark, and how frosted the sidebar is
+As the user, I pick System, Light, or Dark for Local Mind, and slide the sidebar between clear and frosted.
+Screens: settings-appearance
+Depends: S-055
+Acceptance:
+- [self] Light and Dark set the app's look; System follows the Mac.
+- [self] The frost setting is kept between launches.
+Status: done
+
 ## Later
 Next after version one:
 - Projects with their own instructions and files

@@ -37,7 +37,7 @@ struct ConversationSidebar: View {
         }
         // See-through to the desktop, like Finder's and Mail's sidebars.
         .scrollContentBackground(.hidden)
-        .background(DesktopTranslucency().ignoresSafeArea())
+        .background(SidebarGlass().ignoresSafeArea())
         .searchable(text: $model.searchText, placement: .sidebar, prompt: "Search")
         .searchFocused($isSearching)
         .onChange(of: model.searchRequest) { isSearching = true }

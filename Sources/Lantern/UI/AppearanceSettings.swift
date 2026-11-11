@@ -1,10 +1,29 @@
 import SwiftUI
 
-/// Settings > Appearance: the accent color. Light and dark mode follow the Mac.
+/// Settings > Appearance: light or dark, the accent color, and how frosted the sidebar is.
 struct AppearanceSettings: View {
     @Bindable private var store = ThemeStore.shared
 
     var body: some View {
+        Section {
+            Picker("Appearance", selection: $store.mode) {
+                ForEach(ThemeStore.Mode.allCases) { Text($0.title).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .help("System follows your Mac. Light or Dark applies to Local Mind only.")
+            LabeledContent("Sidebar") {
+                Slider(value: $store.sidebarFrost, in: 0...1) {
+                    Text("Sidebar frost")
+                } minimumValueLabel: {
+                    Text("Clear").font(.caption).foregroundStyle(.secondary)
+                } maximumValueLabel: {
+                    Text("Frosted").font(.caption).foregroundStyle(.secondary)
+                }
+                .labelsHidden()
+                .frame(maxWidth: 260)
+                .help("How much of the desktop shows through the sidebar")
+            }
+        }
         Section {
             AccentPreview()
                 .padding(.vertical, Space.xs)

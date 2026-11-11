@@ -76,6 +76,17 @@ private struct WindowHook: NSViewRepresentable {
     }
 }
 
+/// The sidebar's background: the blurred desktop, with a layer of frost over it
+/// that people set in Settings > Appearance.
+struct SidebarGlass: View {
+    private var store = ThemeStore.shared
+
+    var body: some View {
+        DesktopTranslucency()
+            .overlay(Rectangle().fill(.background).opacity(store.sidebarFrost * 0.9))
+    }
+}
+
 /// The blurred desktop behind the window. In dark mode it uses Apple's HUD material,
 /// which lets the most of the desktop through while text stays readable; in light mode the
 /// standard sidebar material, since the HUD material is always dark.

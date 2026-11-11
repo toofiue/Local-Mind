@@ -892,6 +892,22 @@ enum SelfTest {
             model.prefill = nil
         }
 
+        // S-056 look and frost
+        do {
+            let store = ThemeStore.shared
+            let savedMode = store.mode, savedFrost = store.sidebarFrost
+            store.mode = .dark
+            check("S-056 Dark sets the app's look", NSApp.appearance?.name == .darkAqua)
+            store.mode = .light
+            check("S-056 Light sets the app's look", NSApp.appearance?.name == .aqua)
+            store.mode = .system
+            check("S-056 System follows the Mac", NSApp.appearance == nil)
+            store.sidebarFrost = 0.8
+            check("S-056 the frost setting is kept", UserDefaults.standard.double(forKey: "appearance.sidebarFrost") == 0.8)
+            store.mode = savedMode
+            store.sidebarFrost = savedFrost
+        }
+
         // Launch repair
         let stale = Message(role: .assistant, text: "Cut", modelName: "first:1", sequence: 99, state: .writing)
         model.selectedConversation?.messages.append(stale)

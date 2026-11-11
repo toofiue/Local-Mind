@@ -4,7 +4,7 @@ import SwiftUI
 
 /// One accent color in three shades. Everything else is Apple's look.
 /// People pick the accent in Settings > Appearance (AppearanceSettings.swift).
-/// Light and dark mode follow the Mac: there is no app-specific mode setting.
+/// Light and dark mode follow the Mac unless people pick Light or Dark there.
 ///   APP_ACCENT=mint Lantern     run with another accent, to compare
 struct Theme: Identifiable, Hashable {
     struct Shades: Hashable {
@@ -66,6 +66,42 @@ final class ThemeStore {
         didSet { UserDefaults.standard.set(themeID, forKey: "appearance.accent") }
     }
 
+    /// System follows the Mac. Light and Dark override it for this app only.
+    enum Mode: String, CaseIterable, Identifiable {
+        case system, light, dark
+        var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .system: "System"
+            case .light: "Light"
+            case .dark: "Dark"
+            }
+        }
+    }
+
+    var mode: Mode {
+        didSet {
+            UserDefaults.standard.set(mode.rawValue, forKey: "appearance.mode")
+            applyMode()
+        }
+    }
+
+    /// How frosted the sidebar is: 0 shows the desktop clearly, 1 is nearly solid.
+    var sidebarFrost: Double {
+        didSet { UserDefaults.standard.set(sidebarFrost, forKey: "appearance.sidebarFrost") }
+    }
+    static let defaultFrost = 0.5
+
+    /// Sets the whole app's look. Snapshots set their own look, so they're left alone.
+    func applyMode() {
+        guard ProcessInfo.processInfo.environment["APP_SNAPSHOT"] == nil else { return }
+        switch mode {
+        case .system: NSApp.appearance = nil
+        case .light: NSApp.appearance = NSAppearance(named: .aqua)
+        case .dark: NSApp.appearance = NSAppearance(named: .darkAqua)
+        }
+    }
+
     /// True while the Mac's accent is Multicolor.
     private(set) var macIsMulticolor = ThemeStore.readMulticolor()
 
@@ -80,6 +116,8 @@ final class ThemeStore {
     private init() {
         themeID = ProcessInfo.processInfo.environment["APP_ACCENT"]
             ?? UserDefaults.standard.string(forKey: "appearance.accent") ?? Self.defaultID
+        mode = Mode(rawValue: UserDefaults.standard.string(forKey: "appearance.mode") ?? "") ?? .system
+        sidebarFrost = UserDefaults.standard.object(forKey: "appearance.sidebarFrost") as? Double ?? Self.defaultFrost
         NotificationCenter.default.addObserver(forName: NSColor.systemColorsDidChangeNotification,
                                                object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.macIsMulticolor = ThemeStore.readMulticolor() }
@@ -110,7 +148,9 @@ private struct Themed: ViewModifier {
     private var store = ThemeStore.shared
 
     func body(content: Content) -> some View {
-        content.tint(store.theme.tint)
+        content
+            .tint(store.theme.tint)
+            .onAppear { store.applyMode() }
     }
 }
 
