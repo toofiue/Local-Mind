@@ -28,9 +28,9 @@ extension AppModel {
         case .comfortable:
             return nil
         case .closeApps(let needed, let available):
-            message = "\(name) needs about \(bytes(needed)), and \(bytes(available)) is free. Close other apps to keep your Mac responsive."
+            message = "\(name) needs about \(bytes(needed)), but only \(bytes(available)) is free, so your Mac may slow down."
         case .tooLarge(let needed):
-            message = "\(name) needs about \(bytes(needed)), which is nearly all of this Mac's memory. It may be very slow or fail to load."
+            message = "\(name) needs about \(bytes(needed)), nearly all of this Mac's memory, so it may be very slow."
         }
         let apps = readTopApps().map { "\($0.name) (\(bytes($0.bytes)))" }.joined(separator: ", ")
         return MemoryWarning(modelName: modelName, surface: surface, message: message,

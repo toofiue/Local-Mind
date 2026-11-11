@@ -13,8 +13,15 @@ func comfortable() {
 
 @Test("S-039 a model that fits this Mac but not right now asks to close apps")
 func closeApps() {
-    let fit = MemoryAdvisor.assess(modelSize: 8 * gigabyte, memory: memory(total: 16, free: 6))
+    let fit = MemoryAdvisor.assess(modelSize: 8 * gigabyte, memory: memory(total: 16, free: 4))
     guard case .closeApps = fit else { Issue.record("got \(fit)"); return }
+}
+
+@Test("S-048 a model just over free memory isn't warned about")
+func borderlineIsFine() {
+    // The case that warned before: 7.7 GB needed with 7.99 GB free.
+    #expect(MemoryAdvisor.assess(modelSize: 7_710_000_000, memory: MemorySnapshot(totalBytes: 17_179_869_184, availableBytes: 7_990_000_000)) == .comfortable)
+    #expect(MemoryAdvisor.assess(modelSize: 9_460_000_000, memory: MemorySnapshot(totalBytes: 17_179_869_184, availableBytes: 7_990_000_000)) == .comfortable)
 }
 
 @Test("S-039 a model nearly as big as the Mac's memory is too large")

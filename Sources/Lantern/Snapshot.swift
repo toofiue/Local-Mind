@@ -49,8 +49,8 @@ enum SnapshotPage: String, CaseIterable {
             model.benchmarkReports["gemma4:12b-mlx"] = SeedData.sampleBenchmarkReport
         }
         model.memoryWarning = self != .memoryWarning ? nil : MemoryWarning(
-            modelName: "gemma4:latest", surface: .main,
-            message: "gemma4:latest needs about 9.93 GB, and 6.2 GB is free. Close other apps to keep your Mac responsive.",
+            modelName: "gpt-oss:20b", surface: .main,
+            message: "gpt-oss:20b needs about 13.79 GB, but only 6.2 GB is free, so your Mac may slow down.",
             appsSummary: "Using the most memory: Adobe Premiere Pro (5.1 GB), Google Chrome (2 GB)")
         model.models = self == .noModels ? [] : SeedData.models
     }

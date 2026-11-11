@@ -687,6 +687,24 @@ Acceptance:
 - [self] The message clears after 4 seconds, and a newer message gets its own 4 seconds.
 Status: done
 
+### S-047 The model knows when audio or an image is attached
+As the user, I attach audio partway through a conversation and the model uses it instead of saying nothing was attached.
+Screens: chat
+Depends: S-045
+Acceptance:
+- [unit] Each image or audio attachment is named in the text the model gets, while my message stays as I wrote it.
+- [manual] With earlier messages in the conversation, a real model transcribes attached audio.
+Status: done
+
+### S-048 Warn about memory only when it matters
+As the user, I'm only warned when a model clearly won't fit, in one short line.
+Screens: memory-warning
+Depends: S-039
+Acceptance:
+- [unit] A model that fits in free memory plus what macOS can easily reclaim isn't warned about.
+- [snap] The warning is one line with Send Anyway; the apps using the most memory are in its tooltip.
+Status: todo
+
 ## Later
 Next after version one:
 - Projects with their own instructions and files

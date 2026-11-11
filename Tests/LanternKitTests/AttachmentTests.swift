@@ -148,3 +148,10 @@ func readsVision() {
     #expect(OllamaModel(name: "a", size: 1, capabilities: ["completion", "vision"]).supportsImages)
     #expect(!OllamaModel(name: "b", size: 1, capabilities: ["completion"]).supportsImages)
 }
+
+@Test("S-047 attached audio and images are named in the text")
+func namesMedia() {
+    let prompt = AttachmentPrompt.compose(message: "Give me the transcript", files: [],
+                                          media: [(kind: .audio, name: "note.wav"), (kind: .image, name: "shot.png")])
+    #expect(prompt == "[Attached audio: note.wav]\n[Attached image: shot.png]\n\nGive me the transcript")
+}

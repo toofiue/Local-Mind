@@ -22,12 +22,12 @@ public enum MemoryFit: Sendable, Equatable {
 public enum MemoryAdvisor {
     /// What macOS needs for itself, on top of the model.
     public static let systemReserve: Int64 = 2_147_483_648
-    /// Room to leave so the Mac stays responsive once the model is loaded.
-    public static let headroom: Int64 = 1_610_612_736
+    /// How much more macOS can free by compressing memory, without the Mac slowing down noticeably.
+    public static let reclaimable: Int64 = 2_147_483_648
 
-    /// A loaded model measured a little over its size on disk.
+    /// A loaded model measured within 1% of its size on disk.
     public static func estimatedNeed(modelSize: Int64) -> Int64 {
-        modelSize + modelSize / 20
+        modelSize
     }
 
     /// `freeable` is memory that loading this model will release, such as another loaded model.
@@ -35,7 +35,7 @@ public enum MemoryAdvisor {
         let needed = estimatedNeed(modelSize: modelSize)
         if needed + systemReserve > memory.totalBytes { return .tooLarge(neededBytes: needed) }
         let available = memory.availableBytes + freeable
-        if needed + headroom > available { return .closeApps(neededBytes: needed, availableBytes: available) }
+        if needed > available + reclaimable { return .closeApps(neededBytes: needed, availableBytes: available) }
         return .comfortable
     }
 }

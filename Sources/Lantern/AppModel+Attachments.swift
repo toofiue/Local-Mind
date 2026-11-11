@@ -82,8 +82,9 @@ extension AppModel {
         // Ollama takes images and audio in the same list.
         let images = attachments.compactMap { ($0.imageData ?? $0.audioData)?.base64EncodedString() }
         let files = attachments.filter { $0.kind == .pdf || $0.kind == .text }.map { (name: $0.fileName, text: $0.text) }
+        let media = attachments.filter { $0.kind == .image || $0.kind == .audio }.map { (kind: $0.kind, name: $0.fileName) }
         return ChatTurn(role: message.role.rawValue,
-                        content: AttachmentPrompt.compose(message: message.text, files: files),
+                        content: AttachmentPrompt.compose(message: message.text, files: files, media: media),
                         images: images.isEmpty ? nil : images)
     }
 

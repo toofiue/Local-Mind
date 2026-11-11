@@ -789,7 +789,9 @@ enum SelfTest {
             await model.waitForReply()
             let sent = transport.chatBodies.last ?? ""
             check("S-045 the audio goes to the model", sent.contains("\"images\":[\"UklGR"))
-            check("S-045 audio isn't pasted in as text", !sent.contains("Lantern voice note.aiff"))
+            check("S-047 the model is told audio is attached", sent.contains("[Attached audio: Lantern voice note.aiff]"))
+            check("S-045 audio isn't pasted in as a text file", !sent.contains("<file name=\\\"Lantern voice note.aiff"))
+            check("S-047 your message stays as you wrote it", model.selectedConversation?.ordered.first?.text == "What is the code word?")
             check("S-045 audio is saved with its message", model.selectedConversation?.ordered.first?.attachments.first?.audioData != nil)
             model.draftModelName = nil
         }

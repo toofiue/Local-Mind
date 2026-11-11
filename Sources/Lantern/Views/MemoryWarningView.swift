@@ -1,26 +1,22 @@
 import SwiftUI
 
-/// Says a model won't fit comfortably, and what to do about it.
+/// One line saying a model won't fit comfortably, with a way to go ahead.
+/// Sending again checks again, so there's no separate button for that.
 struct MemoryWarningView: View {
     let warning: MemoryWarning
     var actionTitle = "Send Anyway"
     let onContinue: () -> Void
-    @Environment(AppModel.self) private var model
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Space.sm) {
+        HStack(spacing: Space.md) {
             Label(warning.message, systemImage: "memorychip")
                 .font(.callout)
                 .foregroundStyle(.secondary)
-            if !warning.appsSummary.isEmpty {
-                Text(warning.appsSummary)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            HStack(spacing: Space.sm) {
-                Button("Check Again") { model.recheckMemory() }
-                Button(actionTitle, action: onContinue)
-            }
+                .lineLimit(2)
+            Spacer(minLength: Space.sm)
+            Button(actionTitle, action: onContinue)
+                .controlSize(.small)
         }
+        .help(warning.appsSummary.isEmpty ? "Closing other apps frees memory." : "\(warning.appsSummary). Closing them frees memory.")
     }
 }

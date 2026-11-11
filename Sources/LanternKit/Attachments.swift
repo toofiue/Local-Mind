@@ -41,9 +41,14 @@ public enum AttachmentError: Error, Equatable {
 
 /// How attached text goes into a message.
 public enum AttachmentPrompt {
-    public static func compose(message: String, files: [(name: String, text: String)]) -> String {
+    /// `media` names the images and audio sent alongside. Gemma loses track of
+    /// attached audio once a conversation has history, unless the text mentions it.
+    public static func compose(message: String, files: [(name: String, text: String)],
+                               media: [(kind: AttachmentKind, name: String)] = []) -> String {
         let attached = files.map { "<file name=\"\($0.name)\">\n\($0.text)\n</file>" }
-        return (attached + [message]).joined(separator: "\n\n")
+        let labels = media.map { "[Attached \($0.kind == .audio ? "audio" : "image"): \($0.name)]" }
+        let mediaLine = labels.isEmpty ? [] : [labels.joined(separator: "\n")]
+        return (attached + mediaLine + [message]).joined(separator: "\n\n")
     }
 
     /// Roughly four characters per token, which matched Gemma to within 1% on a long test document.
