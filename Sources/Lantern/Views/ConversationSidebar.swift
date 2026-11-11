@@ -104,12 +104,11 @@ struct ConversationSidebar: View {
             if isFiltering && found.isEmpty {
                 ContentUnavailableView.search(text: model.searchText)
             } else if conversations.isEmpty {
+                // No button here: New Conversation is always at the top of the sidebar.
                 ContentUnavailableView {
                     Label("No Conversations", systemImage: "bubble.left.and.bubble.right")
                 } description: {
                     Text("Conversations you start appear here.")
-                } actions: {
-                    Button("New Conversation") { model.newConversation() }
                 }
             }
         }
