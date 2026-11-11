@@ -799,6 +799,7 @@ Screens: sidebar, chat
 Depends: S-057
 Acceptance:
 - [self] Switching chats keeps each one's unsent text and files.
+- [self] New Conversation on a new conversation empties the message box; ⌘Z brings the text back.
 - [self] A message sent while another chat is replying waits, then starts by itself.
 - [snap] New Conversation sits beside the model name on every page.
 Status: done

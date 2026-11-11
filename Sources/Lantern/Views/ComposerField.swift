@@ -78,7 +78,13 @@ struct ComposerField: NSViewRepresentable {
         textView.onPasteFiles = onPasteFiles
         textView.onPasteImage = onPasteImage
         if textView.string != text {
-            textView.string = text
+            if text.isEmpty, textView.shouldChangeText(in: NSRange(location: 0, length: (textView.string as NSString).length), replacementString: "") {
+                // Emptying goes through the undo stack, so ⌘Z brings the text back.
+                textView.replaceCharacters(in: NSRange(location: 0, length: (textView.string as NSString).length), with: "")
+                textView.didChangeText()
+            } else {
+                textView.string = text
+            }
             // After this update, once layout has caught up with the new text.
             DispatchQueue.main.async { context.coordinator.updateHeight(of: textView) }
         }

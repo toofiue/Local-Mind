@@ -954,6 +954,16 @@ enum SelfTest {
             model.delete(other)
         }
 
+        // S-059 New Conversation on a new conversation starts it over
+        do {
+            let previous = model.selection
+            defer { model.selection = previous }
+            model.newConversation()
+            let before = model.composerResetRequest
+            model.newConversation()
+            check("S-059 New on a new conversation empties the message box", model.composerResetRequest == before + 1)
+        }
+
         // Launch repair
         let stale = Message(role: .assistant, text: "Cut", modelName: "first:1", sequence: 99, state: .writing)
         model.selectedConversation?.messages.append(stale)

@@ -89,6 +89,8 @@ final class AppModel {
     var isSelectingConversations = false {
         didSet { if !isSelectingConversations { multiSelection = [] } }
     }
+    /// Bumped to empty the message box when New Conversation is chosen on a new conversation.
+    var composerResetRequest = 0
     /// Unsent text and files, kept per conversation ("new" for a new one), so each chat keeps its own draft.
     var unsentDrafts: [String: UnsentDraft] = [:]
     /// Conversations whose message waits for the reply in another chat to finish.
@@ -330,6 +332,8 @@ final class AppModel {
     }
 
     func newConversation() {
+        // Already on a new conversation: start it over with an empty message box.
+        if selection == nil, !showingModels, labModelName == nil { composerResetRequest += 1 }
         selection = nil
         labModelName = nil
         draftModelName = nil

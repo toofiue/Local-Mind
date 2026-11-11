@@ -165,6 +165,10 @@ private struct Composer: View {
         .onChange(of: model.selection) { old, new in
             draft = model.swapDraft(leaving: old, text: draft, opening: new)
         }
+        .onChange(of: model.composerResetRequest) {
+            draft = ""
+            model.draftAttachments = []
+        }
     }
 
     private func submit() {
