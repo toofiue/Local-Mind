@@ -76,16 +76,26 @@ private struct WindowHook: NSViewRepresentable {
     }
 }
 
-/// The blurred desktop behind the window, in the sidebar material.
+/// The blurred desktop behind the window. In dark mode it uses Apple's HUD material,
+/// which lets the most of the desktop through while text stays readable; in light mode the
+/// standard sidebar material, since the HUD material is always dark.
 /// It turns solid by itself when Reduce Transparency is on.
 struct DesktopTranslucency: NSViewRepresentable {
+    @Environment(\.colorScheme) private var colorScheme
+
     func makeNSView(context: Context) -> NSVisualEffectView {
         let view = NSVisualEffectView()
-        view.material = .sidebar
         view.blendingMode = .behindWindow
         view.state = .followsWindowActiveState
+        view.material = material
         return view
     }
 
-    func updateNSView(_ view: NSVisualEffectView, context: Context) {}
+    func updateNSView(_ view: NSVisualEffectView, context: Context) {
+        view.material = material
+    }
+
+    private var material: NSVisualEffectView.Material {
+        colorScheme == .dark ? .hudWindow : .sidebar
+    }
 }
