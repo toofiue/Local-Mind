@@ -32,6 +32,12 @@ struct ModelsPage: View {
             if model.models.isEmpty { NoModelsView() }
         }
         .navigationTitle("Models")
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button("New Conversation", systemImage: "square.and.pencil") { model.newConversation() }
+                    .help("Start a new conversation (⌘N)")
+            }
+        }
         .sheet(item: $renaming) { RenameModelSheet(item: $0) }
         .task {
             for item in model.models { model.loadLabReport(item.name) }

@@ -80,11 +80,13 @@ struct MessageRow: View {
                     if model.editingMessageID == message.uid {
                         EditMessageField(message: message)
                     } else {
+                        // Your words sit on a soft wash of the accent, so they read apart from replies.
                         Text(message.text)
                             .textSelection(.enabled)
+                            .lineSpacing(Space.xs / 2)
                             .padding(.horizontal, Space.md)
                             .padding(.vertical, Space.sm)
-                            .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: Radius.lg))
+                            .background(Palette.accent.opacity(0.18), in: RoundedRectangle(cornerRadius: Radius.lg))
                         if canEdit {
                             Button("Edit Message", systemImage: "pencil") { model.startEditing() }
                                 .labelStyle(.iconOnly)

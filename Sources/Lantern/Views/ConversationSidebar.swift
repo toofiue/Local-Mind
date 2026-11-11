@@ -23,24 +23,9 @@ struct ConversationSidebar: View {
         @Bindable var model = model
         let groups = ConversationGroups.split(conversations, isPinned: \.isPinned, updatedAt: \.updatedAt)
         let found = isFiltering ? results : []
-        List(selection: Binding(
-            get: { model.isSelectingConversations ? model.multiSelection : Set(model.selection.map { [$0] } ?? []) },
-            set: { picked in
-                if model.isSelectingConversations {
-                    // A plain click ticks or unticks one row, like a checkbox.
-                    if picked.count == 1, let one = picked.first {
-                        if model.multiSelection.contains(one) { model.multiSelection.remove(one) } else { model.multiSelection.insert(one) }
-                    } else {
-                        model.multiSelection = picked
-                    }
-                } else if picked.count > 1 {
-                    // Command- or Shift-click starts picking several.
-                    model.isSelectingConversations = true
-                    model.multiSelection = picked
-                } else {
-                    model.selection = picked.first
-                }
-            })) {
+        // Rows handle clicks themselves: one click opens, a double-click starts picking several,
+        // and the highlight is a soft wash of the accent instead of the system's blue.
+        List {
             if isFiltering {
                 ForEach(found, id: \.conversation.uid) { result in
                     ConversationRow(conversation: result.conversation, snippet: result.snippet)
@@ -58,9 +43,6 @@ struct ConversationSidebar: View {
         .searchable(text: $model.searchText, placement: .sidebar, prompt: "Search")
         .searchFocused($isSearching)
         .onChange(of: model.searchRequest) { isSearching = true }
-        .safeAreaInset(edge: .top) {
-            HomeRow()
-        }
         .safeAreaInset(edge: .bottom) {
             if model.isSelectingConversations {
                 SelectionBar(all: conversations.map(\.uid))
@@ -78,6 +60,10 @@ struct ConversationSidebar: View {
             }
         }
         .onExitCommand { model.isSelectingConversations = false }
+        .onMoveCommand { direction in
+            if direction == .up { model.selectAdjacentConversation(by: -1) }
+            if direction == .down { model.selectAdjacentConversation(by: 1) }
+        }
         .onDeleteCommand { model.requestDelete() }
         .confirmationDialog(
             "Delete “\(model.pendingDeletion?.title ?? "")”?",
@@ -129,6 +115,29 @@ private struct ConversationRow: View {
     @State private var draft = ""
     @FocusState private var isEditing: Bool
 
+    private var isPicked: Bool { model.multiSelection.contains(conversation.uid) }
+    private var isOpen: Bool { model.selection == conversation.uid && !model.showingModels && model.labModelName == nil }
+    private var isHighlighted: Bool { model.isSelectingConversations ? isPicked : isOpen }
+
+    /// A soft wash of the accent: stronger for the open chat or a ticked one.
+    private var highlight: Color {
+        isHighlighted ? Palette.accent.opacity(0.16) : .clear
+    }
+
+    private func click() {
+        if model.isSelectingConversations {
+            if isPicked { model.multiSelection.remove(conversation.uid) } else { model.multiSelection.insert(conversation.uid) }
+        } else if model.selection != conversation.uid || model.showingModels || model.labModelName != nil {
+            model.selection = conversation.uid
+        }
+    }
+
+    private func startPicking() {
+        guard !model.isSelectingConversations else { return }
+        model.isSelectingConversations = true
+        model.multiSelection = [conversation.uid]
+    }
+
     var body: some View {
         HStack(spacing: Space.sm) {
         if model.isSelectingConversations {
@@ -171,15 +180,23 @@ private struct ConversationRow: View {
         }
         }
         .help(conversation.title)
-        .tag(conversation.uid)
-        .accessibilityAddTraits(model.isSelectingConversations && model.multiSelection.contains(conversation.uid) ? .isSelected : [])
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+        .onTapGesture { click() }
+        // Fires on the second click of a double-click, after the first one opened the chat.
+        .simultaneousGesture(TapGesture(count: 2).onEnded { startPicking() })
+        .listRowBackground(
+            RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
+                .fill(highlight)
+                .padding(.horizontal, Space.sm)
+        )
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAddTraits(isHighlighted ? .isSelected : [])
+        .accessibilityAction(named: "Select Multiple") { startPicking() }
         .contextMenu {
             Button("Rename") { model.startRenaming(conversation) }
             Button(conversation.isPinned ? "Unpin" : "Pin") { model.togglePin(conversation) }
-            Button("Select Multiple") {
-                model.isSelectingConversations = true
-                model.multiSelection = [conversation.uid]
-            }
+            Button("Select Multiple", action: startPicking)
             Divider()
             if model.isSelectingConversations, model.multiSelection.contains(conversation.uid) {
                 Button(model.multiSelection.count == 1 ? "Delete" : "Delete \(model.multiSelection.count) Conversations",
@@ -189,29 +206,6 @@ private struct ConversationRow: View {
                     .disabled(model.isWriting(in: conversation))
             }
         }
-    }
-}
-
-/// The way home: a new conversation, from any page. Highlighted while you're there.
-private struct HomeRow: View {
-    @Environment(AppModel.self) private var model
-
-    private var isHome: Bool { model.selection == nil && !model.showingModels && model.labModelName == nil }
-
-    var body: some View {
-        Button { model.newConversation() } label: {
-            Label("New Conversation", systemImage: "square.and.pencil")
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, Space.sm)
-                .frame(minHeight: 28)
-                .background(isHome ? AnyShapeStyle(.fill.secondary) : AnyShapeStyle(.clear),
-                            in: RoundedRectangle(cornerRadius: Radius.md))
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .padding(.horizontal, Space.sm)
-        .padding(.bottom, Space.xs)
-        .help("Start a new conversation (⌘N)")
     }
 }
 

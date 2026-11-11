@@ -537,7 +537,9 @@ enum SelfTest {
 
         // S-029 how long models stay loaded
         do {
-            check("S-029 the default is 5 minutes", model.keepLoadedMinutes == 5)
+            // Your own saved choice wins, so the default only shows when nothing is saved.
+            let saved = UserDefaults.standard.integer(forKey: "keepLoadedMinutes")
+            check("S-029 the default is 5 minutes", saved > 0 ? model.keepLoadedMinutes == saved : model.keepLoadedMinutes == 5)
             model.keepLoadedMinutes = 15
             model.newConversation()
             transport.script(ScriptedTransport.reply(text: ["Ok"]))

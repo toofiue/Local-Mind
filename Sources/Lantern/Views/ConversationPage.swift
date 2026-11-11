@@ -28,6 +28,11 @@ struct ConversationPage: View {
             ToolbarItem(placement: .primaryAction) {
                 ModelPickerButton()
             }
+            ToolbarSpacer(.fixed, placement: .primaryAction)
+            ToolbarItem(placement: .primaryAction) {
+                Button("New Conversation", systemImage: "square.and.pencil") { model.newConversation() }
+                    .help("Start a new conversation (⌘N)")
+            }
         }
     }
 }
@@ -106,7 +111,7 @@ private struct Composer: View {
                     .foregroundStyle(.secondary)
             }
             if !model.draftAttachments.isEmpty { DraftAttachmentRow() }
-            HStack(alignment: .bottom, spacing: Space.sm) {
+            HStack(alignment: .bottom, spacing: Space.md) {
             Button("Attach Files", systemImage: "paperclip") { model.chooseFiles() }
                 .labelStyle(.iconOnly)
                 .buttonStyle(.borderless)

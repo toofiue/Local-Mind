@@ -40,6 +40,10 @@ struct ModelLabPage: View {
                 Button("Models", systemImage: "chevron.left") { model.closeLab() }
                     .help("Back to all models")
             }
+            ToolbarItem(placement: .primaryAction) {
+                Button("New Conversation", systemImage: "square.and.pencil") { model.newConversation() }
+                    .help("Start a new conversation (⌘N)")
+            }
         }
         .task {
             model.loadLabReport(name)

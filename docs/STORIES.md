@@ -776,7 +776,7 @@ Acceptance:
 Status: done
 
 ### S-057 Delete several conversations at once
-As the user, I choose Select Multiple on any conversation, tick the ones I want, and delete them together after one confirmation.
+As the user, I click a conversation to open it, double-click to start picking several (or choose Select Multiple when I right-click), tick the ones I want, and delete them together after one confirmation.
 Screens: sidebar
 Depends: S-014
 Acceptance:
@@ -800,7 +800,7 @@ Depends: S-057
 Acceptance:
 - [self] Switching chats keeps each one's unsent text and files.
 - [self] A message sent while another chat is replying waits, then starts by itself.
-- [snap] New Conversation sits at the top of the sidebar and is highlighted while you're there.
+- [snap] New Conversation sits beside the model name on every page.
 Status: done
 
 ## Later

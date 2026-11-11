@@ -11,6 +11,8 @@ struct MarkdownView: View {
                 BlockView(block: block)
             }
         }
+        // The same airy line height in every paragraph, list, and quote.
+        .lineSpacing(Space.xs)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
