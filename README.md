@@ -48,7 +48,7 @@ temporary database and a scripted Ollama, and never touches your own conversatio
 tools/make_dmg.sh
 ```
 
-Writes `dist/Local Mind.dmg`. It's signed with a development certificate and not notarized, so it's
+Writes `dist/Local-Mind-<version>.dmg`. It's signed with a development certificate and not notarized, so it's
 meant for your own Macs.
 
 ## Project layout
