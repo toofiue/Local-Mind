@@ -784,6 +784,15 @@ Acceptance:
 - [self] A conversation being written is kept.
 Status: done
 
+### S-058 Models as cards, and the model's state in the toolbar
+As the user, I see each model as a card with its score and memory, the best model for each job above them, and whether the chat's model is in memory right in the toolbar.
+Screens: models, chat
+Depends: S-052, S-053
+Acceptance:
+- [snap] Every card is the same height, and a model in memory is outlined in the accent.
+- [snap] The toolbar's model button shows an open aperture when the model is in memory.
+Status: done
+
 ## Later
 Next after version one:
 - Projects with their own instructions and files

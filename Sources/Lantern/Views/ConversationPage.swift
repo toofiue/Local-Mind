@@ -166,14 +166,23 @@ private struct ModelPickerButton: View {
 
     var body: some View {
         @Bindable var model = model
+        let name = model.currentModelName
+        let memory = model.loaded.first { $0.name == name }?.memory
         Button {
             model.showingModelPicker.toggle()
         } label: {
-            Label(model.currentModelName.map(model.displayName) ?? "No Models", systemImage: "cpu")
-                .labelStyle(.titleAndIcon)
+            Label {
+                Text(name.map(model.displayName) ?? "No Models")
+            } icon: {
+                // The aperture: open when this model is in memory and replies start at once.
+                Image(nsImage: ApertureIcon.image(memory != nil ? .open : .closed))
+                    .foregroundStyle(memory != nil ? AnyShapeStyle(Palette.accentText) : AnyShapeStyle(.secondary))
+            }
+            .labelStyle(.titleAndIcon)
         }
         .disabled(model.isWriting || model.models.isEmpty)
-        .help("Choose which model writes the next reply (⇧⌘M)")
+        .help(memory.map { "In memory (\(ByteCountFormatter.string(fromByteCount: $0, countStyle: .file))), so replies start at once. Click to choose another model (⇧⌘M)." }
+              ?? "Not in memory yet. It loads when you send. Click to choose another model (⇧⌘M).")
         .popover(isPresented: $model.showingModelPicker, arrowEdge: .bottom) {
             ModelPicker()
         }

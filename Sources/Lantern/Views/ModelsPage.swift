@@ -1,129 +1,200 @@
 import SwiftUI
 import LanternKit
 
-/// Every installed model, what's in memory, and what's been tested.
+/// Every installed model as a card, with which one is best at each job on top.
 struct ModelsPage: View {
     @Environment(AppModel.self) private var model
     @State private var renaming: OllamaModel?
 
-    private var inMemory: [OllamaModel] {
-        model.models.filter { item in model.loaded.contains { $0.name == item.name } }
+    private var winners: [LabLeaderboard.Winner] {
+        LabLeaderboard.winners(model.models.compactMap { model.labReports[$0.name] })
     }
 
-    private var notLoaded: [OllamaModel] {
-        model.models.filter { item in !model.loaded.contains { $0.name == item.name } }
-    }
+    private var testedCount: Int { model.models.filter { model.labReports[$0.name] != nil }.count }
 
     var body: some View {
-        Form {
-            BestModelsSection()
-            if !inMemory.isEmpty {
-                Section("In Memory") { rows(inMemory) }
+        ScrollView {
+            VStack(alignment: .leading, spacing: Space.section) {
+                header
+                bestFor
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 260), spacing: Space.lg, alignment: .top)],
+                          alignment: .leading, spacing: Space.lg) {
+                    ForEach(model.models) { item in
+                        ModelCard(item: item, onRename: { renaming = item })
+                    }
+                }
             }
-            if !notLoaded.isEmpty {
-                Section("Installed") { rows(notLoaded) }
-            }
+            .padding(Space.margin)
+            .frame(maxWidth: 960, alignment: .leading)
+            .frame(maxWidth: .infinity)
         }
-        .formStyle(.grouped)
         .overlay {
             if model.models.isEmpty { NoModelsView() }
         }
         .navigationTitle("Models")
-        .sheet(item: $renaming) { item in
-            RenameModelSheet(item: item)
-        }
+        .sheet(item: $renaming) { RenameModelSheet(item: $0) }
         .task {
             for item in model.models { model.loadLabReport(item.name) }
         }
     }
 
-    private func rows(_ items: [OllamaModel]) -> some View {
-        ForEach(items) { item in
-            ModelRow(item: item, loaded: model.loaded.first { $0.name == item.name }, onRename: { renaming = item })
+    @ViewBuilder private var header: some View {
+        VStack(alignment: .leading, spacing: Space.md) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(model.models.count == 1 ? "1 model on this Mac" : "\(model.models.count) models on this Mac")
+                    .font(.system(.title, design: .serif))
+                Spacer()
+                if model.lab.isRunning {
+                    Button("Stop") { model.stop() }
+                } else {
+                    Button("Test All Models") { model.testAllModels() }
+                        .disabled(model.isWriting || model.connection != .connected || model.models.isEmpty)
+                        .help("Run the quick check on every model, one at a time. This can take a while.")
+                }
+            }
+            if model.lab.isRunning {
+                VStack(alignment: .leading, spacing: Space.xs) {
+                    ProgressView(value: Double(model.lab.completed), total: Double(max(model.lab.total, 1)))
+                    Text(model.labQueue.isEmpty
+                         ? "Testing \(model.displayName(model.lab.modelName ?? ""))"
+                         : "Testing \(model.displayName(model.lab.modelName ?? "")) · \(model.labQueue.count) more after this")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+            }
         }
+    }
+
+    @ViewBuilder private var bestFor: some View {
+        if !winners.isEmpty {
+            VStack(alignment: .leading, spacing: Space.md) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Best For").font(.headline)
+                    if testedCount < model.models.count {
+                        Text("From \(testedCount) of \(model.models.count) models tested")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                ScrollView(.horizontal) {
+                    HStack(spacing: Space.sm) {
+                        ForEach(winners, id: \.area) { winner in
+                            VStack(alignment: .leading, spacing: Space.xs) {
+                                Label(winner.area.title, systemImage: winner.area.symbol)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Text(model.displayName(winner.modelName))
+                                    .font(.callout.weight(.medium))
+                                    .lineLimit(1)
+                                Text(score(winner))
+                                    .font(.caption)
+                                    .foregroundStyle(Palette.accentText)
+                                    .monospacedDigit()
+                            }
+                            .padding(Space.md)
+                            .frame(width: 168, alignment: .leading)
+                            .background(.fill.quaternary, in: RoundedRectangle(cornerRadius: Radius.md))
+                        }
+                    }
+                }
+                .scrollIndicators(.never)
+            }
+        }
+    }
+
+    private func score(_ winner: LabLeaderboard.Winner) -> String {
+        winner.area == .speed
+            ? "\(Int(winner.tokensPerSecond.rounded())) tokens per second"
+            : "\(winner.passed) of \(winner.total) passed"
     }
 }
 
-private struct ModelRow: View {
+/// One model: whether it's in memory, its score, what it can do, and what to do next.
+private struct ModelCard: View {
     let item: OllamaModel
-    let loaded: LoadedModel?
     let onRename: () -> Void
     @Environment(AppModel.self) private var model
 
     private var report: LabReport? { model.labReports[item.name] }
-
-    /// The original name, shown in small text when you've chosen your own, then the size.
-    private var details: String {
-        let size = ByteCountFormatter.string(fromByteCount: item.size, countStyle: .file)
-        return model.modelNicknames[item.name] == nil ? size : "\(item.name) · \(size)"
-    }
+    private var memory: Int64? { model.loaded.first { $0.name == item.name }?.memory }
+    private var isLoaded: Bool { memory != nil }
 
     var body: some View {
-        HStack(spacing: Space.md) {
-            VStack(alignment: .leading, spacing: Space.xs) {
-                Text(model.displayName(item.name))
-                    .font(.headline)
-                Text(details)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                if !item.abilities.isEmpty {
-                    HStack(spacing: Space.xs) {
-                        ForEach(item.abilities, id: \.self) { AbilityTag(title: $0) }
+        VStack(alignment: .leading, spacing: Space.md) {
+            HStack(spacing: Space.sm) {
+                Image(nsImage: ApertureIcon.image(isLoaded ? .open : .closed))
+                    .foregroundStyle(isLoaded ? AnyShapeStyle(Palette.accentText) : AnyShapeStyle(.tertiary))
+                    .help(isLoaded ? "In memory, ready to reply" : "Not in memory. It loads when you use it.")
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(model.displayName(item.name)).font(.headline).lineLimit(1)
+                    if model.modelNicknames[item.name] != nil {
+                        Text(item.name).font(.caption).foregroundStyle(.secondary).lineLimit(1)
                     }
                 }
+                Spacer()
+                Menu { actions } label: { Image(systemName: "ellipsis") }
+                    .menuStyle(.borderlessButton)
+                    .menuIndicator(.hidden)
+                    .fixedSize()
+                    .help("More actions for this model")
+                    .accessibilityLabel("More actions for \(model.displayName(item.name))")
             }
-            Spacer(minLength: Space.lg)
-            if let loaded {
-                Label(ByteCountFormatter.string(fromByteCount: loaded.memory, countStyle: .file), systemImage: "memorychip.fill")
-                    .font(.callout)
-                    .foregroundStyle(Palette.accentText)
-                    .help("Using this much memory right now")
-                Button("Unload") { Task { await model.unload(item.name) } }
-                    .disabled(!model.canUnload(item.name))
-                    .help(model.canUnload(item.name) ? "Free the memory this model is using" : "Unavailable while this model is busy")
-                    .accessibilityLabel("Unload \(model.displayName(item.name))")
+            // A fixed-height score line, so every card is the same height.
+            HStack(alignment: .lastTextBaseline, spacing: Space.sm) {
+                if let report {
+                    Text("\(report.totalPassed)").font(.system(.largeTitle, design: .serif))
+                    Text("of \(report.results.count) passed").font(.callout).foregroundStyle(.secondary)
+                } else {
+                    Text("Not tested yet").font(.callout).foregroundStyle(.secondary)
+                }
             }
-            if let report {
-                Text("\(report.totalPassed) of \(report.results.count)")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .monospacedDigit()
-                    .help("Tests passed in the last run")
+            .frame(height: 40, alignment: .bottomLeading)
+            HStack(spacing: Space.sm) {
+                ForEach(item.abilities, id: \.self) { title in
+                    Image(systemName: Self.symbol(title))
+                        .foregroundStyle(.secondary)
+                        .help(title)
+                        .accessibilityLabel(title)
+                }
+                Spacer()
+                if let memory {
+                    Text("\(ByteCountFormatter.string(fromByteCount: memory, countStyle: .file)) in memory")
+                        .font(.caption)
+                        .foregroundStyle(Palette.accentText)
+                } else {
+                    Text(ByteCountFormatter.string(fromByteCount: item.size, countStyle: .file))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
-            Button(report == nil ? "Test" : "Results") { model.openLab(item.name) }
-                .help("Find out what this model is good at")
-            Menu {
-                actions
-            } label: {
-                Label("More", systemImage: "ellipsis")
-                    .labelStyle(.iconOnly)
+            HStack {
+                Button(report == nil ? "Test This Model" : "See Results") { model.openLab(item.name) }
+                    .help("Find out what this model is good at")
+                if isLoaded {
+                    Button("Unload") { Task { await model.unload(item.name) } }
+                        .disabled(!model.canUnload(item.name))
+                        .help("Free the memory this model is using")
+                }
             }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
-            .fixedSize()
-            .help("More actions for this model")
-            .accessibilityLabel("More actions for \(model.displayName(item.name))")
         }
-        .padding(.vertical, Space.xs)
+        .padding(Space.lg)
+        .background(.fill.quinary, in: RoundedRectangle(cornerRadius: Radius.lg))
+        .overlay(RoundedRectangle(cornerRadius: Radius.lg)
+            .strokeBorder(isLoaded ? AnyShapeStyle(Palette.accent.opacity(0.5)) : AnyShapeStyle(.separator)))
         .contextMenu { actions }
     }
 
-    @ViewBuilder
-    private var actions: some View {
+    @ViewBuilder private var actions: some View {
         Button("Rename…", action: onRename)
         Button(report == nil ? "Test" : "See Results") { model.openLab(item.name) }
-        if loaded != nil {
+        if isLoaded {
             Divider()
             Button("Unload") { Task { await model.unload(item.name) } }
                 .disabled(!model.canUnload(item.name))
         }
     }
-}
 
-private struct AbilityTag: View {
-    let title: String
-
-    private var symbol: String {
+    static func symbol(_ title: String) -> String {
         switch title {
         case "Images": "photo"
         case "Audio": "waveform"
@@ -131,14 +202,21 @@ private struct AbilityTag: View {
         default: "wrench.and.screwdriver"
         }
     }
+}
 
-    var body: some View {
-        Label(title, systemImage: symbol)
-            .font(.caption2)
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, Space.sm)
-            .padding(.vertical, 2)
-            .background(.fill.tertiary, in: Capsule())
+extension LabArea {
+    var symbol: String {
+        switch self {
+        case .speed: "gauge.with.dots.needle.67percent"
+        case .reasoning: "function"
+        case .code: "chevron.left.forwardslash.chevron.right"
+        case .instructions: "list.bullet.clipboard"
+        case .data: "tablecells"
+        case .documents: "doc.text"
+        case .images: "photo"
+        case .audio: "waveform"
+        case .tools: "wrench.and.screwdriver"
+        }
     }
 }
 
@@ -189,58 +267,3 @@ private struct RenameModelSheet: View {
     }
 }
 
-/// Which model did best in each area, and a way to test them all.
-private struct BestModelsSection: View {
-    @Environment(AppModel.self) private var model
-
-    private var winners: [LabLeaderboard.Winner] {
-        LabLeaderboard.winners(model.models.compactMap { model.labReports[$0.name] })
-    }
-
-    private var testedCount: Int { model.models.filter { model.labReports[$0.name] != nil }.count }
-
-    var body: some View {
-        Section {
-            if model.lab.isRunning {
-                VStack(alignment: .leading, spacing: Space.sm) {
-                    ProgressView(value: Double(model.lab.completed), total: Double(max(model.lab.total, 1)))
-                    HStack {
-                        Text("Testing \(model.displayName(model.lab.modelName ?? "")) · \(model.labQueue.count) more after this")
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                        Button("Stop") { model.stop() }
-                    }
-                }
-            } else if winners.isEmpty {
-                Text("Test your models to see which one is best at each job.")
-                    .foregroundStyle(.secondary)
-            } else {
-                ForEach(winners, id: \.area) { winner in
-                    LabeledContent(winner.area.title) {
-                        Text("\(model.displayName(winner.modelName)) · \(score(winner))")
-                    }
-                }
-                if testedCount < model.models.count {
-                    Text("Based on \(testedCount) of \(model.models.count) models. Test the rest to compare them all.")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                }
-            }
-        } header: {
-            HStack {
-                Text("Best for Each Job")
-                Spacer()
-                Button("Test All Models") { model.testAllModels() }
-                    .disabled(model.isWriting || model.connection != .connected || model.models.isEmpty)
-                    .help("Run the quick check on every model, one at a time. This can take a while.")
-            }
-        }
-    }
-
-    private func score(_ winner: LabLeaderboard.Winner) -> String {
-        winner.area == .speed
-            ? "\(Int(winner.tokensPerSecond.rounded())) tokens per second"
-            : "\(winner.passed) of \(winner.total)"
-    }
-}
