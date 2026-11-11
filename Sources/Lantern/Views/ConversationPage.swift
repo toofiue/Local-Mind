@@ -153,19 +153,10 @@ private struct Composer: View {
         .padding(.bottom, Space.margin)
         .padding(.top, Space.sm)
         .frame(maxWidth: .infinity)
-        .onChange(of: model.prefill) { takePrefill() }
     }
 
     private func submit() {
         if model.send(draft) { draft = "" }
-    }
-
-    /// A starter from the welcome screen fills the field and puts the cursor at the end.
-    private func takePrefill() {
-        guard let text = model.prefill else { return }
-        draft = text
-        model.prefill = nil
-        model.focusRequest += 1
     }
 }
 

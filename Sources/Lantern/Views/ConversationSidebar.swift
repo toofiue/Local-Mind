@@ -23,7 +23,12 @@ struct ConversationSidebar: View {
         @Bindable var model = model
         let groups = ConversationGroups.split(conversations, isPinned: \.isPinned, updatedAt: \.updatedAt)
         let found = isFiltering ? results : []
-        List(selection: $model.selection) {
+        List(selection: Binding(
+            get: { model.multiSelection.isEmpty ? Set(model.selection.map { [$0] } ?? []) : model.multiSelection },
+            set: { picked in
+                model.multiSelection = picked.count > 1 ? picked : []
+                if picked.count == 1 { model.selection = picked.first }
+            })) {
             if isFiltering {
                 ForEach(found, id: \.conversation.uid) { result in
                     ConversationRow(conversation: result.conversation, snippet: result.snippet)
@@ -62,6 +67,15 @@ struct ConversationSidebar: View {
             Button("Delete", role: .destructive) { model.delete(conversation) }
             Button("Cancel", role: .cancel) {}
         } message: { _ in
+            Text("You can't undo this action.")
+        }
+        .confirmationDialog(
+            "Delete \(model.pendingDeletions.count) conversations?",
+            isPresented: Binding(get: { !model.pendingDeletions.isEmpty }, set: { if !$0 { model.pendingDeletions = [] } })
+        ) {
+            Button("Delete \(model.pendingDeletions.count) Conversations", role: .destructive) { model.delete(model.pendingDeletions) }
+            Button("Cancel", role: .cancel) {}
+        } message: {
             Text("You can't undo this action.")
         }
         .overlay {
@@ -133,8 +147,12 @@ private struct ConversationRow: View {
             Button("Rename") { model.startRenaming(conversation) }
             Button(conversation.isPinned ? "Unpin" : "Pin") { model.togglePin(conversation) }
             Divider()
-            Button("Delete", role: .destructive) { model.requestDelete(conversation) }
-                .disabled(model.isWriting(in: conversation))
+            if model.multiSelection.count > 1, model.multiSelection.contains(conversation.uid) {
+                Button("Delete \(model.multiSelection.count) Conversations", role: .destructive) { model.requestDelete(conversation) }
+            } else {
+                Button("Delete", role: .destructive) { model.requestDelete(conversation) }
+                    .disabled(model.isWriting(in: conversation))
+            }
         }
     }
 }

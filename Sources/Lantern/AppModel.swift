@@ -81,6 +81,10 @@ final class AppModel {
     var editingMessageID: UUID?
     /// The conversation waiting on a delete confirmation.
     var pendingDeletion: Conversation?
+    /// Several conversations waiting for one confirmation.
+    var pendingDeletions: [Conversation] = []
+    /// Conversations picked with Command- or Shift-click. Empty when one or none is picked.
+    var multiSelection: Set<UUID> = []
     var searchText = ""
     /// Files attached to the message being written.
     var draftAttachments: [LoadedAttachment] = []
@@ -94,8 +98,6 @@ final class AppModel {
     var searchRequest = 0
     /// Goes up whenever the message field should take focus.
     var focusRequest = 0
-    /// Text a welcome-screen starter puts in the message field.
-    var prefill: String?
     /// The system-wide shortcut for Quick Ask. Test and snapshot runs leave it alone.
     var hotkey: Hotkey = AppModel.savedHotkey {
         didSet {
@@ -367,8 +369,31 @@ final class AppModel {
 
     /// Asks for confirmation. A reply can't be deleted while it's being written.
     func requestDelete(_ conversation: Conversation? = nil) {
+        // With several picked, Delete applies to all of them, unless a row outside them was right-clicked.
+        if multiSelection.count > 1, conversation.map({ multiSelection.contains($0.uid) }) ?? true {
+            let all = (try? context.fetch(FetchDescriptor<Conversation>())) ?? []
+            pendingDeletions = all.filter { multiSelection.contains($0.uid) && !isWriting(in: $0) }
+            return
+        }
         guard let target = conversation ?? selectedConversation, !isWriting(in: target) else { return }
         pendingDeletion = target
+    }
+
+    /// Deletes several conversations at once, then shows the next one left.
+    func delete(_ conversations: [Conversation]) {
+        pendingDeletions = []
+        let doomed = Set(conversations.filter { !isWriting(in: $0) }.map(\.uid))
+        guard !doomed.isEmpty else { return }
+        let all = (try? context.fetch(FetchDescriptor<Conversation>())) ?? []
+        let groups = ConversationGroups.split(all, isPinned: \.isPinned, updatedAt: \.updatedAt)
+        let order = (groups.pinned + groups.recent).map(\.uid)
+        multiSelection = []
+        if let current = selection, doomed.contains(current) {
+            let index = order.firstIndex(of: current) ?? 0
+            selection = order[index...].first { !doomed.contains($0) } ?? order[..<index].last { !doomed.contains($0) }
+        }
+        for conversation in all where doomed.contains(conversation.uid) { context.delete(conversation) }
+        save()
     }
 
     func delete(_ conversation: Conversation) {

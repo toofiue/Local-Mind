@@ -883,14 +883,6 @@ enum SelfTest {
             }
         }
 
-        // S-055 starters
-        do {
-            let before = model.focusRequest
-            model.prefill = "Summarize this in five short points."
-            try? await Task.sleep(for: .milliseconds(200))
-            check("S-055 a starter is waiting for the message field", model.prefill == nil || model.focusRequest >= before)
-            model.prefill = nil
-        }
 
         // S-056 look and frost
         do {
@@ -906,6 +898,28 @@ enum SelfTest {
             check("S-056 the frost setting is kept", UserDefaults.standard.double(forKey: "appearance.sidebarFrost") == 0.8)
             store.mode = savedMode
             store.sidebarFrost = savedFrost
+        }
+
+        // S-057 deleting several
+        do {
+            let context = model.container.mainContext
+            let made = (0..<3).map { i -> Conversation in
+                let c = Conversation(modelName: "first:1")
+                c.title = "Bulk \(i)"
+                context.insert(c)
+                return c
+            }
+            try? context.save()
+            let before = (try? context.fetchCount(FetchDescriptor<Conversation>())) ?? 0
+            model.selection = made[0].uid
+            model.multiSelection = Set(made.prefix(2).map { $0.uid })
+            model.requestDelete()
+            check("S-057 Delete with several picked asks once for all of them", model.pendingDeletions.count == 2 && model.pendingDeletion == nil)
+            model.delete(model.pendingDeletions)
+            let after = (try? context.fetchCount(FetchDescriptor<Conversation>())) ?? 0
+            check("S-057 they're all removed", after == before - 2, "\(before) to \(after)")
+            check("S-057 the next conversation left is shown", model.selection != nil && model.selection != made[0].uid && model.selection != made[1].uid)
+            model.delete([made[2]])
         }
 
         // Launch repair

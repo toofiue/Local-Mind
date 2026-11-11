@@ -758,11 +758,11 @@ Acceptance:
 Status: done
 
 ### S-055 A warmer, more personal Local Mind
-As the user, a new conversation greets me, tells me if the model is ready, and offers a few ways to start; the whole app has a warm, calm character.
+As the user, a new conversation greets me simply, and the whole app has a warm, calm character.
 Screens: chat-empty, chat, settings-appearance
 Depends: S-054
 Acceptance:
-- [self] A starter fills the message field and puts the cursor there.
+- [snap] A new conversation shows only the mark and a greeting.
 - [snap] The Appearance preview shows a small Local Mind window in the chosen color.
 Status: done
 
@@ -773,6 +773,15 @@ Depends: S-055
 Acceptance:
 - [self] Light and Dark set the app's look; System follows the Mac.
 - [self] The frost setting is kept between launches.
+Status: done
+
+### S-057 Delete several conversations at once
+As the user, I Command- or Shift-click conversations and delete them together after one confirmation.
+Screens: sidebar
+Depends: S-014
+Acceptance:
+- [self] Delete with several picked asks once, then removes them all and shows the next conversation left.
+- [self] A conversation being written is kept.
 Status: done
 
 ## Later
