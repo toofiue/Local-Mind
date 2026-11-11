@@ -30,6 +30,8 @@ struct ComposerField: NSViewRepresentable {
     @Binding var height: CGFloat
     let isEnabled: Bool
     let focusRequest: Int
+    /// Checked when a focus request lands, so the field doesn't take focus from a rename in progress.
+    var mayTakeFocus: () -> Bool = { true }
     let maxLines: Int
     let onSubmit: () -> Void
     var onPasteFiles: ([URL]) -> Void = { _ in }
@@ -86,7 +88,7 @@ struct ComposerField: NSViewRepresentable {
             DispatchQueue.main.async {
                 // Arrow keys in the sidebar must keep moving through the list.
                 let event = NSApp.currentEvent
-                if event?.type != .keyDown || event?.modifierFlags.contains(.command) == true {
+                if (event?.type != .keyDown || event?.modifierFlags.contains(.command) == true) && mayTakeFocus() {
                     textView.window?.makeFirstResponder(textView)
                 }
             }

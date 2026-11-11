@@ -122,7 +122,7 @@ private struct Composer: View {
 
             ComposerField(text: $draft, height: $fieldHeight,
                           isEnabled: model.connection == .connected,
-                          focusRequest: model.focusRequest, maxLines: 8, onSubmit: submit,
+                          focusRequest: model.focusRequest, mayTakeFocus: { model.renamingID == nil }, maxLines: 8, onSubmit: submit,
                           onPasteFiles: { urls in Task { await model.addFiles(urls) } },
                           onPasteImage: { data in Task { await model.addPastedImage(data) } },
                           onMoveConversation: { model.selectAdjacentConversation(by: $0) })

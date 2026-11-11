@@ -776,7 +776,7 @@ Acceptance:
 Status: done
 
 ### S-057 Delete several conversations at once
-As the user, I click a conversation to open it, double-click to start picking several (or choose Select Multiple when I right-click), tick the ones I want, and delete them together after one confirmation.
+As the user, I click a conversation to open it and double-click to rename it. To delete several, I right-click and choose Select Multiple, tick the ones I want, and delete them together after one confirmation.
 Screens: sidebar
 Depends: S-014
 Acceptance:

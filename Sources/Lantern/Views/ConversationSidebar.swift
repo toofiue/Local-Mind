@@ -23,7 +23,7 @@ struct ConversationSidebar: View {
         @Bindable var model = model
         let groups = ConversationGroups.split(conversations, isPinned: \.isPinned, updatedAt: \.updatedAt)
         let found = isFiltering ? results : []
-        // Rows handle clicks themselves: one click opens, a double-click starts picking several,
+        // Rows handle clicks themselves: one click opens, a double-click renames,
         // and the highlight is a soft wash of the accent instead of the system's blue.
         List {
             if isFiltering {
@@ -159,8 +159,9 @@ private struct ConversationRow: View {
                     }
                     .task {
                         draft = conversation.title
-                        // A list row can't take focus until it has been laid out.
-                        try? await Task.sleep(for: .milliseconds(50))
+                        // A list row can't take focus until it has been laid out, and a double-click's
+                        // first click has just opened the chat, so wait for that to settle.
+                        try? await Task.sleep(for: .milliseconds(150))
                         isEditing = true
                     }
             } else {
@@ -183,15 +184,19 @@ private struct ConversationRow: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
         .onTapGesture { click() }
-        // Fires on the second click of a double-click, after the first one opened the chat.
-        .simultaneousGesture(TapGesture(count: 2).onEnded { startPicking() })
+        // A double-click renames, as in Finder. It fires after the first click opened the chat.
+        .simultaneousGesture(TapGesture(count: 2).onEnded {
+            if !model.isSelectingConversations { model.startRenaming(conversation) }
+        })
         .listRowBackground(
             RoundedRectangle(cornerRadius: Radius.md, style: .continuous)
                 .fill(highlight)
                 .padding(.horizontal, Space.sm)
         )
-        .accessibilityAddTraits(.isButton)
+        // While renaming, the row is a text field, not a button.
+        .accessibilityAddTraits(model.renamingID == conversation.uid ? [] : .isButton)
         .accessibilityAddTraits(isHighlighted ? .isSelected : [])
+        .accessibilityAction(named: "Rename") { model.startRenaming(conversation) }
         .accessibilityAction(named: "Select Multiple") { startPicking() }
         .contextMenu {
             Button("Rename") { model.startRenaming(conversation) }
