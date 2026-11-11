@@ -5,13 +5,27 @@ struct AppearanceSettings: View {
     @Bindable private var store = ThemeStore.shared
 
     var body: some View {
-        Section {
-            Picker("Appearance", selection: $store.mode) {
-                ForEach(ThemeStore.Mode.allCases) { Text($0.title).tag($0) }
+        SettingsPageLayout(title: "Appearance") {
+            AccentPreview()
+                .padding(.vertical, Space.md)
+            SettingRow(title: "Appearance", description: "System follows your Mac. Light or Dark applies to Local Mind only.") {
+                Picker("Appearance", selection: $store.mode) {
+                    ForEach(ThemeStore.Mode.allCases) { Text($0.title).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .fixedSize()
             }
-            .pickerStyle(.segmented)
-            .help("System follows your Mac. Light or Dark applies to Local Mind only.")
-            LabeledContent("Sidebar") {
+            SettingRow(title: "Accent color", description: "For buttons, selection, and the logo. \(store.theme.name) is selected.") {
+                HStack(spacing: Space.sm) {
+                    ForEach(Theme.all) { theme in
+                        AccentSwatch(theme: theme, selected: store.themeID == theme.id) {
+                            store.themeID = theme.id
+                        }
+                    }
+                }
+            }
+            SettingRow(title: "Sidebar transparency", description: "How much of the desktop shows through the sidebar.", divider: false) {
                 HStack(spacing: Space.md) {
                     // Snaps in 10% steps, like the Mac's brightness and volume.
                     Slider(value: $store.sidebarFrost, in: 0...1, step: 0.1) {
@@ -22,31 +36,12 @@ struct AppearanceSettings: View {
                         Text("Frosted").font(.caption).foregroundStyle(.secondary)
                     }
                     .labelsHidden()
-                    .frame(maxWidth: 260)
-                    .help("How much of the desktop shows through the sidebar")
+                    .frame(width: 220)
                     .accessibilityValue("\(Int((store.sidebarFrost * 100).rounded())) percent frosted")
                     Text(store.sidebarFrost, format: .percent.precision(.fractionLength(0)))
                         .monospacedDigit()
                         .foregroundStyle(.secondary)
                         .frame(width: 40, alignment: .trailing)
-                }
-            }
-        }
-        Section {
-            AccentPreview()
-                .padding(.vertical, Space.xs)
-            LabeledContent("Accent color") {
-                VStack(alignment: .trailing, spacing: Space.xs) {
-                    HStack(spacing: Space.sm) {
-                        ForEach(Theme.all) { theme in
-                            AccentSwatch(theme: theme, selected: store.themeID == theme.id) {
-                                store.themeID = theme.id
-                            }
-                        }
-                    }
-                    Text(store.theme.name)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                 }
             }
         }

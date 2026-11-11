@@ -64,7 +64,7 @@ struct SidebarFooter: View {
                 }
                 Spacer(minLength: Space.sm)
                 Image(systemName: "chevron.up.chevron.down")
-                    .font(.caption.weight(.semibold))
+                    .font(.caption)
                     .foregroundStyle(.secondary)
             }
             .padding(.leading, Space.sm)

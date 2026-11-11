@@ -23,16 +23,14 @@ struct SettingsView: View {
 
     @ViewBuilder
     private func page(_ tab: SettingsTab) -> some View {
-        Form {
+        Group {
             switch tab {
             case .models: ModelsSettings()
             case .quickAsk: QuickAskSettings()
             case .appearance: AppearanceSettings()
             }
         }
-        .formStyle(.grouped)
-        .fitsContent()
-        .frame(width: 520)
+        .frame(width: 640, height: 520)
     }
 }
 
@@ -63,21 +61,16 @@ struct QuickAskSettings: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        Section {
-            LabeledContent("Shortcut") {
+        SettingsPageLayout(title: "Quick Ask") {
+            SettingRow(title: "Shortcut",
+                       description: model.hotkeyMessage ?? "Opens Quick Ask from any app while Local Mind is running.",
+                       divider: false) {
                 HStack(spacing: Space.sm) {
-                    ShortcutRecorder()
                     if model.hotkey != .standard {
                         Button("Use Default") { model.changeHotkey(.standard) }
-                            .accessibilityLabel("Use Default")
                     }
+                    ShortcutRecorder()
                 }
-            }
-        } footer: {
-            if let message = model.hotkeyMessage {
-                Label(message, systemImage: "exclamationmark.triangle")
-            } else {
-                Text("Opens Quick Ask from any app while Local Mind is running.")
             }
         }
     }
@@ -130,26 +123,32 @@ struct ModelsSettings: View {
 
     var body: some View {
         @Bindable var model = model
-        Section {
-            Picker("Default model", selection: $model.chosenDefaultModel) {
-                Text("Last Used").tag("")
-                Divider()
-                ForEach(model.models) { item in
-                    Text(item.name).tag(item.name)
+        SettingsPageLayout(title: "Models") {
+            SettingRow(title: "Default model", description: "Used for new conversations. Last Used picks the one you used most recently.") {
+                Picker("Default model", selection: $model.chosenDefaultModel) {
+                    Text("Last Used").tag("")
+                    Divider()
+                    ForEach(model.models) { item in
+                        Text(model.displayName(item.name)).tag(item.name)
+                    }
                 }
+                .labelsHidden()
+                .fixedSize()
             }
-        }
-        Section {
-            Picker("Keep a model loaded for", selection: $model.keepLoadedMinutes) {
-                ForEach([1, 5, 15, 30], id: \.self) { minutes in
-                    Text("^[\(minutes) minute](inflect: true)").tag(minutes)
+            SettingRow(title: "Keep a model loaded", description: "How long a model stays in memory after its last reply. Loaded models answer at once but use a lot of memory.") {
+                Picker("Keep a model loaded", selection: $model.keepLoadedMinutes) {
+                    ForEach([1, 5, 15, 30], id: \.self) { minutes in
+                        Text("^[\(minutes) minute](inflect: true)").tag(minutes)
+                    }
                 }
+                .labelsHidden()
+                .fixedSize()
             }
-        } footer: {
-            Text("After its last reply. Models use a lot of memory while loaded.")
-        }
-        Section {
-            Toggle("Show Local Mind in the menu bar", isOn: $showMenuBarItem)
+            SettingRow(title: "Show in the menu bar", description: "An aperture that opens when a model is loaded, with Quick Ask and Unload.", divider: false) {
+                Toggle("Show in the menu bar", isOn: $showMenuBarItem)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+            }
         }
     }
 }

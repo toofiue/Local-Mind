@@ -52,7 +52,7 @@ private struct BlockView: View {
                 Grid(alignment: .leading, horizontalSpacing: Space.lg, verticalSpacing: Space.sm) {
                     GridRow {
                         ForEach(Array(header.enumerated()), id: \.offset) { _, cell in
-                            Text(inline(cell)).fontWeight(.semibold)
+                            Text(inline(cell)).fontWeight(.medium)
                         }
                     }
                     Divider()
@@ -85,8 +85,8 @@ private struct BlockView: View {
 
     private func font(forHeading level: Int) -> Font {
         switch level {
-        case 1: .title2.weight(.semibold)
-        case 2: .title3.weight(.semibold)
+        case 1: .title2.weight(.medium)
+        case 2: .title3.weight(.medium)
         default: .headline
         }
     }

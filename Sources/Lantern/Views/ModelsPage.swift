@@ -49,7 +49,7 @@ struct ModelsPage: View {
         VStack(alignment: .leading, spacing: Space.md) {
             HStack(alignment: .firstTextBaseline) {
                 Text(model.models.count == 1 ? "1 model on this Mac" : "\(model.models.count) models on this Mac")
-                    .font(.system(.title, design: .serif))
+                    .font(TextStyle.title)
                 Spacer()
                 if model.lab.isRunning {
                     Button("Stop") { model.stop() }
@@ -76,7 +76,7 @@ struct ModelsPage: View {
         if !winners.isEmpty {
             VStack(alignment: .leading, spacing: Space.md) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text("Best For").font(.headline)
+                    Text("Best For").font(TextStyle.heading)
                     if testedCount < model.models.count {
                         Text("From \(testedCount) of \(model.models.count) models tested")
                             .font(.caption)
@@ -132,7 +132,7 @@ private struct ModelCard: View {
                     .foregroundStyle(isLoaded ? AnyShapeStyle(Palette.accentText) : AnyShapeStyle(.tertiary))
                     .help(isLoaded ? "In memory, ready to reply" : "Not in memory. It loads when you use it.")
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(model.displayName(item.name)).font(.headline).lineLimit(1)
+                    Text(model.displayName(item.name)).font(TextStyle.heading).lineLimit(1)
                     if model.modelNicknames[item.name] != nil {
                         Text(item.name).font(.caption).foregroundStyle(.secondary).lineLimit(1)
                     }
@@ -237,7 +237,7 @@ private struct RenameModelSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.lg) {
             Text("Name This Model")
-                .font(.headline)
+                .font(TextStyle.heading)
             TextField("Name", text: $name, prompt: Text(item.name))
                 .focused($isFocused)
                 .onSubmit(save)

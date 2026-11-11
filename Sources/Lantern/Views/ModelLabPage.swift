@@ -87,13 +87,13 @@ struct ModelLabPage: View {
             VStack(alignment: .leading, spacing: Space.xs) {
                 if let report, !isRunningHere {
                     Text("\(report.totalPassed) of \(report.results.count)")
-                        .font(.largeTitle.weight(.semibold))
+                        .font(TextStyle.figure)
                         .monospacedDigit()
                     Text("tests passed · \(report.date, format: .dateTime.day().month().hour().minute())")
                         .foregroundStyle(.secondary)
                 } else {
                     Text(installed.map { "\(ModelLab.cases(for: $0).count) tests across \(areas.count) areas" } ?? "Model Test")
-                        .font(.title3.weight(.semibold))
+                        .font(.system(.title3, design: .serif))
                     Text("Takes a few minutes and uses this model's full memory.")
                         .foregroundStyle(.secondary)
                 }
@@ -137,7 +137,7 @@ private struct LabAreaIntro: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.xs) {
             Text(area.title)
-                .font(.headline)
+                .font(TextStyle.heading)
             Text(area.measures)
             if let standard = area.standard {
                 Text("Based on \(standard.name)")

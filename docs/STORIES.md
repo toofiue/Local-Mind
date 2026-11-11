@@ -859,6 +859,15 @@ Acceptance:
 - [snap] On a wide window the Models page fills more of it, and the Best For tiles wrap instead of running off the edge.
 Status: done
 
+### S-066 One type system, and calm Settings rows
+As the user, the app's text follows one calm system (SF Pro for the interface in two weights, New York for display moments, SF Mono for code), and each setting is a row with its name, a short description, and its control.
+Screens: settings-board, settings, models
+Depends: S-065
+Acceptance:
+- [snap] No bold headings; hierarchy comes from size and color.
+- [snap] Settings rows show a title, a description, and the control on the right, with a line between rows.
+Status: done
+
 ## Later
 Next after version one:
 - Projects with their own instructions and files

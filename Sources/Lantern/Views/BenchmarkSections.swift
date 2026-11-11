@@ -105,7 +105,7 @@ private struct SuiteRow: View {
         VStack(alignment: .leading, spacing: Space.xs) {
             HStack(spacing: Space.xs) {
                 Link(suite.title, destination: suite.infoURL)
-                    .font(.headline)
+                    .font(TextStyle.heading)
                 Text("\(suite.itemCount.formatted()) questions · \(suite.license) license")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -138,7 +138,7 @@ private struct BenchmarkResultSection: View {
             VStack(alignment: .leading, spacing: Space.sm) {
                 HStack(alignment: .firstTextBaseline) {
                     Text(percent)
-                        .font(.largeTitle.weight(.semibold))
+                        .font(TextStyle.figure)
                         .monospacedDigit()
                     Text("\(result.passed) of \(result.items.count) passed")
                         .foregroundStyle(.secondary)

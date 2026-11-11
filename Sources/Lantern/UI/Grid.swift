@@ -166,3 +166,21 @@ struct GridOverlay: View {
         .allowsHitTesting(false)
     }
 }
+
+/// The type scale. Three families, two weights:
+/// - SF Pro (the system font) for all interface text, regular or medium. Hierarchy comes from
+///   size and color (.primary, .secondary), not from bold.
+/// - New York (Apple's serif) only for display moments: the greeting, page titles, big numbers.
+/// - SF Mono only for code.
+enum TextStyle {
+    /// The greeting and other once-per-page moments.
+    static let display = Font.system(.largeTitle, design: .serif)
+    /// Page and panel titles.
+    static let title = Font.system(.title2, design: .serif)
+    /// Big figures, like a score.
+    static let figure = Font.system(.largeTitle, design: .serif)
+    /// A row or card's name: body size, medium weight.
+    static let heading = Font.body.weight(.medium)
+    /// Code and anything that must line up character by character.
+    static let code = Font.system(.body, design: .monospaced)
+}
