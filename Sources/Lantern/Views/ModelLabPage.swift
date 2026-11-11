@@ -34,6 +34,8 @@ struct ModelLabPage: View {
             }
         }
         .formStyle(.grouped)
+        .scrollContentBackground(.hidden)
+        .background(Palette.canvas)
         .navigationTitle(model.displayName(name))
         .toolbar {
             ToolbarItem(placement: .navigation) {

@@ -883,6 +883,15 @@ enum SelfTest {
             }
         }
 
+        // S-055 starters
+        do {
+            let before = model.focusRequest
+            model.prefill = "Summarize this in five short points."
+            try? await Task.sleep(for: .milliseconds(200))
+            check("S-055 a starter is waiting for the message field", model.prefill == nil || model.focusRequest >= before)
+            model.prefill = nil
+        }
+
         // Launch repair
         let stale = Message(role: .assistant, text: "Cut", modelName: "first:1", sequence: 99, state: .writing)
         model.selectedConversation?.messages.append(stale)

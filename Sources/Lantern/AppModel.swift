@@ -94,6 +94,8 @@ final class AppModel {
     var searchRequest = 0
     /// Goes up whenever the message field should take focus.
     var focusRequest = 0
+    /// Text a welcome-screen starter puts in the message field.
+    var prefill: String?
     /// The system-wide shortcut for Quick Ask. Test and snapshot runs leave it alone.
     var hotkey: Hotkey = AppModel.savedHotkey {
         didSet {

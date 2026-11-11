@@ -8,7 +8,8 @@ R = 318.0          # outer edge of the petals
 INNER = 128.0      # the opening in the middle
 SWIRL = 58.0       # how far each petal edge turns, in degrees, from the opening to the rim
 GAP = 15.0         # the gap between petals, in pixels, the same width all the way out
-PUPIL = 62.0
+PUPIL = 92.0       # the clay pupil
+GLINT = 24.0       # the cream catchlight that makes it look alive
 
 def point(radius, degrees):
     a = math.radians(degrees - 90)
@@ -43,4 +44,8 @@ out = sys.argv[1]
 for f in os.listdir(out):
     if f.endswith('.svg'): os.remove(os.path.join(out, f))
 open(f'{out}/petals.svg', 'w').write(svg('\n'.join(petal(i) for i in range(6))))
-open(f'{out}/pupil.svg', 'w').write(svg(f'<circle fill="{CLAY}" cx="{C}" cy="{C}" r="{PUPIL:.0f}"/>'))
+# The pupil, with a catchlight cut out of its upper left, like light caught in an eye.
+gx, gy = C - PUPIL * 0.36, C - PUPIL * 0.36
+open(f'{out}/pupil.svg', 'w').write(svg(
+    f'<path fill="{CLAY}" fill-rule="evenodd" d="M{C-PUPIL} {C}a{PUPIL} {PUPIL} 0 1 0 {2*PUPIL} 0a{PUPIL} {PUPIL} 0 1 0 {-2*PUPIL} 0Z'
+    f'M{gx-GLINT} {gy}a{GLINT} {GLINT} 0 1 0 {2*GLINT} 0a{GLINT} {GLINT} 0 1 0 {-2*GLINT} 0Z"/>'))

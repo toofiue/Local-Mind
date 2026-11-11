@@ -26,9 +26,8 @@ struct AppearanceSettings: View {
     }
 }
 
-/// A small sample window in the chosen accent: a sidebar, two tasks, a tag,
-/// a button, and a switch. It redraws as people pick a color.
-/// Swap the sample words for ones from this app.
+/// A small Local Mind window in the chosen accent: conversations, a question,
+/// a reply, and the message field. It redraws as people pick a color.
 private struct AccentPreview: View {
     private let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
 
@@ -36,9 +35,9 @@ private struct AccentPreview: View {
         HStack(spacing: 0) {
             sidebar
             Divider()
-            content
+            chat
         }
-        .frame(height: 152)
+        .frame(height: 188)
         .background(.background, in: shape)
         .clipShape(shape)
         .overlay(shape.strokeBorder(.separator, lineWidth: 1))
@@ -56,19 +55,24 @@ private struct AccentPreview: View {
             }
             .padding(.leading, Space.xs)
             .padding(.bottom, Space.sm)
-            sidebarRow("Inbox", symbol: "tray", selected: true)
-            sidebarRow("Today", symbol: "star", selected: false)
-            sidebarRow("Done", symbol: "checkmark.circle", selected: false)
+            row("Weekend in Lisbon", selected: true)
+            row("Summarize the report", selected: false)
+            row("Voice note", selected: false)
             Spacer(minLength: 0)
+            Label("Models", systemImage: "cpu")
+                .font(.caption)
+                .foregroundStyle(Palette.accentText)
+                .padding(.leading, Space.xs)
         }
         .padding(Space.sm)
-        .frame(width: 128)
+        .frame(width: 148)
         .background(.background.secondary)
     }
 
-    private func sidebarRow(_ title: String, symbol: String, selected: Bool) -> some View {
-        Label(title, systemImage: symbol)
-            .font(.callout)
+    private func row(_ title: String, selected: Bool) -> some View {
+        Text(title)
+            .font(.caption)
+            .lineLimit(1)
             .foregroundStyle(selected ? Palette.onAccent : .primary)
             .padding(.horizontal, Space.sm)
             .frame(maxWidth: .infinity, minHeight: 24, alignment: .leading)
@@ -76,56 +80,41 @@ private struct AccentPreview: View {
                         in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 
-    private var content: some View {
+    // Drawn, not real controls: the preview is a picture, and real
+    // controls turn gray when the window is not in front.
+    private var chat: some View {
         VStack(alignment: .leading, spacing: Space.sm) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("Inbox").font(.headline)
-                Spacer()
-                Text("1 left").font(.caption).foregroundStyle(Palette.accentText)
-            }
-            task("Pick a color", done: true)
-            task("Ship the first build", done: false, tag: "Today")
-            Spacer(minLength: 0)
-            // Drawn, not real controls: the preview is a picture, and real
-            // controls turn gray when the window is not in front.
             HStack {
-                Label("Add Task", systemImage: "plus")
-                    .font(.callout.weight(.medium))
-                    .foregroundStyle(Palette.onAccent)
-                    .padding(.horizontal, Space.md)
-                    .frame(height: 24)
-                    .background(Palette.accent, in: Capsule())
                 Spacer()
-                Text("Focus").font(.caption).foregroundStyle(.secondary)
-                Capsule()
-                    .fill(Palette.accent)
-                    .frame(width: 28, height: 16)
-                    .overlay(alignment: .trailing) {
-                        Circle().fill(.white).padding(2).shadow(color: .black.opacity(0.2), radius: 1, y: 1)
-                    }
+                Text("Plan a slow weekend in Lisbon")
+                    .font(.caption)
+                    .padding(.horizontal, Space.sm)
+                    .padding(.vertical, Space.xs)
+                    .background(.fill.tertiary, in: Capsule())
             }
+            HStack(spacing: Space.xs) {
+                BrandMark().frame(width: 12, height: 12)
+                Text("gemma4").font(.caption2.weight(.medium)).foregroundStyle(.secondary)
+            }
+            Text("Saturday: coffee in Alfama, then the tram up to the castle. Sunday: Belém, pastries, and the river at sunset.")
+                .font(.caption)
+                .lineLimit(3)
+            Spacer(minLength: 0)
+            HStack {
+                Text("Ask anything").font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                Image(systemName: "arrow.up")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(Palette.onAccent)
+                    .frame(width: 20, height: 20)
+                    .background(Palette.accent, in: Circle())
+            }
+            .padding(.leading, Space.sm)
+            .padding(Space.xs)
+            .background(.fill.quaternary, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .padding(Space.md)
-    }
-
-    private func task(_ title: String, done: Bool, tag: String? = nil) -> some View {
-        HStack(spacing: Space.sm) {
-            Image(systemName: done ? "checkmark.circle.fill" : "circle")
-                .foregroundStyle(done ? AnyShapeStyle(.tint) : AnyShapeStyle(.tertiary))
-            Text(title)
-                .strikethrough(done)
-                .foregroundStyle(done ? .secondary : .primary)
-            Spacer()
-            if let tag {
-                Text(tag)
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(Palette.accentText)
-                    .padding(.horizontal, Space.sm)
-                    .padding(.vertical, 2)
-                    .background(Palette.accent.opacity(0.15), in: Capsule())
-            }
-        }
-        .font(.callout)
+        .background(Palette.canvas)
     }
 }
 

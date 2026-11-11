@@ -13,16 +13,12 @@ struct ConversationPage: View {
                 NoModelsView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                ContentUnavailableView {
-                    Label(ConversationTitle.placeholder, systemImage: "camera.aperture")
-                } description: {
-                    Text("Replies are written on this Mac by local models. Nothing leaves it.")
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                WelcomeView()
             }
             ConnectionStatus()
             Composer()
         }
+        .background(Palette.canvas)
         .gridArea("conversation", inset: 0)
         .dropDestination(for: URL.self) { urls, _ in
             Task { await model.addFiles(urls) }
@@ -151,16 +147,26 @@ private struct Composer: View {
             }
         }
         .padding(Space.md)
-        .background(.fill.quaternary, in: RoundedRectangle(cornerRadius: Radius.lg))
+        // The composer floats over the conversation, so it gets Liquid Glass.
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: Radius.lg))
         .frame(maxWidth: Layout.column)
         .padding(.horizontal, Space.margin)
         .padding(.bottom, Space.margin)
         .padding(.top, Space.sm)
         .frame(maxWidth: .infinity)
+        .onChange(of: model.prefill) { takePrefill() }
     }
 
     private func submit() {
         if model.send(draft) { draft = "" }
+    }
+
+    /// A starter from the welcome screen fills the field and puts the cursor at the end.
+    private func takePrefill() {
+        guard let text = model.prefill else { return }
+        draft = text
+        model.prefill = nil
+        model.focusRequest += 1
     }
 }
 

@@ -757,6 +757,15 @@ Acceptance:
 - [self] Clay is the brand accent, shown when the accent follows the Mac.
 Status: done
 
+### S-055 A warmer, more personal Local Mind
+As the user, a new conversation greets me, tells me if the model is ready, and offers a few ways to start; the whole app has a warm, calm character.
+Screens: chat-empty, chat, settings-appearance
+Depends: S-054
+Acceptance:
+- [self] A starter fills the message field and puts the cursor there.
+- [snap] The Appearance preview shows a small Local Mind window in the chosen color.
+Status: done
+
 ## Later
 Next after version one:
 - Projects with their own instructions and files

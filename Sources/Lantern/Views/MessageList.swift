@@ -132,12 +132,21 @@ private struct ReplyRow: View {
     @Environment(AppModel.self) private var model
 
     private var isWriting: Bool { message.state == .writing }
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.sm) {
-            Text(model.displayName(message.modelName))
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            HStack(spacing: Space.xs) {
+                BrandMark()
+                    .frame(width: 16, height: 16)
+                    // Breathes while the model writes. Still when Reduce Motion is on.
+                    .phaseAnimator(isWriting && !reduceMotion ? [1.0, 0.4] : [1.0]) { mark, phase in
+                        mark.opacity(phase)
+                    } animation: { _ in .easeInOut(duration: 0.9) }
+                Text(model.displayName(message.modelName))
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+            }
 
             if !message.thinking.isEmpty {
                 ThinkingSection(text: message.thinking, isStreaming: isWriting && message.text.isEmpty)

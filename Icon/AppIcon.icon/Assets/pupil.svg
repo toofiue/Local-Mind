@@ -1,3 +1,3 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
-<circle fill="#C8553D" cx="512.0" cy="512.0" r="62"/>
+<path fill="#C8553D" fill-rule="evenodd" d="M420.0 512.0a92.0 92.0 0 1 0 184.0 0a92.0 92.0 0 1 0 -184.0 0ZM454.88 478.88a24.0 24.0 0 1 0 48.0 0a24.0 24.0 0 1 0 -48.0 0Z"/>
 </svg>

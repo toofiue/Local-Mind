@@ -97,6 +97,11 @@ enum Palette {
     static var accent: Color { ThemeStore.shared.theme.accent }
     static var accentText: Color { ThemeStore.shared.theme.accentText }
     static var onAccent: Color { ThemeStore.shared.theme.onAccent }
+    /// The page behind content: the window background with a breath of the accent,
+    /// so clay makes the app feel warm without coloring any text or control.
+    static var canvas: some View {
+        Rectangle().fill(.background).overlay(Rectangle().fill(accent.opacity(0.045))).ignoresSafeArea()
+    }
 }
 
 extension View {
