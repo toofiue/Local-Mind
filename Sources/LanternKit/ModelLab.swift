@@ -466,3 +466,35 @@ public struct LabReport: Codable, Sendable, Equatable {
         return list
     }
 }
+
+/// The best model in each area, from each model's latest report.
+public enum LabLeaderboard {
+    public struct Winner: Sendable, Equatable {
+        public let area: LabArea
+        public let modelName: String
+        public let passed: Int
+        public let total: Int
+        public let tokensPerSecond: Double
+    }
+
+    /// Highest share of tests passed wins, and the faster model wins a tie. Speed is ranked by speed alone.
+    public static func winners(_ reports: [LabReport]) -> [Winner] {
+        LabArea.allCases.compactMap { area in
+            let entries = reports.compactMap { report -> Winner? in
+                if area == .speed {
+                    guard report.tokensPerSecond > 0 else { return nil }
+                    return Winner(area: area, modelName: report.modelName, passed: 0, total: 0, tokensPerSecond: report.tokensPerSecond)
+                }
+                let results = report.results(in: area)
+                guard !results.isEmpty else { return nil }
+                return Winner(area: area, modelName: report.modelName, passed: report.passed(in: area),
+                              total: results.count, tokensPerSecond: report.tokensPerSecond)
+            }
+            return entries.max { a, b in
+                let shareA = a.total == 0 ? 0 : Double(a.passed) / Double(a.total)
+                let shareB = b.total == 0 ? 0 : Double(b.passed) / Double(b.total)
+                return shareA == shareB ? a.tokensPerSecond < b.tokensPerSecond : shareA < shareB
+            }
+        }
+    }
+}

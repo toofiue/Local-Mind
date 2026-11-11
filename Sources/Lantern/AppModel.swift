@@ -60,6 +60,8 @@ final class AppModel {
     let benchmark = BenchmarkRunner()
     let benchmarkLibrary = BenchmarkLibrary()
     var benchmarkReports: [String: BenchmarkReport] = [:]
+    /// Models still waiting their turn in Test All Models.
+    var labQueue: [String] = []
     /// Which tab the Test page is showing.
     var labTab: LabTab = .quickCheck
     var isDownloadingBenchmarks = false
@@ -140,8 +142,14 @@ final class AppModel {
         MenuState.shared.quickAskHotkey = hotkey
         replies.onChange = { [weak self] in self?.syncMenu() }
         lab.onStateChange = { [weak self] in
-            self?.syncMenu()
-            Task { await self?.refreshLoaded() }
+            guard let self else { return }
+            self.syncMenu()
+            Task { await self.refreshLoaded() }
+            // Test All Models: when one model finishes, start the next.
+            if !self.lab.isRunning, !self.labQueue.isEmpty {
+                let next = self.labQueue.removeFirst()
+                Task { self.runLab(next, skipMemoryCheck: true) }
+            }
         }
         lab.onFinished = { [weak self] report in self?.saveLabReport(report) }
         benchmark.onStateChange = { [weak self] in
@@ -457,6 +465,7 @@ final class AppModel {
 
     func stop() {
         replies.stop()
+        labQueue = []
         lab.stop()
         benchmark.stop()
     }

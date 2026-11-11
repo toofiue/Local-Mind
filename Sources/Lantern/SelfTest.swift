@@ -841,6 +841,25 @@ enum SelfTest {
             check("S-051 and its report says it can't listen", model.labReports["second:1"]?.limits.contains("Can't listen to audio.") == true)
         }
 
+        // S-052 testing every model
+        do {
+            let previous = model.selection
+            defer { model.selection = previous }
+            transport.scriptLab { _ in "No idea" }
+            let before = (try? model.container.mainContext.fetchCount(FetchDescriptor<ModelTestRun>())) ?? -1
+            model.testAllModels()
+            check("S-052 the smallest model goes first", model.lab.modelName == "first:1" && model.labQueue == ["second:1"])
+            for _ in 0..<100 where model.lab.isRunning || !model.labQueue.isEmpty {
+                try? await Task.sleep(for: .milliseconds(100))
+            }
+            let after = (try? model.container.mainContext.fetchCount(FetchDescriptor<ModelTestRun>())) ?? -1
+            check("S-052 every model gets a report", after == before + 2, "\(before) to \(after)")
+            model.testAllModels()
+            model.stop()
+            for _ in 0..<50 where model.lab.isRunning { try? await Task.sleep(for: .milliseconds(100)) }
+            check("S-052 Stop ends the whole queue", !model.lab.isRunning && model.labQueue.isEmpty)
+        }
+
         // Launch repair
         let stale = Message(role: .assistant, text: "Cut", modelName: "first:1", sequence: 99, state: .writing)
         model.selectedConversation?.messages.append(stale)

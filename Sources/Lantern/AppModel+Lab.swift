@@ -29,6 +29,15 @@ extension AppModel {
         lab.start(installed, client: client, totalMemory: readMemory().totalBytes, swapUsed: { SystemMonitor.swapUsedBytes() })
     }
 
+    /// Runs the quick check on every model, one after another, smallest first.
+    func testAllModels() {
+        guard !isWriting, connection == .connected else { return }
+        let order = models.sorted { $0.size < $1.size }.map(\.name)
+        guard let first = order.first else { return }
+        labQueue = Array(order.dropFirst())
+        runLab(first, skipMemoryCheck: true)
+    }
+
     func saveLabReport(_ report: LabReport) {
         guard let payload = try? JSONEncoder().encode(report) else { return }
         context.insert(ModelTestRun(modelName: report.modelName, date: report.date, payload: payload))

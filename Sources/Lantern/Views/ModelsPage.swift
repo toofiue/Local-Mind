@@ -16,6 +16,7 @@ struct ModelsPage: View {
 
     var body: some View {
         Form {
+            BestModelsSection()
             if !inMemory.isEmpty {
                 Section("In Memory") { rows(inMemory) }
             }
@@ -185,5 +186,61 @@ private struct RenameModelSheet: View {
     private func save() {
         model.setNickname(name, for: item.name)
         dismiss()
+    }
+}
+
+/// Which model did best in each area, and a way to test them all.
+private struct BestModelsSection: View {
+    @Environment(AppModel.self) private var model
+
+    private var winners: [LabLeaderboard.Winner] {
+        LabLeaderboard.winners(model.models.compactMap { model.labReports[$0.name] })
+    }
+
+    private var testedCount: Int { model.models.filter { model.labReports[$0.name] != nil }.count }
+
+    var body: some View {
+        Section {
+            if model.lab.isRunning {
+                VStack(alignment: .leading, spacing: Space.sm) {
+                    ProgressView(value: Double(model.lab.completed), total: Double(max(model.lab.total, 1)))
+                    HStack {
+                        Text("Testing \(model.displayName(model.lab.modelName ?? "")) · \(model.labQueue.count) more after this")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Button("Stop") { model.stop() }
+                    }
+                }
+            } else if winners.isEmpty {
+                Text("Test your models to see which one is best at each job.")
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(winners, id: \.area) { winner in
+                    LabeledContent(winner.area.title) {
+                        Text("\(model.displayName(winner.modelName)) · \(score(winner))")
+                    }
+                }
+                if testedCount < model.models.count {
+                    Text("Based on \(testedCount) of \(model.models.count) models. Test the rest to compare them all.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        } header: {
+            HStack {
+                Text("Best for Each Job")
+                Spacer()
+                Button("Test All Models") { model.testAllModels() }
+                    .disabled(model.isWriting || model.connection != .connected || model.models.isEmpty)
+                    .help("Run the quick check on every model, one at a time. This can take a while.")
+            }
+        }
+    }
+
+    private func score(_ winner: LabLeaderboard.Winner) -> String {
+        winner.area == .speed
+            ? "\(Int(winner.tokensPerSecond.rounded())) tokens per second"
+            : "\(winner.passed) of \(winner.total)"
     }
 }

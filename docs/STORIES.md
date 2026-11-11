@@ -737,7 +737,7 @@ Depends: S-040
 Acceptance:
 - [unit] For each area, the model with the highest score wins, and faster wins a tie.
 - [self] Test All Models runs the quick check on each model in turn, and Stop ends the queue.
-Status: todo
+Status: done
 
 ## Later
 Next after version one:
