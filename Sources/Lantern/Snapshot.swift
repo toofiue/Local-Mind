@@ -11,6 +11,7 @@ enum SnapshotPage: String, CaseIterable {
     case offline
     case modelPicker = "model-picker"
     case sidebarSearch = "sidebar-search"
+    case sidebarSelect = "sidebar-select"
     case chatAttachments = "chat-attachments"
     case quickPanel = "quick-panel"
     case models
@@ -27,7 +28,7 @@ enum SnapshotPage: String, CaseIterable {
         model.replies.activeReplyID = nil
         model.showingModelPicker = false
         switch self {
-        case .chat, .offline, .modelPicker, .sidebarSearch, .quickPanel, .memoryWarning:
+        case .chat, .offline, .modelPicker, .sidebarSearch, .sidebarSelect, .quickPanel, .memoryWarning:
             model.selection = SeedData.conversation(titled: SeedData.formatted, in: model)?.uid
         case .chatEmpty, .models, .noModels, .modelLab, .modelLabIntro, .modelBenchmark:
             model.selection = nil
@@ -41,6 +42,10 @@ enum SnapshotPage: String, CaseIterable {
             model.replies.activeReplyID = conversation?.ordered.last?.uid
         }
         if self == .modelPicker { model.showingModelPicker = true }
+        model.isSelectingConversations = self == .sidebarSelect
+        if self == .sidebarSelect {
+            model.multiSelection = Set([SeedData.formatted, SeedData.attached].compactMap { SeedData.conversation(titled: $0, in: model)?.uid })
+        }
         model.showingModels = self == .models
         model.labModelName = self == .modelLab || self == .modelBenchmark ? "gemma4:12b-mlx" : self == .modelLabIntro ? "gemma4:latest" : nil
         model.labTab = self == .modelBenchmark ? .benchmark : .quickCheck
