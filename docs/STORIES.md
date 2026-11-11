@@ -813,6 +813,15 @@ Acceptance:
 - [snap] Renaming shows the name on a gray row with no box; the selected text is in the accent.
 Status: done
 
+### S-061 A welcoming home
+As the user, a new conversation greets me by name in the middle of the window, with the message box and a few ways to start right under it; when I send, the box glides down and the conversation begins.
+Screens: chat-empty
+Depends: S-055
+Acceptance:
+- [snap] The greeting, message box, and starter buttons sit together just above the middle.
+- [self] A starter button fills the message box.
+Status: done
+
 ## Later
 Next after version one:
 - Projects with their own instructions and files

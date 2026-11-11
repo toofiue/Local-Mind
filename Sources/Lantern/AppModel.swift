@@ -89,6 +89,8 @@ final class AppModel {
     var isSelectingConversations = false {
         didSet { if !isSelectingConversations { multiSelection = [] } }
     }
+    /// Text a starter button puts in the message box.
+    var prefill: String?
     /// Bumped to empty the message box when New Conversation is chosen on a new conversation.
     var composerResetRequest = 0
     /// Unsent text and files, kept per conversation ("new" for a new one), so each chat keeps its own draft.

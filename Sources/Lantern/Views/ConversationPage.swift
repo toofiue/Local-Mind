@@ -4,20 +4,47 @@ import LanternKit
 struct ConversationPage: View {
     @Environment(AppModel.self) private var model
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// A new conversation: the message box sits in the middle, under the greeting.
+    private var isHome: Bool {
+        model.selectedConversation == nil && !(model.connection == .connected && model.models.isEmpty)
+    }
+
     var body: some View {
+        // One message box that moves, rather than two, so what you've typed stays put:
+        // on a new conversation the space above and below it centers it, and once the
+        // conversation starts that space collapses and the box glides to the bottom.
         VStack(spacing: 0) {
             if let conversation = model.selectedConversation {
                 MessageList(conversation: conversation)
                     .id(conversation.uid)
+                    .transition(.opacity)
             } else if model.connection == .connected && model.models.isEmpty {
                 NoModelsView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                WelcomeView()
+                // Flexible room above the greeting; the room below the buttons matches it.
+                Color.clear
+                    .frame(minHeight: Space.section, maxHeight: .infinity)
+                    .overlay(alignment: .bottom) {
+                        WelcomeView()
+                            .padding(.bottom, Space.xl)
+                            .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                    }
             }
             ConnectionStatus()
             Composer()
+            if isHome {
+                StarterRow()
+                    .transition(.opacity)
+                // Equal room above and below, plus a little more below, sits the group just above center.
+                Color.clear
+                    .frame(minHeight: Space.section, maxHeight: .infinity)
+                    .padding(.bottom, Space.section * 2)
+            }
         }
+        .animation(reduceMotion ? nil : .smooth(duration: 0.45), value: isHome)
         .gridArea("conversation", inset: 0)
         .dropDestination(for: URL.self) { urls, _ in
             Task { await model.addFiles(urls) }
@@ -164,6 +191,12 @@ private struct Composer: View {
         .frame(maxWidth: .infinity)
         .onChange(of: model.selection) { old, new in
             draft = model.swapDraft(leaving: old, text: draft, opening: new)
+        }
+        .onChange(of: model.prefill) {
+            guard let text = model.prefill else { return }
+            draft = text
+            model.prefill = nil
+            model.focusRequest += 1
         }
         .onChange(of: model.composerResetRequest) {
             draft = ""

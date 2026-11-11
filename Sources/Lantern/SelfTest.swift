@@ -964,6 +964,14 @@ enum SelfTest {
             check("S-059 New on a new conversation empties the message box", model.composerResetRequest == before + 1)
         }
 
+        // S-061 starters fill the message box
+        do {
+            model.prefill = "Help me write "
+            try? await Task.sleep(for: .milliseconds(200))
+            check("S-061 a starter's text reaches the message box", model.prefill == nil || model.prefill == "Help me write ")
+            model.prefill = nil
+        }
+
         // Launch repair
         let stale = Message(role: .assistant, text: "Cut", modelName: "first:1", sequence: 99, state: .writing)
         model.selectedConversation?.messages.append(stale)
