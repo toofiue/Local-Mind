@@ -705,6 +705,40 @@ Acceptance:
 - [snap] The warning is one line with Send Anyway; the apps using the most memory are in its tooltip.
 Status: done
 
+### S-049 Preview what I attach
+As the user, I click an attachment to see the image, hear the audio, or read the PDF.
+Screens: chat-attachments
+Depends: S-016
+Acceptance:
+- [self] Clicking an attachment, in the draft or a sent message, opens it in Quick Look.
+- [unit] PDFs and text files keep their original file, so the preview shows the real document.
+Status: done
+
+### S-050 No length limit on audio
+As the user, I attach a recording of any length, and the model decides what it can handle.
+Depends: S-045
+Acceptance:
+- [unit] A long recording isn't refused by Lantern.
+Status: done
+
+### S-051 Test how well a model hears
+As the user, I see how accurately each model transcribes speech, across voices and lengths.
+Screens: model-lab
+Depends: S-040, S-045
+Acceptance:
+- [unit] Transcripts are scored by word error rate, the standard measure for speech recognition.
+- [self] Audio tests run only for models that list audio.
+Status: todo
+
+### S-052 See the best model for each job
+As the user, I see which model scored best in each area, and I can test every model in one go.
+Screens: models
+Depends: S-040
+Acceptance:
+- [unit] For each area, the model with the highest score wins, and faster wins a tie.
+- [self] Test All Models runs the quick check on each model in turn, and Stop ends the queue.
+Status: todo
+
 ## Later
 Next after version one:
 - Projects with their own instructions and files

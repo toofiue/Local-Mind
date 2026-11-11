@@ -1,4 +1,5 @@
 import AppKit
+import QuickLook
 import SwiftUI
 import LanternKit
 
@@ -9,6 +10,8 @@ struct AttachmentTile: View {
     let imageData: Data?
     let pageCount: Int
     var durationSeconds: Double = 0
+    /// Opens a preview when clicked.
+    var onPreview: (() -> Void)?
     /// Shows an X when the attachment can still be removed.
     var onRemove: (() -> Void)?
     @State private var image: NSImage?
@@ -27,7 +30,7 @@ struct AttachmentTile: View {
                 }
                 .frame(width: Layout.thumbnail, height: Layout.thumbnail)
                 .clipShape(RoundedRectangle(cornerRadius: Radius.md))
-                .help(fileName)
+                .help("\(fileName). Click to preview.")
                 .accessibilityLabel(fileName)
             } else {
                 HStack(spacing: Space.sm) {
@@ -48,7 +51,7 @@ struct AttachmentTile: View {
                 .frame(height: Layout.thumbnail)
                 .frame(maxWidth: Layout.chip)
                 .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: Radius.md))
-                .help(fileName)
+                .help("\(fileName). Click to preview.")
             }
         }
         .overlay(alignment: .topTrailing) {
@@ -64,6 +67,10 @@ struct AttachmentTile: View {
                     .accessibilityLabel("Remove \(fileName)")
             }
         }
+        .contentShape(Rectangle())
+        .onTapGesture { onPreview?() }
+        .accessibilityAddTraits(onPreview == nil ? [] : .isButton)
+        .accessibilityAction(named: "Preview") { onPreview?() }
         .onAppear {
             if image == nil, let imageData { image = NSImage(data: imageData) }
         }
@@ -89,30 +96,43 @@ struct AttachmentTile: View {
 /// The attachments on the message being written.
 struct DraftAttachmentRow: View {
     @Environment(AppModel.self) private var model
+    @State private var preview: URL?
 
     var body: some View {
         ScrollView(.horizontal) {
             HStack(spacing: Space.sm) {
                 ForEach(model.draftAttachments) { item in
                     AttachmentTile(kind: item.kind, fileName: item.fileName, imageData: item.imageData, pageCount: item.pageCount,
-                                   durationSeconds: item.durationSeconds, onRemove: { model.removeAttachment(item.id) })
+                                   durationSeconds: item.durationSeconds,
+                                   onPreview: {
+                                       preview = AttachmentPreview.file(kind: item.kind, fileName: item.fileName, imageData: item.imageData,
+                                                                        audioData: item.audioData, fileData: item.fileData, text: item.text)
+                                   },
+                                   onRemove: { model.removeAttachment(item.id) })
                 }
             }
         }
         .scrollIndicators(.never)
+        .quickLookPreview($preview)
     }
 }
 
 /// The attachments on a sent message.
 struct SentAttachmentRow: View {
     let message: Message
+    @State private var preview: URL?
 
     var body: some View {
         HStack(spacing: Space.sm) {
             ForEach(message.orderedAttachments) { item in
                 AttachmentTile(kind: item.kind, fileName: item.fileName, imageData: item.imageData, pageCount: item.pageCount,
-                               durationSeconds: item.durationSeconds)
+                               durationSeconds: item.durationSeconds,
+                               onPreview: {
+                                   preview = AttachmentPreview.file(kind: item.kind, fileName: item.fileName, imageData: item.imageData,
+                                                                    audioData: item.audioData, fileData: item.fileData, text: item.text)
+                               })
             }
         }
+        .quickLookPreview($preview)
     }
 }

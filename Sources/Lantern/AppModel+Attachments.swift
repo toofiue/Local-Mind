@@ -69,8 +69,6 @@ extension AppModel {
     private func show(_ error: Error, fileName: String) {
         if case AttachmentError.noReadableText = error {
             attachmentNotice = "“\(fileName)” has no readable text."
-        } else if case AttachmentError.tooLong = error {
-            attachmentNotice = "“\(fileName)” is longer than 5 minutes. Attach a shorter clip."
         } else {
             attachmentNotice = "Unable to read “\(fileName)”. Attach an image, PDF, or text file."
         }

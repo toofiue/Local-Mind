@@ -809,6 +809,18 @@ enum SelfTest {
             check("S-046 the notice clears itself", model.attachmentNotice == nil)
         }
 
+        // S-049 previews
+        do {
+            let pdf = AttachmentPreview.file(kind: .pdf, fileName: "report.pdf", imageData: nil, audioData: nil, fileData: SeedData.samplePDF(text: "Hi"), text: "Hi")
+            check("S-049 a PDF previews as the original PDF", pdf?.lastPathComponent == "report.pdf" && (try? Data(contentsOf: pdf!))?.starts(with: Data("%PDF".utf8)) == true)
+            let audio = AttachmentPreview.file(kind: .audio, fileName: "note.m4a", imageData: nil, audioData: Data("RIFFdata".utf8), fileData: nil, text: "")
+            check("S-049 audio previews as the WAV that was sent", audio?.lastPathComponent == "note.wav")
+            let older = AttachmentPreview.file(kind: .pdf, fileName: "old.pdf", imageData: nil, audioData: nil, fileData: nil, text: "Read text")
+            check("S-049 an older PDF previews its text", older?.lastPathComponent == "old.txt" && (try? String(contentsOf: older!, encoding: .utf8)) == "Read text")
+            let image = AttachmentPreview.file(kind: .image, fileName: "shot.png", imageData: SeedData.sampleImage, audioData: nil, fileData: nil, text: "")
+            check("S-049 an image previews", image.map { FileManager.default.fileExists(atPath: $0.path) } == true)
+        }
+
         // Launch repair
         let stale = Message(role: .assistant, text: "Cut", modelName: "first:1", sequence: 99, state: .writing)
         model.selectedConversation?.messages.append(stale)

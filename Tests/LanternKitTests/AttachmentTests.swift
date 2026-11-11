@@ -155,3 +155,11 @@ func namesMedia() {
                                           media: [(kind: .audio, name: "note.wav"), (kind: .image, name: "shot.png")])
     #expect(prompt == "[Attached audio: note.wav]\n[Attached image: shot.png]\n\nGive me the transcript")
 }
+
+@Test("S-049 PDFs and text files keep their original file")
+func keepsOriginals() throws {
+    let pdf = makePDF(pages: ["Original page"])
+    #expect(try AttachmentLoader.load(name: "a.pdf", data: pdf).fileData == pdf)
+    let text = Data("hello".utf8)
+    #expect(try AttachmentLoader.load(name: "a.txt", data: text).fileData == text)
+}

@@ -72,6 +72,7 @@ final class Attachment {
     var text: String = ""
     var pageCount: Int = 0
     @Attribute(.externalStorage) var audioData: Data?
+    @Attribute(.externalStorage) var fileData: Data?
     var durationSeconds: Double = 0
     var sequence: Int = 0
     var message: Message?
@@ -83,6 +84,7 @@ final class Attachment {
         self.text = loaded.text
         self.pageCount = loaded.pageCount
         self.audioData = loaded.audioData
+        self.fileData = loaded.fileData
         self.durationSeconds = loaded.durationSeconds
         self.sequence = sequence
     }

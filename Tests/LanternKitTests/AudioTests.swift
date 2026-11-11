@@ -42,3 +42,16 @@ func readsAudioCapability() {
     #expect(OllamaModel(name: "a", size: 1, capabilities: ["audio"]).supportsAudio)
     #expect(!OllamaModel(name: "b", size: 1, capabilities: ["vision"]).supportsAudio)
 }
+
+@Test("S-050 a long recording isn't refused")
+func acceptsLongAudio() throws {
+    let url = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString + ".aiff")
+    let process = Process()
+    process.executableURL = URL(fileURLWithPath: "/usr/bin/say")
+    process.arguments = ["-r", "500", "-o", url.path, String(repeating: "This sentence keeps going for a long while. ", count: 420)]
+    try process.run()
+    process.waitUntilExit()
+    defer { try? FileManager.default.removeItem(at: url) }
+    let attachment = try AttachmentLoader.load(contentsOf: url)
+    #expect(attachment.durationSeconds > 300)
+}

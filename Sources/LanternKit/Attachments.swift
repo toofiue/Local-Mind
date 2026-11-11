@@ -19,6 +19,8 @@ public struct LoadedAttachment: Sendable, Equatable, Identifiable {
     /// 16 kHz mono WAV, the format Ollama decodes.
     public let audioData: Data?
     public let durationSeconds: Double
+    /// The original PDF or text file, kept so it can be previewed.
+    public var fileData: Data?
 
     public init(id: UUID = UUID(), kind: AttachmentKind, fileName: String, imageData: Data? = nil, text: String = "", pageCount: Int = 0,
                 audioData: Data? = nil, durationSeconds: Double = 0) {
@@ -36,7 +38,6 @@ public struct LoadedAttachment: Sendable, Equatable, Identifiable {
 public enum AttachmentError: Error, Equatable {
     case unsupported(String)
     case noReadableText(String)
-    case tooLong(String)
 }
 
 /// How attached text goes into a message.
@@ -65,9 +66,6 @@ public enum AttachmentLoader {
     /// Images are shrunk to this many pixels on their longest side before sending.
     public static let maxImagePixels = 1_568
 
-    /// Longest audio clip to send. 155 seconds was tested and heard correctly.
-    public static let maxAudioSeconds = 300.0
-
     public static func load(contentsOf url: URL) throws -> LoadedAttachment {
         if UTType(filenameExtension: url.pathExtension)?.conforms(to: .audio) == true {
             return try loadAudio(url)
@@ -86,7 +84,9 @@ public enum AttachmentLoader {
             throw AttachmentError.unsupported(name)
         }
         guard !text.allSatisfy(\.isWhitespace) else { throw AttachmentError.noReadableText(name) }
-        return LoadedAttachment(kind: .text, fileName: name, text: text)
+        var attachment = LoadedAttachment(kind: .text, fileName: name, text: text)
+        attachment.fileData = data
+        return attachment
     }
 
     /// Ollama only decodes WAV, so everything is converted with macOS's own audio converter.
@@ -106,7 +106,6 @@ public enum AttachmentLoader {
         }
         // 16,000 samples a second, 2 bytes each, after a 44-byte header.
         let seconds = Double(wav.count - 44) / 32_000
-        guard seconds <= maxAudioSeconds else { throw AttachmentError.tooLong(name) }
         return LoadedAttachment(kind: .audio, fileName: name, audioData: wav, durationSeconds: seconds)
     }
 
@@ -115,7 +114,9 @@ public enum AttachmentLoader {
         let pages = (0..<document.pageCount).compactMap { document.page(at: $0)?.string }
         let text = pages.joined(separator: "\n\n").trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { throw AttachmentError.noReadableText(name) }
-        return LoadedAttachment(kind: .pdf, fileName: name, text: text, pageCount: document.pageCount)
+        var attachment = LoadedAttachment(kind: .pdf, fileName: name, text: text, pageCount: document.pageCount)
+        attachment.fileData = data
+        return attachment
     }
 
     /// Re-encodes any image macOS can read as a JPEG, or a PNG if it has transparency.
