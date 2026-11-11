@@ -11,6 +11,9 @@ final class ProfileStore {
 
     private(set) var list: ProfileList
     var current: Profile { list.current }
+    /// Bumped when a photo changes, so badges redraw.
+    private(set) var photoVersion = 0
+    @ObservationIgnored private var photoCache: [UUID: NSImage] = [:]
 
     /// The app's folder: ~/Library/Application Support/Lantern. Tests and snapshots use their own /tmp place.
     private let folder: URL
@@ -44,6 +47,50 @@ final class ProfileStore {
         let url = ProfileList.storeURL(for: profile, in: folder)
         try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         return url
+    }
+
+    // MARK: Photos
+
+    /// A profile's photo, kept as a 256-pixel square beside its conversations.
+    private func photoURL(for id: UUID) -> URL {
+        let dir = folder.appending(path: "Profiles", directoryHint: .isDirectory).appending(path: id.uuidString, directoryHint: .isDirectory)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir.appending(path: "Photo.png")
+    }
+
+    func photo(for id: UUID) -> NSImage? {
+        _ = photoVersion
+        if let cached = photoCache[id] { return cached }
+        let image = NSImage(contentsOf: photoURL(for: id))
+        photoCache[id] = image
+        return image
+    }
+
+    /// Crops the picture to a centered square and saves it small. Returns false for a file that isn't a picture.
+    @discardableResult
+    func setPhoto(from url: URL, for id: UUID) -> Bool {
+        guard let source = NSImage(contentsOf: url), let cg = source.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return false }
+        let side = min(cg.width, cg.height)
+        let crop = CGRect(x: (cg.width - side) / 2, y: (cg.height - side) / 2, width: side, height: side)
+        guard let square = cg.cropping(to: crop),
+              let context = CGContext(data: nil, width: 256, height: 256, bitsPerComponent: 8, bytesPerRow: 0,
+                                      space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { return false }
+        context.interpolationQuality = .high
+        context.draw(square, in: CGRect(x: 0, y: 0, width: 256, height: 256))
+        guard let small = context.makeImage(),
+              let png = NSBitmapImageRep(cgImage: small).representation(using: .png, properties: [:]),
+              (try? png.write(to: photoURL(for: id))) != nil
+        else { return false }
+        photoCache[id] = nil
+        photoVersion += 1
+        return true
+    }
+
+    func removePhoto(for id: UUID) {
+        try? FileManager.default.removeItem(at: photoURL(for: id))
+        photoCache[id] = nil
+        photoVersion += 1
     }
 
     // MARK: Changes

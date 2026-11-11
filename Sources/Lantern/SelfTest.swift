@@ -998,6 +998,21 @@ enum SelfTest {
             check("S-063 the original profile is still current", profiles.current.id == original.id)
         }
 
+        // S-064 profile photos
+        do {
+            let profiles = ProfileStore.shared
+            let id = profiles.current.id
+            let file = FileManager.default.temporaryDirectory.appending(path: "profile-photo-test.png")
+            try? SeedData.sampleImage.write(to: file)
+            check("S-064 a picture becomes the profile photo", profiles.setPhoto(from: file, for: id) && profiles.photo(for: id) != nil)
+            check("S-064 it is kept as a small square", profiles.photo(for: id).map { Int($0.size.width) == Int($0.size.height) } == true)
+            profiles.removePhoto(for: id)
+            check("S-064 and it can be removed", profiles.photo(for: id) == nil)
+            let notPicture = FileManager.default.temporaryDirectory.appending(path: "not-a-picture.png")
+            try? Data("hello".utf8).write(to: notPicture)
+            check("S-064 a file that isn't a picture is refused", !profiles.setPhoto(from: notPicture, for: id))
+        }
+
         // Launch repair
         let stale = Message(role: .assistant, text: "Cut", modelName: "first:1", sequence: 99, state: .writing)
         model.selectedConversation?.messages.append(stale)

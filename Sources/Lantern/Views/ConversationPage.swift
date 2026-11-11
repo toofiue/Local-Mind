@@ -234,6 +234,8 @@ private struct ModelPickerButton: View {
                     .frame(maxWidth: 200)
                     .fixedSize(horizontal: name.map(model.displayName)?.count ?? 0 < 22, vertical: false)
             }
+            // Room inside the pill, so the aperture and the name don't touch its edge.
+            .padding(.horizontal, Space.xs)
         }
         .disabled(model.isWriting || model.models.isEmpty)
         .help(memory.map { "In memory (\(ByteCountFormatter.string(fromByteCount: $0, countStyle: .file))), so replies start at once. Click to choose another model (⇧⌘M)." }

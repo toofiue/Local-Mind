@@ -841,6 +841,15 @@ Acceptance:
 - [snap] The sidebar's bottom row shows the profile, Models, and Settings; a locked profile shows only the lock screen.
 Status: done
 
+### S-064 A profile photo, and one calm corner
+As the user, I pick a photo for my profile, and the bottom-left corner is one row with my photo and name that opens profiles, Models, and Settings.
+Screens: sidebar
+Depends: S-063
+Acceptance:
+- [self] A picture becomes a small square photo, can be removed, and a non-picture is refused.
+- [snap] The corner shows one row: photo or initial, name, and a chevron.
+Status: done
+
 ## Later
 Next after version one:
 - Projects with their own instructions and files

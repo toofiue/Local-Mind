@@ -1,71 +1,73 @@
+import AppKit
 import LanternKit
 import SwiftUI
 
-/// The bottom of the sidebar: who you are (with switching and locking), Models, and Settings.
+/// The bottom of the sidebar: one row with who you are,
+/// opening a menu with profiles, Models, Settings, and Lock. One target, nothing to mis-click.
 struct SidebarFooter: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.openSettings) private var openSettings
     @State private var addingProfile = false
     @State private var editingProfile = false
+    @State private var hovering = false
     private var profiles = ProfileStore.shared
 
     var body: some View {
-        HStack(spacing: Space.xs) {
-            Menu {
-                Section("Profiles") {
-                    ForEach(profiles.list.profiles) { profile in
-                        Button {
-                            profiles.switchTo(profile.id)
-                        } label: {
-                            if profile.id == profiles.current.id {
-                                Label(profile.name, systemImage: "checkmark")
-                            } else {
-                                Text(profile.name)
-                            }
+        Menu {
+            Section(profiles.list.profiles.count > 1 ? "Switch Profile" : "Profile") {
+                ForEach(profiles.list.profiles) { profile in
+                    Button {
+                        profiles.switchTo(profile.id)
+                    } label: {
+                        if profile.id == profiles.current.id {
+                            Label(profile.name, systemImage: "checkmark")
+                        } else {
+                            Text(profile.name)
                         }
                     }
                 }
-                Divider()
                 Button("Add Profile…") { addingProfile = true }
-                Button("Edit Profile…") { editingProfile = true }
-                if profiles.current.hasPassword {
-                    Divider()
-                    Button("Lock") { model.isLocked = true }
-                }
-            } label: {
-                HStack(spacing: Space.sm) {
-                    ProfileBadge(profile: profiles.current, size: 24)
+            }
+            Divider()
+            Button("Edit Profile…") { editingProfile = true }
+            Button("Models") { model.showModels() }
+                .keyboardShortcut("l", modifiers: [.command, .shift])
+            Button("Settings…") { openSettings() }
+                .keyboardShortcut(",")
+            if profiles.current.hasPassword {
+                Divider()
+                Button("Lock") { model.isLocked = true }
+            }
+        } label: {
+            HStack(spacing: Space.md) {
+                ProfileBadge(profile: profiles.current, size: 32)
+                VStack(alignment: .leading, spacing: 0) {
                     Text(profiles.current.name)
+                        .font(.body.weight(.medium))
                         .lineLimit(1)
+                    Text(profiles.current.hasPassword ? "Private profile" : "On this Mac")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
+                Spacer(minLength: Space.sm)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
             }
-            .menuStyle(.button)
-            .buttonStyle(.plain)
-            .menuIndicator(.hidden)
-            .fixedSize(horizontal: false, vertical: true)
-            .help("Switch profiles, add one, or lock")
-            .accessibilityLabel("Profile: \(profiles.current.name)")
-
-            Spacer(minLength: Space.sm)
-
-            Button { model.showModels() } label: {
-                Image(systemName: "cpu")
-            }
-            .buttonStyle(.borderless)
-            .foregroundStyle(model.showingModels ? Palette.accentText : .secondary)
-            .help("Models (⇧⌘L)")
-            .accessibilityLabel("Models")
-
-            SettingsLink {
-                Image(systemName: "gearshape")
-            }
-            .buttonStyle(.borderless)
-            .foregroundStyle(.secondary)
-            .help("Settings (⌘,)")
-            .accessibilityLabel("Settings")
+            .padding(.horizontal, Space.sm)
+            .padding(.vertical, Space.sm)
+            .background(hovering ? AnyShapeStyle(.fill.tertiary) : AnyShapeStyle(.clear),
+                        in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+            .contentShape(Rectangle())
         }
-        .font(.callout)
-        .padding(.horizontal, Space.lg)
-        .padding(.vertical, Space.md)
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+        .onHover { hovering = $0 }
+        .help("Profiles, Models, and Settings")
+        .accessibilityLabel("Profile: \(profiles.current.name)")
+        .padding(.horizontal, Space.sm)
+        .padding(.vertical, Space.sm)
         .sheet(isPresented: $addingProfile) { AddProfileSheet() }
         .sheet(isPresented: $editingProfile) { EditProfileSheet() }
     }
@@ -75,14 +77,31 @@ struct SidebarFooter: View {
 struct ProfileBadge: View {
     let profile: Profile
     var size: CGFloat = 24
+    private var profiles = ProfileStore.shared
+
+    init(profile: Profile, size: CGFloat = 24) {
+        self.profile = profile
+        self.size = size
+    }
 
     var body: some View {
-        Text(profile.initial)
-            .font(.system(size: size * 0.48, weight: .semibold)) // grid: ok scales with the badge
-            .foregroundStyle(Palette.onAccent)
-            .frame(width: size, height: size)
-            .background(Palette.accent, in: Circle())
-            .accessibilityHidden(true)
+        Group {
+            if let photo = profiles.photo(for: profile.id) {
+                Image(nsImage: photo)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                Text(profile.initial)
+                    .font(.system(size: size * 0.46, weight: .semibold)) // grid: ok scales with the badge
+                    .foregroundStyle(Palette.onAccent)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Palette.accent)
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(Circle())
+        .overlay(Circle().strokeBorder(.separator, lineWidth: 0.5)) // grid: ok hairline ring
+        .accessibilityHidden(true)
     }
 }
 
@@ -206,6 +225,15 @@ struct EditProfileSheet: View {
     var body: some View {
         Form {
             Section("Profile") {
+                LabeledContent("Photo") {
+                    HStack(spacing: Space.md) {
+                        ProfileBadge(profile: profiles.current, size: 40)
+                        Button("Choose…", action: choosePhoto)
+                        if profiles.photo(for: profiles.current.id) != nil {
+                            Button("Remove") { profiles.removePhoto(for: profiles.current.id) }
+                        }
+                    }
+                }
                 TextField("Name", text: $name)
             }
             Section {
@@ -251,6 +279,14 @@ struct EditProfileSheet: View {
         } message: {
             Text("Its conversations move to the Trash.")
         }
+    }
+
+    private func choosePhoto() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.image]
+        panel.message = "Choose a photo for your profile"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        if !profiles.setPhoto(from: url, for: profiles.current.id) { problem = "That file isn't a picture Local Mind can read." }
     }
 
     private func save() {
