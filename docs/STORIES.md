@@ -896,6 +896,40 @@ Acceptance:
 - [snap] While a model thinks, its thinking is closed and the line reads "Thinking…".
 Status: done
 
+### S-070 Share and export a conversation
+As the user, I share a conversation through the Mac's share sheet, copy it as Markdown, or save it as Markdown or PDF.
+Screens: chat
+Depends: S-001
+Acceptance:
+- [unit] Markdown has the title, then each turn in order under who said it, with attachments named.
+- [self] Save as PDF writes a real PDF.
+Status: done
+
+### S-071 Back up and move conversations
+As the user, I save all of a profile's conversations to one file and bring them back on this or another Mac.
+Screens: settings-profile
+Depends: S-063
+Acceptance:
+- [unit] A backup round-trips exactly, attachments included.
+- [self] Importing restores what's missing and skips what's already here.
+Status: todo
+
+### S-072 Speak a message
+As the user, I click the microphone and talk; my words appear in the message box as I speak, recognized on this Mac.
+Screens: chat
+Depends: S-001
+Acceptance:
+- [manual] Dictation writes into the message box and stops when clicked again; nothing is sent until Send.
+Status: todo
+
+### S-073 Listen to a reply
+As the user, I click the speaker on a reply to hear it in the Mac's best voice, and click again to stop.
+Screens: chat
+Depends: S-001
+Acceptance:
+- [unit] What's read has no Markdown symbols, tables are read as cells, and code is mentioned, not read.
+Status: todo
+
 ## Later
 Next after version one:
 - Projects with their own instructions and files

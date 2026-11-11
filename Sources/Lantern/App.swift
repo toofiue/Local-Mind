@@ -78,6 +78,15 @@ struct LanternApp: App {
                 Button("Edit Message") { model.startEditing() }
                     .keyboardShortcut("e", modifiers: [.command, .shift])
                     .disabled(!menu.canEdit)
+                Button("Share Conversation…") { if let c = model.selectedConversation { model.share(c) } }
+                    .disabled(!menu.hasSelection)
+                Button("Save as PDF…") { if let c = model.selectedConversation { model.savePDF(of: c) } }
+                    .keyboardShortcut("p", modifiers: [.command, .option])
+                    .disabled(!menu.hasSelection)
+                Button("Copy Conversation as Markdown") { if let c = model.selectedConversation { model.copyMarkdown(of: c) } }
+                    .keyboardShortcut("c", modifiers: [.command, .option])
+                    .disabled(!menu.hasSelection)
+                Divider()
                 Button("Copy Reply") { model.copyLatestReply() }
                     .keyboardShortcut("c", modifiers: [.command, .shift])
                     .disabled(!menu.hasReply)

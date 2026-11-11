@@ -1009,6 +1009,34 @@ enum SelfTest {
             check("S-064 a file that isn't a picture is refused", !profiles.setPhoto(from: notPicture, for: id))
         }
 
+        // S-070, S-071 export, PDF, and backup
+        do {
+            let context = model.container.mainContext
+            let all = (try? context.fetch(FetchDescriptor<Conversation>())) ?? []
+            if let sample = all.first(where: { !$0.messages.isEmpty }) {
+                let markdown = model.markdown(for: sample)
+                check("S-070 a conversation exports as Markdown with its title", markdown.hasPrefix("# \(sample.title)"))
+                let pdf = FileManager.default.temporaryDirectory.appending(path: "export-test.pdf")
+                try? FileManager.default.removeItem(at: pdf)
+                model.writePDF(of: sample, to: pdf)
+                check("S-070 Save as PDF writes a real PDF", (try? Data(contentsOf: pdf))?.starts(with: Data("%PDF".utf8)) == true)
+
+                let backup = ConversationBackup(profileName: "Test", conversations: all.map(model.exported))
+                let file = FileManager.default.temporaryDirectory.appending(path: "backup-test.json")
+                try? backup.encoded().write(to: file)
+                let before = all.count
+                let uid = sample.uid
+                let messageCount = sample.messages.count
+                model.delete(sample)
+                let restored = model.importConversations(from: file)
+                let after = (try? context.fetchCount(FetchDescriptor<Conversation>())) ?? -1
+                check("S-071 importing a backup restores what's missing", restored == 1 && after == before, "\(restored ?? -1), \(before) to \(after)")
+                check("S-071 and skips what's already here", model.importConversations(from: file) == 0)
+                let back = (try? context.fetch(FetchDescriptor<Conversation>()))?.first { $0.uid == uid }
+                check("S-071 a restored conversation keeps its messages", back?.messages.count == messageCount)
+            }
+        }
+
         // Launch repair
         let stale = Message(role: .assistant, text: "Cut", modelName: "first:1", sequence: 99, state: .writing)
         model.selectedConversation?.messages.append(stale)

@@ -158,6 +158,8 @@ struct SettingsBoard: View {
 
 /// Settings > Profile: who you are on this Mac, and the other profiles.
 struct ProfileSettings: View {
+    @Environment(AppModel.self) private var model
+    @State private var imported: Int?
     @State private var editing = false
     @State private var adding = false
     private var profiles = ProfileStore.shared
@@ -176,9 +178,13 @@ struct ProfileSettings: View {
             }
             .padding(.vertical, Space.lg)
             Divider()
-            SettingRow(title: "Your conversations",
-                       description: "They stay on this Mac, in this profile only. Models are shared by every profile.") {
-                EmptyView()
+            SettingRow(title: "Back up and move",
+                       description: imported.map { "Added \($0) conversation\($0 == 1 ? "" : "s")." }
+                           ?? "Save all of this profile's conversations to one file, or bring them in from another Mac. They stay on this Mac otherwise.") {
+                HStack(spacing: Space.sm) {
+                    Button("Import…") { imported = model.importConversations() }
+                    Button("Export…") { model.backupConversations() }
+                }
             }
             Text("Profiles on This Mac")
                 .font(.title3)
