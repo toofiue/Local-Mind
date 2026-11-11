@@ -40,7 +40,7 @@ enum SelfTest {
     }
 
     private static func runScripted(_ model: AppModel) async {
-        let first = OllamaModel(name: "first:1", size: 100, capabilities: ["completion", "thinking", "vision"], contextLimit: 100)
+        let first = OllamaModel(name: "first:1", size: 100, capabilities: ["completion", "thinking", "vision", "audio"], contextLimit: 100)
         let second = OllamaModel(name: "second:1", size: 200, capabilities: ["completion"])
         let transport = ScriptedTransport(installed: [first, second])
         model.client = OllamaClient(transport: transport)
@@ -762,6 +762,49 @@ enum SelfTest {
             let started = ContinuousClock.now
             check("S-044 endless code is stopped", await !run("while True:\n    pass", timeout: 1.5))
             check("S-044 and stopped on time", started.duration(to: .now) < .seconds(5))
+        }
+
+        // S-045 audio
+        do {
+            let previous = model.selection
+            defer { model.selection = previous }
+            let speech = FileManager.default.temporaryDirectory.appending(path: "Lantern voice note.aiff")
+            let say = Process()
+            say.executableURL = URL(fileURLWithPath: "/usr/bin/say")
+            say.arguments = ["-o", speech.path, "The code word is marigold."]
+            try? say.run()
+            say.waitUntilExit()
+            defer { try? FileManager.default.removeItem(at: speech) }
+
+            model.newConversation()
+            model.draftModelName = "second:1"
+            await model.addFiles([speech])
+            check("S-045 a model without audio is refused by name", model.attachmentNotice == "second:1 can't listen to audio. Choose a model that can.", model.attachmentNotice ?? "nil")
+            model.draftModelName = "first:1"
+            await model.addFiles([speech])
+            let audio = model.draftAttachments.first
+            check("S-045 audio attaches with its length", audio?.kind == .audio && (audio?.durationSeconds ?? 0) > 0.5)
+            transport.script(ScriptedTransport.reply(text: ["Marigold"]))
+            model.send("What is the code word?")
+            await model.waitForReply()
+            let sent = transport.chatBodies.last ?? ""
+            check("S-045 the audio goes to the model", sent.contains("\"images\":[\"UklGR"))
+            check("S-045 audio isn't pasted in as text", !sent.contains("Lantern voice note.aiff"))
+            check("S-045 audio is saved with its message", model.selectedConversation?.ordered.first?.attachments.first?.audioData != nil)
+            model.draftModelName = nil
+        }
+
+        // S-046 notices clear themselves
+        do {
+            model.noticeDuration = .milliseconds(400)
+            defer { model.noticeDuration = .seconds(4) }
+            model.attachmentNotice = "First notice"
+            try? await Task.sleep(for: .milliseconds(250))
+            model.attachmentNotice = "Second notice"
+            try? await Task.sleep(for: .milliseconds(250))
+            check("S-046 a newer notice gets its own time", model.attachmentNotice == "Second notice")
+            try? await Task.sleep(for: .milliseconds(300))
+            check("S-046 the notice clears itself", model.attachmentNotice == nil)
         }
 
         // Launch repair

@@ -82,8 +82,12 @@ final class AppModel {
     var searchText = ""
     /// Files attached to the message being written.
     var draftAttachments: [LoadedAttachment] = []
-    /// Why the last attachment couldn't be added.
-    var attachmentNotice: String?
+    /// Why the last attachment couldn't be added. It clears itself after a few seconds.
+    var attachmentNotice: String? {
+        didSet { clearNoticeLater() }
+    }
+    @ObservationIgnored var noticeDuration: Duration = .seconds(4)
+    @ObservationIgnored private var noticeTask: Task<Void, Never>?
     /// Goes up whenever the search field should take focus.
     var searchRequest = 0
     /// Goes up whenever the message field should take focus.
@@ -155,6 +159,17 @@ final class AppModel {
     }
 
     var context: ModelContext { container.mainContext }
+
+    /// Each new notice gets its full time on screen before it clears.
+    private func clearNoticeLater() {
+        noticeTask?.cancel()
+        guard let shown = attachmentNotice else { return }
+        noticeTask = Task { [weak self] in
+            try? await Task.sleep(for: self?.noticeDuration ?? .seconds(4))
+            guard !Task.isCancelled, let self, self.attachmentNotice == shown else { return }
+            self.attachmentNotice = nil
+        }
+    }
 
     private static var savedNicknames: [String: String] {
         guard !Store.isOverridden else { return [:] }
@@ -393,6 +408,10 @@ final class AppModel {
         let text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty, !isWriting, connection == .connected, let modelName = currentModelName else { return false }
         if draftAttachments.contains(where: { $0.kind == .image }), let refusal = imageRefusal {
+            attachmentNotice = refusal
+            return false
+        }
+        if draftAttachments.contains(where: { $0.kind == .audio }), let refusal = audioRefusal {
             attachmentNotice = refusal
             return false
         }

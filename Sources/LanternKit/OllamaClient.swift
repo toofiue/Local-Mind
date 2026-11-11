@@ -14,6 +14,7 @@ public struct OllamaModel: Sendable, Equatable, Identifiable {
     public var id: String { name }
     public var supportsThinking: Bool { capabilities.contains("thinking") }
     public var supportsImages: Bool { capabilities.contains("vision") }
+    public var supportsAudio: Bool { capabilities.contains("audio") }
 
     /// Each ability the model has, in a fixed order.
     public var abilities: [String] {

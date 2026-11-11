@@ -8,6 +8,7 @@ struct AttachmentTile: View {
     let fileName: String
     let imageData: Data?
     let pageCount: Int
+    var durationSeconds: Double = 0
     /// Shows an X when the attachment can still be removed.
     var onRemove: (() -> Void)?
     @State private var image: NSImage?
@@ -30,7 +31,7 @@ struct AttachmentTile: View {
                 .accessibilityLabel(fileName)
             } else {
                 HStack(spacing: Space.sm) {
-                    Image(systemName: kind == .pdf ? "doc.richtext" : "doc.text")
+                    Image(systemName: symbol)
                         .foregroundStyle(.secondary)
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 0) {
@@ -68,8 +69,20 @@ struct AttachmentTile: View {
         }
     }
 
+    private var symbol: String {
+        switch kind {
+        case .pdf: "doc.richtext"
+        case .audio: "waveform"
+        default: "doc.text"
+        }
+    }
+
     private var detail: LocalizedStringKey {
-        kind == .pdf ? "^[\(pageCount) page](inflect: true)" : "Text"
+        switch kind {
+        case .pdf: "^[\(pageCount) page](inflect: true)"
+        case .audio: LocalizedStringKey(Duration.seconds(durationSeconds.rounded()).formatted(.time(pattern: .minuteSecond)))
+        default: "Text"
+        }
     }
 }
 
@@ -82,7 +95,7 @@ struct DraftAttachmentRow: View {
             HStack(spacing: Space.sm) {
                 ForEach(model.draftAttachments) { item in
                     AttachmentTile(kind: item.kind, fileName: item.fileName, imageData: item.imageData, pageCount: item.pageCount,
-                                   onRemove: { model.removeAttachment(item.id) })
+                                   durationSeconds: item.durationSeconds, onRemove: { model.removeAttachment(item.id) })
                 }
             }
         }
@@ -97,7 +110,8 @@ struct SentAttachmentRow: View {
     var body: some View {
         HStack(spacing: Space.sm) {
             ForEach(message.orderedAttachments) { item in
-                AttachmentTile(kind: item.kind, fileName: item.fileName, imageData: item.imageData, pageCount: item.pageCount)
+                AttachmentTile(kind: item.kind, fileName: item.fileName, imageData: item.imageData, pageCount: item.pageCount,
+                               durationSeconds: item.durationSeconds)
             }
         }
     }

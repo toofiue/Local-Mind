@@ -61,7 +61,8 @@ enum SeedData {
 
     static var draftAttachments: [LoadedAttachment] {
         [sampleImageAttachment,
-         LoadedAttachment(kind: .pdf, fileName: "Quarterly report.pdf", text: "Revenue rose in the third quarter.", pageCount: 12)]
+         LoadedAttachment(kind: .pdf, fileName: "Quarterly report.pdf", text: "Revenue rose in the third quarter.", pageCount: 12),
+         LoadedAttachment(kind: .audio, fileName: "Voice note.m4a", audioData: Data(count: 64), durationSeconds: 83)]
     }
 
     /// A one-page PDF, with text or with none, for the self-test.

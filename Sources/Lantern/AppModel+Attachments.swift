@@ -42,6 +42,8 @@ extension AppModel {
     private func addIfSupported(_ loaded: LoadedAttachment) {
         if loaded.kind == .image, let refusal = imageRefusal {
             attachmentNotice = refusal
+        } else if loaded.kind == .audio, let refusal = audioRefusal {
+            attachmentNotice = refusal
         } else {
             draftAttachments.append(loaded)
         }
@@ -53,6 +55,12 @@ extension AppModel {
         return "\(displayName(model.name)) can't read images. Choose a model that can."
     }
 
+    /// Why the current model can't take audio, or nil if it can.
+    var audioRefusal: String? {
+        guard let model = models.first(where: { $0.name == currentModelName }), !model.supportsAudio else { return nil }
+        return "\(displayName(model.name)) can't listen to audio. Choose a model that can."
+    }
+
     func removeAttachment(_ id: UUID) {
         draftAttachments.removeAll { $0.id == id }
         attachmentNotice = nil
@@ -61,6 +69,8 @@ extension AppModel {
     private func show(_ error: Error, fileName: String) {
         if case AttachmentError.noReadableText = error {
             attachmentNotice = "“\(fileName)” has no readable text."
+        } else if case AttachmentError.tooLong = error {
+            attachmentNotice = "“\(fileName)” is longer than 5 minutes. Attach a shorter clip."
         } else {
             attachmentNotice = "Unable to read “\(fileName)”. Attach an image, PDF, or text file."
         }
@@ -69,8 +79,9 @@ extension AppModel {
     /// The history turn for one stored message, with its attachments.
     func turn(for message: Message) -> ChatTurn {
         let attachments = message.orderedAttachments
-        let images = attachments.compactMap { $0.imageData?.base64EncodedString() }
-        let files = attachments.filter { $0.kind != .image }.map { (name: $0.fileName, text: $0.text) }
+        // Ollama takes images and audio in the same list.
+        let images = attachments.compactMap { ($0.imageData ?? $0.audioData)?.base64EncodedString() }
+        let files = attachments.filter { $0.kind == .pdf || $0.kind == .text }.map { (name: $0.fileName, text: $0.text) }
         return ChatTurn(role: message.role.rawValue,
                         content: AttachmentPrompt.compose(message: message.text, files: files),
                         images: images.isEmpty ? nil : images)
@@ -79,7 +90,7 @@ extension AppModel {
     /// A warning if an attached file is too long for the current model. Sending is still allowed.
     var attachmentLengthWarning: String? {
         guard let limit = models.first(where: { $0.name == currentModelName })?.contextLimit else { return nil }
-        let tooLong = draftAttachments.first { $0.kind != .image && AttachmentPrompt.exceedsContext($0.text, limit: limit) }
+        let tooLong = draftAttachments.first { ($0.kind == .pdf || $0.kind == .text) && AttachmentPrompt.exceedsContext($0.text, limit: limit) }
         return tooLong.map { "“\($0.fileName)” is longer than this model can read at once. It may only see part of it." }
     }
 }

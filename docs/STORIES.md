@@ -668,6 +668,25 @@ UX:
 - States: HumanEval is off until you turn it on, because it runs code a model wrote.
 Status: done
 
+### S-045 Attach audio for models that can listen
+As the user, I attach a voice note or audio file, and a model that lists audio actually hears it.
+Screens: chat-attachments
+Depends: S-016
+Acceptance:
+- [unit] Audio in any format macOS reads is converted to 16 kHz mono WAV, which Ollama accepts.
+- [self] The audio reaches the model with the message, and a model without audio is refused by name.
+- [manual] A real model answers a question about a real recording.
+UX:
+- Words: chip detail shows the length, like "0:03"; "<model> can't listen to audio. Choose a model that can."; "“<file>” is longer than 5 minutes. Attach a shorter clip."
+Status: done
+
+### S-046 Attachment messages clear themselves
+As the user, a message about a file that couldn't be attached disappears after a few seconds.
+Screens: chat-attachments
+Acceptance:
+- [self] The message clears after 4 seconds, and a newer message gets its own 4 seconds.
+Status: todo
+
 ## Later
 Next after version one:
 - Projects with their own instructions and files

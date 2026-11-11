@@ -5,7 +5,7 @@ import PDFKit
 import UniformTypeIdentifiers
 
 public enum AttachmentKind: String, Sendable {
-    case image, pdf, text
+    case image, pdf, text, audio
 }
 
 /// A file read and ready to send with a message.
@@ -16,8 +16,14 @@ public struct LoadedAttachment: Sendable, Equatable, Identifiable {
     public let imageData: Data?
     public let text: String
     public let pageCount: Int
+    /// 16 kHz mono WAV, the format Ollama decodes.
+    public let audioData: Data?
+    public let durationSeconds: Double
 
-    public init(id: UUID = UUID(), kind: AttachmentKind, fileName: String, imageData: Data? = nil, text: String = "", pageCount: Int = 0) {
+    public init(id: UUID = UUID(), kind: AttachmentKind, fileName: String, imageData: Data? = nil, text: String = "", pageCount: Int = 0,
+                audioData: Data? = nil, durationSeconds: Double = 0) {
+        self.audioData = audioData
+        self.durationSeconds = durationSeconds
         self.id = id
         self.kind = kind
         self.fileName = fileName
@@ -30,6 +36,7 @@ public struct LoadedAttachment: Sendable, Equatable, Identifiable {
 public enum AttachmentError: Error, Equatable {
     case unsupported(String)
     case noReadableText(String)
+    case tooLong(String)
 }
 
 /// How attached text goes into a message.
@@ -53,7 +60,13 @@ public enum AttachmentLoader {
     /// Images are shrunk to this many pixels on their longest side before sending.
     public static let maxImagePixels = 1_568
 
+    /// Longest audio clip to send. 155 seconds was tested and heard correctly.
+    public static let maxAudioSeconds = 300.0
+
     public static func load(contentsOf url: URL) throws -> LoadedAttachment {
+        if UTType(filenameExtension: url.pathExtension)?.conforms(to: .audio) == true {
+            return try loadAudio(url)
+        }
         guard let data = try? Data(contentsOf: url) else { throw AttachmentError.unsupported(url.lastPathComponent) }
         return try load(name: url.lastPathComponent, data: data)
     }
@@ -69,6 +82,27 @@ public enum AttachmentLoader {
         }
         guard !text.allSatisfy(\.isWhitespace) else { throw AttachmentError.noReadableText(name) }
         return LoadedAttachment(kind: .text, fileName: name, text: text)
+    }
+
+    /// Ollama only decodes WAV, so everything is converted with macOS's own audio converter.
+    private static func loadAudio(_ url: URL) throws -> LoadedAttachment {
+        let name = url.lastPathComponent
+        let output = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString + ".wav")
+        defer { try? FileManager.default.removeItem(at: output) }
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/afconvert")
+        process.arguments = ["-f", "WAVE", "-d", "LEI16@16000", "-c", "1", url.path, output.path]
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
+        do { try process.run() } catch { throw AttachmentError.unsupported(name) }
+        process.waitUntilExit()
+        guard process.terminationStatus == 0, let wav = try? Data(contentsOf: output), wav.count > 44 else {
+            throw AttachmentError.unsupported(name)
+        }
+        // 16,000 samples a second, 2 bytes each, after a 44-byte header.
+        let seconds = Double(wav.count - 44) / 32_000
+        guard seconds <= maxAudioSeconds else { throw AttachmentError.tooLong(name) }
+        return LoadedAttachment(kind: .audio, fileName: name, audioData: wav, durationSeconds: seconds)
     }
 
     private static func loadPDF(name: String, data: Data) throws -> LoadedAttachment {
