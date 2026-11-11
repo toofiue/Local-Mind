@@ -75,3 +75,15 @@ func keepsPlace() {
     let rows = [Row(name: "c", pinned: false, age: 30), Row(name: "a", pinned: false, age: 10), Row(name: "b", pinned: false, age: 20)]
     #expect(split(rows).recent.map(\.name) == ["a", "b", "c"])
 }
+
+@Test("S-060 conversations group by day instead of showing a time on each row")
+func groupsByDate() {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(identifier: "UTC")!
+    let now = Date(timeIntervalSince1970: 1_800_000_000)
+    let day: TimeInterval = 86_400
+    let dates = [now, now - day, now - 3 * day, now - 20 * day, now - 90 * day, now - 60]
+    let groups = ConversationGroups.byDate(dates, updatedAt: { $0 }, now: now, calendar: calendar)
+    #expect(groups.map(\.title) == ["Today", "Yesterday", "Previous 7 Days", "Previous 30 Days", "Older"])
+    #expect(groups[0].items.count == 2)
+}

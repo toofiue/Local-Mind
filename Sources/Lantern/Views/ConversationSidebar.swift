@@ -30,11 +30,14 @@ struct ConversationSidebar: View {
                 ForEach(found, id: \.conversation.uid) { result in
                     ConversationRow(conversation: result.conversation, snippet: result.snippet)
                 }
-            } else if groups.pinned.isEmpty {
-                rows(groups.recent)
             } else {
-                Section("Pinned") { rows(groups.pinned) }
-                Section("Recent") { rows(groups.recent) }
+                // No time on each row: the day groups give the sense of when, like Notes and Mail.
+                if !groups.pinned.isEmpty {
+                    Section("Pinned") { rows(groups.pinned) }
+                }
+                ForEach(ConversationGroups.byDate(groups.recent, updatedAt: \.updatedAt), id: \.title) { group in
+                    Section(group.title) { rows(group.items) }
+                }
             }
         }
         // See-through to the desktop, like Finder's and Mail's sidebars.
@@ -112,16 +115,17 @@ private struct ConversationRow: View {
     /// Shown in place of the date when this row is a search result.
     var snippet: String?
     @Environment(AppModel.self) private var model
-    @State private var draft = ""
-    @FocusState private var isEditing: Bool
 
     private var isPicked: Bool { model.multiSelection.contains(conversation.uid) }
     private var isOpen: Bool { model.selection == conversation.uid && !model.showingModels && model.labModelName == nil }
     private var isHighlighted: Bool { model.isSelectingConversations ? isPicked : isOpen }
 
     /// A soft wash of the accent: stronger for the open chat or a ticked one.
+    /// Editing is neutral gray, so the system's text selection stands out from it;
+    /// clay means open or ticked.
     private var highlight: Color {
-        isHighlighted ? Palette.accent.opacity(0.16) : .clear
+        if model.renamingID == conversation.uid { return Color.primary.opacity(0.08) }
+        return isHighlighted ? Palette.accent.opacity(0.16) : .clear
     }
 
     private func click() {
@@ -148,22 +152,10 @@ private struct ConversationRow: View {
         }
         VStack(alignment: .leading, spacing: Space.xs) {
             if model.renamingID == conversation.uid {
-                TextField("Title", text: $draft)
-                    .labelsHidden()
-                    .focused($isEditing)
-                    .onSubmit { model.rename(conversation, to: draft) }
-                    .onExitCommand { model.finishRenaming() }
-                    .onChange(of: isEditing) { _, editing in
-                        // Clicking away saves, as it does in Finder.
-                        if !editing, model.renamingID == conversation.uid { model.rename(conversation, to: draft) }
-                    }
-                    .task {
-                        draft = conversation.title
-                        // A list row can't take focus until it has been laid out, and a double-click's
-                        // first click has just opened the chat, so wait for that to settle.
-                        try? await Task.sleep(for: .milliseconds(150))
-                        isEditing = true
-                    }
+                // No box around it: the row itself is the field, on a neutral editing tint.
+                InlineRenameField(title: conversation.title,
+                                  onCommit: { model.rename(conversation, to: $0) },
+                                  onCancel: { model.finishRenaming() })
             } else {
                 Text(conversation.title)
                     .lineLimit(1)
@@ -173,14 +165,10 @@ private struct ConversationRow: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
-            } else {
-                Text(conversation.updatedAt, format: .relative(presentation: .named))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
         }
         }
-        .help(conversation.title)
+        .help("\(conversation.title)\n\(conversation.updatedAt.formatted(date: .abbreviated, time: .shortened))")
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
         .onTapGesture { click() }

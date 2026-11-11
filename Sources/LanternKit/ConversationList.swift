@@ -42,6 +42,30 @@ public enum ConversationGroups {
         return (sorted.filter(isPinned), sorted.filter { !isPinned($0) })
     }
 
+    /// Splits conversations, newest first, into Today, Yesterday, Previous 7 Days, Previous 30 Days,
+    /// and Older, the way the sidebar shows them. Empty groups are left out; order is kept.
+    public static func byDate<Item>(_ items: [Item], updatedAt: (Item) -> Date,
+                                    now: Date = .now, calendar: Calendar = .current) -> [(title: String, items: [Item])] {
+        let today = calendar.startOfDay(for: now)
+        func title(_ date: Date) -> String {
+            let day = calendar.startOfDay(for: date)
+            let days = calendar.dateComponents([.day], from: day, to: today).day ?? 0
+            switch days {
+            case ..<1: return "Today"
+            case 1: return "Yesterday"
+            case 2..<8: return "Previous 7 Days"
+            case 8..<31: return "Previous 30 Days"
+            default: return "Older"
+            }
+        }
+        var groups: [(title: String, items: [Item])] = []
+        for item in items.sorted(by: { updatedAt($0) > updatedAt($1) }) {
+            let name = title(updatedAt(item))
+            if groups.last?.title == name { groups[groups.count - 1].items.append(item) } else { groups.append((name, [item])) }
+        }
+        return groups
+    }
+
     /// What to select after removing a row: the one below it, or the one above if it was last.
     public static func next<ID: Equatable>(in ids: [ID], afterRemoving id: ID) -> ID? {
         guard let index = ids.firstIndex(of: id) else { return nil }

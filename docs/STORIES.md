@@ -803,6 +803,15 @@ Acceptance:
 - [snap] New Conversation sits beside the model name on every page.
 Status: done
 
+### S-060 A calmer sidebar: day groups and in-place renaming
+As the user, I see conversations under Today, Yesterday, Previous 7 Days, and so on, with no time on each row, and I rename one right where it sits, with no box around the text.
+Screens: sidebar
+Depends: S-059
+Acceptance:
+- [unit] Conversations group by day, newest first.
+- [snap] Renaming shows the name on a gray row with no box; the selected text is in the accent.
+Status: done
+
 ## Later
 Next after version one:
 - Projects with their own instructions and files
