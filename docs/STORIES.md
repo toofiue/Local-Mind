@@ -879,6 +879,15 @@ Acceptance:
 - [snap] The model picker ends with Manage Models….
 Status: done
 
+### S-068 A consistent accent, and a curated set of colors
+As the user, every Settings section follows one rule (the accent for pickers, switches, and the chosen segment; gray for plain buttons), and I choose from a short set of refined accents.
+Screens: settings-appearance, settings-board
+Depends: S-067
+Acceptance:
+- [snap] Pickers and switches use the accent in every section; plain buttons are gray.
+- [snap] Accents: System, Clay, Ocean, Sage, Plum, Rose, Graphite. A saved accent that's gone falls back to System.
+Status: done
+
 ## Later
 Next after version one:
 - Projects with their own instructions and files

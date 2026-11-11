@@ -5,7 +5,7 @@ import SwiftUI
 /// One accent color in three shades. Everything else is Apple's look.
 /// People pick the accent in Settings > Appearance (AppearanceSettings.swift).
 /// Light and dark mode follow the Mac unless people pick Light or Dark there.
-///   APP_ACCENT=mint Lantern     run with another accent, to compare
+///   APP_ACCENT=ocean Lantern    run with another accent, to compare
 struct Theme: Identifiable, Hashable {
     struct Shades: Hashable {
         let light: UInt32
@@ -31,17 +31,13 @@ struct Theme: Identifiable, Hashable {
     var onAccent: Color { darkText ? Color(hex: 0x16161C) : .white }
 
     static let all: [Theme] = [
+        // A short, muted set that suits the clay brand: no neon, nothing too close to Clay.
         Theme(id: "system", name: "System", shades: nil),
         Theme(id: "clay", name: "Clay", shades: .init(light: 0xEBA68D, base: 0xD97757, deep: 0xB0553A)),
-        Theme(id: "blue", name: "Blue", shades: .init(light: 0x7CC0FF, base: 0x0A84FF, deep: 0x0064D2)),
-        Theme(id: "indigo", name: "Indigo", shades: .init(light: 0xA5ADFF, base: 0x5E6AD2, deep: 0x4650B8)),
-        Theme(id: "violet", name: "Violet", shades: .init(light: 0xB9A6FF, base: 0x7B5CFF, deep: 0x6342E6)),
-        Theme(id: "pink", name: "Pink", shades: .init(light: 0xFF9CCB, base: 0xE84A93, deep: 0xC0306F)),
-        Theme(id: "red", name: "Red", shades: .init(light: 0xFF8A9A, base: 0xE11D48, deep: 0xBE123C)),
-        Theme(id: "orange", name: "Orange", shades: .init(light: 0xFFB87A, base: 0xF97316, deep: 0xC2410C)),
-        Theme(id: "yellow", name: "Yellow", shades: .init(light: 0xFFE17A, base: 0xF5B800, deep: 0x946800), darkText: true),
-        Theme(id: "mint", name: "Mint", shades: .init(light: 0x8EEBC4, base: 0x2BC48A, deep: 0x0F7A55), darkText: true),
-        Theme(id: "teal", name: "Teal", shades: .init(light: 0x8BE9F5, base: 0x06B6D4, deep: 0x0E7490), darkText: true),
+        Theme(id: "ocean", name: "Ocean", shades: .init(light: 0x9BBBF0, base: 0x4A7BD0, deep: 0x2F5DAE)),
+        Theme(id: "sage", name: "Sage", shades: .init(light: 0xA9CBB0, base: 0x5F9470, deep: 0x41704F)),
+        Theme(id: "plum", name: "Plum", shades: .init(light: 0xC6B2E6, base: 0x8669BE, deep: 0x6A4EA3)),
+        Theme(id: "rose", name: "Rose", shades: .init(light: 0xEBA9B9, base: 0xC0607E, deep: 0xA14462)),
         Theme(id: "graphite", name: "Graphite", shades: .init(light: 0xC7C7CC, base: 0x7C7C84, deep: 0x55555C)),
     ]
 }

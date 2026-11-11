@@ -86,7 +86,6 @@ struct ModelsSettings: View {
                 }
             }
         }
-        .tint(.secondary)
         .sheet(item: $renaming) { RenameModelSheet(item: $0) }
         .task { for item in model.models { model.loadLabReport(item.name) } }
     }
@@ -170,6 +169,7 @@ private struct ModelRow: View {
                 }
                 .menuStyle(.borderlessButton)
                 .menuIndicator(.hidden)
+                .tint(.secondary)
                 .fixedSize()
                 .help("More actions for this model")
                 .accessibilityLabel("More actions for \(model.displayName(item.name))")

@@ -48,3 +48,18 @@ struct SettingsPageLayout<Content: View>: View {
         }
     }
 }
+
+/// Plain buttons in Settings: neutral gray, so the accent stays for what's selected.
+struct SettingsButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .padding(.horizontal, Space.md)
+            .frame(minHeight: 28)
+            .background(configuration.isPressed ? AnyShapeStyle(.fill.secondary) : AnyShapeStyle(.fill.tertiary),
+                        in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+            .foregroundStyle(isEnabled ? .primary : .tertiary)
+            .contentShape(Rectangle())
+    }
+}

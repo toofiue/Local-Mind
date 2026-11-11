@@ -86,8 +86,9 @@ struct SettingsBoard: View {
                 Divider()
                 page
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    // Settings controls stay neutral; the accent is for state, like a loaded model.
-                    .buttonStyle(.bordered)
+                    // One rule for every section: the accent for selection controls (pickers, switches,
+                    // the chosen segment), neutral gray for plain buttons.
+                    .buttonStyle(SettingsButtonStyle())
             }
         }
         .background(.background)
