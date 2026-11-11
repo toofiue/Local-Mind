@@ -6,11 +6,24 @@ import SwiftUI
 /// opening a menu with profiles, Models, Settings, and Lock. One target, nothing to mis-click.
 struct SidebarFooter: View {
     @Environment(AppModel.self) private var model
-    @Environment(\.openSettings) private var openSettings
     @State private var addingProfile = false
     @State private var editingProfile = false
     @State private var hovering = false
     private var profiles = ProfileStore.shared
+
+    /// The one Settings button, beside the profile row, with room around it.
+    private var gear: some View {
+        Button { model.showingSettings = true } label: {
+            Image(systemName: "gearshape")
+                .frame(width: 32, height: 32)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.borderless)
+        .foregroundStyle(.secondary)
+        .help("Settings (⌘,)")
+        .accessibilityLabel("Settings")
+        .padding(.trailing, Space.md)
+    }
 
     var body: some View {
         Menu {
@@ -32,7 +45,7 @@ struct SidebarFooter: View {
             Button("Edit Profile…") { editingProfile = true }
             Button("Models") { model.showModels() }
                 .keyboardShortcut("l", modifiers: [.command, .shift])
-            Button("Settings…") { openSettings() }
+            Button("Settings…") { model.showingSettings = true }
                 .keyboardShortcut(",")
             if profiles.current.hasPassword {
                 Divider()
@@ -54,7 +67,9 @@ struct SidebarFooter: View {
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
             }
-            .padding(.horizontal, Space.sm)
+            .padding(.leading, Space.sm)
+            // The gear sits to the right, outside the row's highlight.
+            .padding(.trailing, Space.sm + 32 + Space.md)
             .padding(.vertical, Space.sm)
             .background(hovering ? AnyShapeStyle(.fill.tertiary) : AnyShapeStyle(.clear),
                         in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
@@ -64,10 +79,11 @@ struct SidebarFooter: View {
         .buttonStyle(.plain)
         .menuIndicator(.hidden)
         .onHover { hovering = $0 }
-        .help("Profiles, Models, and Settings")
+        .help("Switch profiles, see Models, or lock")
         .accessibilityLabel("Profile: \(profiles.current.name)")
-        .padding(.horizontal, Space.sm)
+        .padding(.leading, Space.sm)
         .padding(.vertical, Space.sm)
+        .overlay(alignment: .trailing) { gear }
         .sheet(isPresented: $addingProfile) { AddProfileSheet() }
         .sheet(isPresented: $editingProfile) { EditProfileSheet() }
     }

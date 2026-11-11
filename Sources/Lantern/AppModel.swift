@@ -89,6 +89,10 @@ final class AppModel {
     var isSelectingConversations = false {
         didSet { if !isSelectingConversations { multiSelection = [] } }
     }
+    /// True while the Settings board shows over the window.
+    var showingSettings = false
+    /// The section the Settings board opens on, when something asks for a particular one.
+    var settingsBoardStart: SettingsBoard.BoardSection?
     /// True while a profile with a password waits to be unlocked. Nothing of its conversations shows.
     var isLocked = ProfileStore.shared.current.hasPassword
     /// Text a starter button puts in the message box.

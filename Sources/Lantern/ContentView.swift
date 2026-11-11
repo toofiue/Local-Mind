@@ -12,6 +12,13 @@ struct ContentView: View {
                 LockView()
             } else {
                 main
+                    .overlay {
+                        if model.showingSettings {
+                            SettingsBoard()
+                                .transition(.opacity.combined(with: .scale(scale: 0.98)))
+                        }
+                    }
+                    .animation(.smooth(duration: 0.2), value: model.showingSettings)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in

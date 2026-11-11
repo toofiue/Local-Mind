@@ -850,6 +850,15 @@ Acceptance:
 - [snap] The corner shows one row: photo or initial, name, and a chevron.
 Status: done
 
+### S-065 Settings as a board in the window, and pages that use a wide window
+As the user, Settings opens as a board in the middle of the window, sized to fit the window; the Models page uses the room a big window gives it.
+Screens: settings-board, models
+Depends: S-064
+Acceptance:
+- [snap] The board has a largest size and keeps a margin from the window's edges; Escape or a click outside closes it.
+- [snap] On a wide window the Models page fills more of it, and the Best For tiles wrap instead of running off the edge.
+Status: done
+
 ## Later
 Next after version one:
 - Projects with their own instructions and files

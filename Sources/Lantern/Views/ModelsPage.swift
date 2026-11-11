@@ -17,7 +17,7 @@ struct ModelsPage: View {
             VStack(alignment: .leading, spacing: Space.section) {
                 header
                 bestFor
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 260), spacing: Space.lg, alignment: .top)],
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 280), spacing: Space.lg, alignment: .top)],
                           alignment: .leading, spacing: Space.lg) {
                     ForEach(model.models) { item in
                         ModelCard(item: item, onRename: { renaming = item })
@@ -25,7 +25,8 @@ struct ModelsPage: View {
                 }
             }
             .padding(Space.margin)
-            .frame(maxWidth: 960, alignment: .leading)
+            // Room to breathe on a big window, without lines too long to scan.
+            .frame(maxWidth: 1280, alignment: .leading)
             .frame(maxWidth: .infinity)
         }
         .overlay {
@@ -82,8 +83,9 @@ struct ModelsPage: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-                ScrollView(.horizontal) {
-                    HStack(spacing: Space.sm) {
+                // Tiles wrap onto more rows instead of running off the edge.
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 168), spacing: Space.sm, alignment: .top)],
+                          alignment: .leading, spacing: Space.sm) {
                         ForEach(winners, id: \.area) { winner in
                             VStack(alignment: .leading, spacing: Space.xs) {
                                 Label(winner.area.title, systemImage: winner.area.symbol)
@@ -98,12 +100,10 @@ struct ModelsPage: View {
                                     .monospacedDigit()
                             }
                             .padding(Space.md)
-                            .frame(width: 168, alignment: .leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                             .background(.fill.quaternary, in: RoundedRectangle(cornerRadius: Radius.md))
                         }
-                    }
                 }
-                .scrollIndicators(.never)
             }
         }
     }

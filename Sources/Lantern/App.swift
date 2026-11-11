@@ -42,6 +42,14 @@ struct LanternApp: App {
         .commands {
             SidebarCommands()
             ToolbarCommands()
+            // Settings opens as a board inside the window.
+            CommandGroup(replacing: .appSettings) {
+                Button("Settings…") {
+                    model.showMainWindow()
+                    model.showingSettings = true
+                }
+                .keyboardShortcut(",")
+            }
             CommandGroup(replacing: .newItem) {
                 Button("New Conversation") { model.newConversation() }
                     .keyboardShortcut("n")
