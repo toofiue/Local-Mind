@@ -6,7 +6,7 @@ extension AppModel {
     func openLab(_ modelName: String) {
         memoryWarning = nil
         selection = nil
-        showingModels = false
+        showingSettings = false
         labTab = .quickCheck
         labModelName = modelName
     }
@@ -14,7 +14,7 @@ extension AppModel {
     func closeLab() {
         memoryWarning = nil
         labModelName = nil
-        showingModels = true
+        showModels()
     }
 
     /// Runs the tests, unless the model won't fit and you haven't said to go ahead.

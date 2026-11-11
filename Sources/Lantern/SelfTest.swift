@@ -490,7 +490,7 @@ enum SelfTest {
             await model.refreshLoaded()
             check("S-027 the loaded model is known", model.loaded.map(\.name) == ["first:1"])
             model.showModels()
-            check("S-027 the page opens", model.showingModels && model.selection == nil)
+            check("S-027 Settings opens on Models", model.showingModels && model.showingSettings)
             model.newConversation()
             check("S-027 New Conversation leaves it", !model.showingModels)
             model.showModels()

@@ -34,8 +34,6 @@ struct ContentView: View {
         } detail: {
             if let name = model.labModelName {
                 ModelLabPage(name: name)
-            } else if model.showingModels {
-                ModelsPage()
             } else {
                 ConversationPage()
             }

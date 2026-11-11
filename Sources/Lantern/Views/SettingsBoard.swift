@@ -6,15 +6,15 @@ import SwiftUI
 /// small window, keeping a margin all round. Escape, the close button, or a click outside closes it.
 struct SettingsBoard: View {
     @Environment(AppModel.self) private var model
-    @State private var section: BoardSection = .profile
     @State private var search = ""
 
     enum BoardSection: String, CaseIterable, Identifiable {
-        case profile, appearance, general
+        case profile, models, appearance, general
         var id: String { rawValue }
         var title: String {
             switch self {
             case .profile: "Profile"
+            case .models: "Models"
             case .appearance: "Appearance"
             case .general: "General"
             }
@@ -22,6 +22,7 @@ struct SettingsBoard: View {
         var symbol: String {
             switch self {
             case .profile: "person"
+            case .models: "cpu"
             case .appearance: "paintpalette"
             case .general: "gearshape"
             }
@@ -31,11 +32,12 @@ struct SettingsBoard: View {
             switch self {
             case .profile: ["name", "photo", "password", "lock", "account", "switch"]
             case .appearance: ["dark", "light", "theme", "color", "accent", "sidebar", "frost", "transparency"]
-            case .general: ["shortcut", "hotkey", "keyboard", "quick ask", "menu bar", "models", "default", "loaded"]
+            case .models: ["default", "loaded", "memory", "test", "benchmark", "best", "rename", "unload"]
+            case .general: ["shortcut", "hotkey", "keyboard", "quick ask", "menu bar"]
             }
         }
         /// The sidebar's groups, split by lines.
-        static let groups: [[BoardSection]] = [[.profile], [.appearance, .general]]
+        static let groups: [[BoardSection]] = [[.profile], [.models], [.appearance, .general]]
     }
 
     private func matches(_ item: BoardSection) -> Bool {
@@ -90,9 +92,6 @@ struct SettingsBoard: View {
         .overlay(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous).strokeBorder(.separator))
         .shadow(color: .black.opacity(0.3), radius: 30, y: 12)
         .accessibilityAddTraits(.isModal)
-        .onAppear {
-            if let start = model.settingsBoardStart { section = start; model.settingsBoardStart = nil }
-        }
     }
 
     private var sidebar: some View {
@@ -103,7 +102,7 @@ struct SettingsBoard: View {
                     .accessibilityHidden(true)
                 TextField("Search", text: $search, prompt: Text("Search"))
                     .textFieldStyle(.plain)
-                    .onSubmit { if let first = BoardSection.allCases.first(where: matches) { section = first } }
+                    .onSubmit { if let first = BoardSection.allCases.first(where: matches) { model.settingsSection = first } }
             }
             .padding(.horizontal, Space.md)
             .frame(height: 32)
@@ -115,17 +114,17 @@ struct SettingsBoard: View {
                     Divider().padding(.horizontal, Space.sm).padding(.vertical, Space.sm)
                 }
                 ForEach(group) { item in
-                    Button { section = item } label: {
+                    Button { model.settingsSection = item } label: {
                         Label(item.title, systemImage: item.symbol)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, Space.md)
                             .frame(height: 32)
-                            .background(section == item ? AnyShapeStyle(.fill.secondary) : AnyShapeStyle(.clear),
+                            .background(model.settingsSection == item ? AnyShapeStyle(.fill.secondary) : AnyShapeStyle(.clear),
                                         in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .accessibilityAddTraits(section == item ? .isSelected : [])
+                    .accessibilityAddTraits(model.settingsSection == item ? .isSelected : [])
                 }
             }
             if groups.isEmpty {
@@ -140,8 +139,9 @@ struct SettingsBoard: View {
     }
 
     @ViewBuilder private var page: some View {
-        switch section {
+        switch model.settingsSection {
         case .profile: ProfileSettings()
+        case .models: ModelsPage(inSettings: true)
         case .appearance: AppearanceSettings()
         case .general: GeneralSettings()
         }

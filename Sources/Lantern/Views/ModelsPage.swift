@@ -3,6 +3,8 @@ import LanternKit
 
 /// Every installed model as a card, with which one is best at each job on top.
 struct ModelsPage: View {
+    /// Shown as the Models section of Settings: sized for the board, with no window title or toolbar.
+    var inSettings = false
     @Environment(AppModel.self) private var model
     @State private var renaming: OllamaModel?
 
@@ -13,31 +15,41 @@ struct ModelsPage: View {
     private var testedCount: Int { model.models.filter { model.labReports[$0.name] != nil }.count }
 
     var body: some View {
+        if inSettings {
+            content
+        } else {
+            content
+                .navigationTitle("Models")
+                .toolbar {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button("New Conversation", systemImage: "square.and.pencil") { model.newConversation() }
+                            .help("Start a new conversation (⌘N)")
+                    }
+                }
+        }
+    }
+
+    private var content: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Space.section) {
+            VStack(alignment: .leading, spacing: inSettings ? Space.xl : Space.section) {
                 header
-                bestFor
+                // Your models first, then which one won each job.
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 280), spacing: Space.lg, alignment: .top)],
                           alignment: .leading, spacing: Space.lg) {
                     ForEach(model.models) { item in
                         ModelCard(item: item, onRename: { renaming = item })
                     }
                 }
+                bestFor
             }
-            .padding(Space.margin)
+            .padding(.horizontal, inSettings ? Space.xxl : Space.margin)
+            .padding(.vertical, inSettings ? Space.xl : Space.margin)
             // Room to breathe on a big window, without lines too long to scan.
             .frame(maxWidth: 1280, alignment: .leading)
             .frame(maxWidth: .infinity)
         }
         .overlay {
             if model.models.isEmpty { NoModelsView() }
-        }
-        .navigationTitle("Models")
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button("New Conversation", systemImage: "square.and.pencil") { model.newConversation() }
-                    .help("Start a new conversation (⌘N)")
-            }
         }
         .sheet(item: $renaming) { RenameModelSheet(item: $0) }
         .task {
@@ -49,7 +61,7 @@ struct ModelsPage: View {
         VStack(alignment: .leading, spacing: Space.md) {
             HStack(alignment: .firstTextBaseline) {
                 Text(model.models.count == 1 ? "1 model on this Mac" : "\(model.models.count) models on this Mac")
-                    .font(TextStyle.title)
+                    .font(inSettings ? .title3 : TextStyle.title)
                 Spacer()
                 if model.lab.isRunning {
                     Button("Stop") { model.stop() }

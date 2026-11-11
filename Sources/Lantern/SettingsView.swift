@@ -55,7 +55,6 @@ enum SettingsTab: String, CaseIterable, Identifiable {
 }
 
 /// Settings > General: Quick Ask's shortcut and the menu bar item.
-/// The default model and how long models stay loaded live on the Models page, with the models.
 struct GeneralSettings: View {
     @Environment(AppModel.self) private var model
     @AppStorage("showMenuBarItem") private var showMenuBarItem = true
@@ -72,16 +71,11 @@ struct GeneralSettings: View {
                 }
             }
             SettingRow(title: "Show in the menu bar",
-                       description: "An aperture that opens when a model is loaded, with Quick Ask and Unload.") {
+                       description: "An aperture that opens when a model is loaded, with Quick Ask and Unload.",
+                       divider: false) {
                 Toggle("Show in the menu bar", isOn: $showMenuBarItem)
                     .labelsHidden()
                     .toggleStyle(.switch)
-            }
-            SettingRow(title: "Models", description: "The default model and how long models stay loaded are on the Models page.", divider: false) {
-                Button("Open Models") {
-                    model.showingSettings = false
-                    model.showModels()
-                }
             }
         }
     }

@@ -46,12 +46,11 @@ enum SnapshotPage: String, CaseIterable {
         if self == .modelPicker { model.showingModelPicker = true }
         model.isSelectingConversations = self == .sidebarSelect
         model.isLocked = self == .lock
-        model.showingSettings = self == .settingsBoard
-        if self == .settingsBoard { model.settingsBoardStart = .general }
+        model.showingSettings = self == .settingsBoard || self == .models
+        model.settingsSection = self == .models ? .models : .general
         if self == .sidebarSelect {
             model.multiSelection = Set([SeedData.formatted, SeedData.attached].compactMap { SeedData.conversation(titled: $0, in: model)?.uid })
         }
-        model.showingModels = self == .models
         model.labModelName = self == .modelLab || self == .modelBenchmark ? "gemma4:12b-mlx" : self == .modelLabIntro ? "gemma4:latest" : nil
         model.labTab = self == .modelBenchmark ? .benchmark : .quickCheck
         if self == .modelLab || self == .modelBenchmark {

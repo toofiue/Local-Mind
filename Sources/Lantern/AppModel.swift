@@ -38,7 +38,7 @@ final class AppModel {
     /// nil means a new conversation that isn't saved yet.
     var selection: UUID? {
         didSet {
-            showingModels = false
+            showingSettings = false
             labModelName = nil
             selectedConversation = conversation(with: selection)
             syncMenu()
@@ -51,8 +51,8 @@ final class AppModel {
     var models: [OllamaModel] = []
     /// The models in memory right now.
     var loaded: [LoadedModel] = []
-    /// True while the detail area shows the Models page.
-    var showingModels = false
+    /// True while Settings shows its Models section, the one place for models.
+    var showingModels: Bool { showingSettings && settingsSection == .models }
     var draftModelName: String?
     let replies = ReplyWriter()
     let quickAsk = QuickAskState()
@@ -91,8 +91,8 @@ final class AppModel {
     }
     /// True while the Settings board shows over the window.
     var showingSettings = false
-    /// The section the Settings board opens on, when something asks for a particular one.
-    var settingsBoardStart: SettingsBoard.BoardSection?
+    /// The section the Settings board shows.
+    var settingsSection: SettingsBoard.BoardSection = .profile
     /// True while a profile with a password waits to be unlocked. Nothing of its conversations shows.
     var isLocked = ProfileStore.shared.current.hasPassword
     /// Text a starter button puts in the message box.
@@ -341,18 +341,17 @@ final class AppModel {
 
     func newConversation() {
         // Already on a new conversation: start it over with an empty message box.
-        if selection == nil, !showingModels, labModelName == nil { composerResetRequest += 1 }
+        if selection == nil, !showingSettings, labModelName == nil { composerResetRequest += 1 }
         selection = nil
         labModelName = nil
         draftModelName = nil
-        showingModels = false
+        showingSettings = false
     }
 
+    /// Opens Settings on its Models section.
     func showModels() {
-        // Clearing the selection lets a click on any conversation come back from this page.
-        selection = nil
-        labModelName = nil
-        showingModels = true
+        settingsSection = .models
+        showingSettings = true
     }
 
     /// A model can't be unloaded while it's writing a reply.
