@@ -912,7 +912,7 @@ Depends: S-063
 Acceptance:
 - [unit] A backup round-trips exactly, attachments included.
 - [self] Importing restores what's missing and skips what's already here.
-Status: todo
+Status: done
 
 ### S-072 Speak a message
 As the user, I click the microphone and talk; my words appear in the message box as I speak, recognized on this Mac.
@@ -928,7 +928,7 @@ Screens: chat
 Depends: S-001
 Acceptance:
 - [unit] What's read has no Markdown symbols, tables are read as cells, and code is mentioned, not read.
-Status: todo
+Status: done
 
 ## Later
 Next after version one:
