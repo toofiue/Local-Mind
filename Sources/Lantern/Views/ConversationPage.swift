@@ -7,8 +7,12 @@ struct ConversationPage: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// A new conversation: the message box sits in the middle, under the greeting.
+    /// Ollama couldn't be started because it isn't on this Mac.
+    private var needsOllama: Bool { model.connection == .failed && !AppModel.ollamaInstalled }
+    private var needsModel: Bool { model.connection == .connected && model.models.isEmpty }
+
     private var isHome: Bool {
-        model.selectedConversation == nil && !(model.connection == .connected && model.models.isEmpty)
+        model.selectedConversation == nil && !needsModel && !needsOllama
     }
 
     var body: some View {
@@ -20,9 +24,10 @@ struct ConversationPage: View {
                 MessageList(conversation: conversation)
                     .id(conversation.uid)
                     .transition(.opacity)
-            } else if model.connection == .connected && model.models.isEmpty {
-                NoModelsView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if needsOllama {
+                GetOllamaView()
+            } else if needsModel {
+                FirstModelView()
             } else {
                 // Flexible room above the greeting; the room below the buttons matches it.
                 Color.clear
@@ -33,10 +38,12 @@ struct ConversationPage: View {
                             .transition(.opacity.combined(with: .scale(scale: 0.96)))
                     }
             }
-            ConnectionStatus()
-            Composer()
-                // Its glass would show through the dimmed window around Settings.
-                .opacity(model.showingSettings ? 0 : 1)
+            if !needsOllama && !(needsModel && model.selectedConversation == nil) {
+                ConnectionStatus()
+                Composer()
+                    // Its glass would show through the dimmed window around Settings.
+                    .opacity(model.showingSettings ? 0 : 1)
+            }
             if isHome {
                 StarterRow()
                     .transition(.opacity)

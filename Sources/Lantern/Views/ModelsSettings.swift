@@ -57,10 +57,12 @@ struct ModelsSettings: View {
                 ModelRow(item: item, isLast: item.id == model.models.last?.id, onRename: { renaming = item })
             }
             if model.models.isEmpty {
-                Text("No models yet. Install one with Ollama, then it appears here.")
+                Text("No models yet. Download one below.")
                     .foregroundStyle(.secondary)
                     .padding(.vertical, Space.lg)
             }
+
+            GetMoreModelsSection()
 
             if !winners.isEmpty {
                 sectionHeader("Best For", detail: testedCount < model.models.count
@@ -112,6 +114,7 @@ private struct ModelRow: View {
     let isLast: Bool
     let onRename: () -> Void
     @Environment(AppModel.self) private var model
+    @State private var confirmingDelete = false
 
     private var report: LabReport? { model.labReports[item.name] }
     private var memory: Int64? { model.loaded.first { $0.name == item.name }?.memory }
@@ -163,6 +166,9 @@ private struct ModelRow: View {
                         Button("Unload") { Task { await model.unload(item.name) } }
                             .disabled(!model.canUnload(item.name))
                     }
+                    Divider()
+                    Button("Delete…", role: .destructive) { confirmingDelete = true }
+                        .disabled(!model.canUnload(item.name))
                 } label: {
                     Image(systemName: "ellipsis")
                         .foregroundStyle(.secondary)
@@ -176,6 +182,12 @@ private struct ModelRow: View {
             }
             .frame(height: 56)
             if !isLast { Divider() }
+        }
+        .confirmationDialog("Delete \(model.displayName(item.name))?", isPresented: $confirmingDelete) {
+            Button("Delete Model", role: .destructive) { Task { await model.deleteModel(item.name) } }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This frees \(ByteCountFormatter.string(fromByteCount: item.size, countStyle: .file)) on your Mac. Your conversations stay. You can download it again any time.")
         }
         .contextMenu {
             Button("Rename…", action: onRename)

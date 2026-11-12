@@ -89,6 +89,11 @@ final class AppModel {
     var isSelectingConversations = false {
         didSet { if !isSelectingConversations { multiSelection = [] } }
     }
+    /// Model downloads in progress, by Ollama name.
+    var downloads: [String: PullProgress] = [:]
+    /// Why a download stopped, by name, until it's tried again.
+    var downloadErrors: [String: String] = [:]
+    @ObservationIgnored var downloadTasks: [String: Task<Void, Never>] = [:]
     /// True while the Settings board shows over the window.
     var showingSettings = false
     /// The section the Settings board shows.

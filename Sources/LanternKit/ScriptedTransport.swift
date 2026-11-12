@@ -92,6 +92,11 @@ public final class ScriptedTransport: OllamaTransport {
                 state.loaded.removeAll { $0 == asked?["model"] as? String }
                 return Data("{}".utf8)
             }
+            if path.hasSuffix("/api/delete") {
+                let asked = (try? JSONSerialization.jsonObject(with: request.httpBody ?? Data())) as? [String: Any]
+                state.installed.removeAll { $0.name == asked?["model"] as? String }
+                return Data("{}".utf8)
+            }
             throw OllamaError.server("no script for \(path)")
         }
     }
@@ -109,6 +114,12 @@ public final class ScriptedTransport: OllamaTransport {
                     if delay > .zero { try? await Task.sleep(for: delay) }
                     if Task.isCancelled { break }
                     continuation.yield(line)
+                }
+                // A finished download installs the model, as Ollama does.
+                if request.url?.path.hasSuffix("/api/pull") == true, !Task.isCancelled, lines.contains(where: { $0.contains("\"success\"") }),
+                   let asked = (try? JSONSerialization.jsonObject(with: request.httpBody ?? Data())) as? [String: Any],
+                   let name = asked["model"] as? String {
+                    state.withLock { $0.installed.append(OllamaModel(name: name, size: 1)) }
                 }
                 continuation.finish()
             }

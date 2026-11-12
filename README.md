@@ -5,10 +5,13 @@ so every conversation stays on your Mac: nothing goes over the internet.
 
 ## What it does
 
+- **No Terminal needed**: if Ollama isn't installed, Local Mind explains it and links the download; then it
+  suggests the model that suits your Mac's memory and downloads it with progress. Remove models from their menu.
 - **Chat with local models**: Gemma, gpt-oss, and anything else Ollama runs, with streaming replies,
   Markdown, code blocks, and thinking you can open when you want it.
 - **Attach files**: images, PDFs, text, and audio, with previews. Gemma models can transcribe recordings.
-- **Quick Ask**: a floating panel from any app with a global shortcut.
+- **Quick Ask**: a floating panel from any app with a global shortcut. Drag it anywhere; it stays on screen.
+- **Always ready**: closing the window keeps Local Mind in the menu bar, and it can open at login.
 - **Menu bar aperture**: open when a model is loaded and ready, closed when it isn't.
 - **Model Lab**: test each model on this Mac (speed, reasoning, code, instructions, documents, images,
   listening, tools) and see which one is best for each job. An optional Full Benchmark runs
@@ -21,7 +24,7 @@ so every conversation stays on your Mac: nothing goes over the internet.
 ## Requirements
 
 - macOS 26 or later, Apple silicon
-- [Ollama](https://ollama.com) installed (Local Mind starts it when needed)
+- [Ollama](https://ollama.com) (Local Mind links the download if it's missing, and starts it when needed)
 - Xcode 26 to build
 
 ## Build and run

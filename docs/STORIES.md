@@ -924,6 +924,17 @@ Acceptance:
 - [manual] Open at login starts Local Mind with no window and the shortcut working.
 Status: done
 
+### S-075 Get Ollama and models without the Terminal
+As someone new to local AI, I'm told what Ollama is and where to get it, then offered the model that suits my Mac, download it with progress, and can delete models I don't need.
+Screens: no-ollama, no-models, settings-models
+Depends: S-067
+Acceptance:
+- [unit] The catalog rates each model for this Mac's memory and suggests the best one that runs well.
+- [unit] Download progress adds up across parts, and Ollama's errors are reported.
+- [self] A download shows progress, then installs the model; a missing model says so plainly; Delete removes a model.
+- [snap] Without Ollama, the window explains it and offers Download Ollama; without models, it offers the right first model.
+Status: done
+
 ## Later
 Next after version one:
 - Projects with their own instructions and files

@@ -310,7 +310,7 @@ public struct OllamaClient: Sendable {
         return request
     }
 
-    private func post(_ path: String, _ body: some Encodable) -> URLRequest {
+    func post(_ path: String, _ body: some Encodable) -> URLRequest {
         var request = URLRequest(url: base.appending(path: path))
         request.httpMethod = "POST"
         request.httpBody = try? JSONEncoder().encode(body)

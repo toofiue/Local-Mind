@@ -13,6 +13,7 @@ enum SnapshotPage: String, CaseIterable {
     case sidebarSearch = "sidebar-search"
     case sidebarSelect = "sidebar-select"
     case lock
+    case noOllama = "no-ollama"
     case settingsBoard = "settings-board"
     case chatAttachments = "chat-attachments"
     case quickPanel = "quick-panel"
@@ -25,14 +26,15 @@ enum SnapshotPage: String, CaseIterable {
 
     func apply(to model: AppModel) {
         model.draftAttachments = self == .chatAttachments ? SeedData.draftAttachments : []
-        model.connection = self == .offline ? .failed : .connected
+        model.connection = self == .offline || self == .noOllama ? .failed : .connected
+        AppModel.pretendOllamaInstalled = self == .noOllama ? false : nil
         model.searchText = self == .sidebarSearch ? "model" : ""
         model.replies.activeReplyID = nil
         model.showingModelPicker = false
         switch self {
         case .chat, .offline, .modelPicker, .sidebarSearch, .sidebarSelect, .quickPanel, .memoryWarning:
             model.selection = SeedData.conversation(titled: SeedData.formatted, in: model)?.uid
-        case .chatEmpty, .models, .noModels, .modelLab, .modelLabIntro, .modelBenchmark, .lock, .settingsBoard:
+        case .chatEmpty, .models, .noModels, .noOllama, .modelLab, .modelLabIntro, .modelBenchmark, .lock, .settingsBoard:
             model.selection = nil
         case .chatAttachments:
             model.selection = SeedData.conversation(titled: SeedData.attached, in: model)?.uid

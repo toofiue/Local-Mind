@@ -1059,6 +1059,31 @@ enum SelfTest {
             check("S-074 a panel already on screen isn't moved", QuickAskController.onScreen(inside) == inside)
         }
 
+        // S-075 downloading and deleting models
+        do {
+            transport.script([
+                #"{"status":"pulling manifest"}"#,
+                #"{"status":"pulling a1","digest":"a1","total":1000,"completed":400}"#,
+                #"{"status":"pulling a1","digest":"a1","total":1000,"completed":1000}"#,
+                #"{"status":"success"}"#,
+            ], delay: .milliseconds(30))
+            model.download("qwen3:4b")
+            try? await Task.sleep(for: .milliseconds(60))
+            check("S-075 a download shows progress", model.downloads["qwen3:4b"] != nil)
+            for _ in 0..<50 where model.downloads["qwen3:4b"] != nil { try? await Task.sleep(for: .milliseconds(50)) }
+            try? await Task.sleep(for: .milliseconds(200))
+            check("S-075 a finished download is installed", model.isInstalled("qwen3:4b"), "\(model.models.map(\.name))")
+
+            transport.script([#"{"error":"pull model manifest: file does not exist"}"#])
+            model.download("nothing:here")
+            for _ in 0..<50 where model.downloads["nothing:here"] != nil { try? await Task.sleep(for: .milliseconds(50)) }
+            check("S-075 a model that doesn't exist says so plainly", model.downloadErrors["nothing:here"]?.contains("doesn't have") == true,
+                  model.downloadErrors["nothing:here"] ?? "nil")
+
+            await model.deleteModel("qwen3:4b")
+            check("S-075 Delete removes a model", !model.isInstalled("qwen3:4b"))
+        }
+
         // Launch repair
         let stale = Message(role: .assistant, text: "Cut", modelName: "first:1", sequence: 99, state: .writing)
         model.selectedConversation?.messages.append(stale)
