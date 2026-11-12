@@ -24,9 +24,9 @@ private final class QuickPanel: NSPanel {
                    styleMask: [.borderless, .nonactivatingPanel, .fullSizeContentView],
                    backing: .buffered, defer: false)
         isFloatingPanel = true
-        level = .statusBar
+        level = .floating
         hidesOnDeactivate = false
-        collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
+        collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         isOpaque = false
         backgroundColor = .clear
         hasShadow = true
@@ -35,10 +35,7 @@ private final class QuickPanel: NSPanel {
 
     override var canBecomeKey: Bool { true }
 
-    override func resignKey() {
-        super.resignKey()
-        onDismiss()
-    }
+    // Clicking another app leaves Quick Ask open, with what you typed. Escape or the shortcut closes it.
 
     override func cancelOperation(_ sender: Any?) {
         onDismiss()
@@ -67,7 +64,18 @@ final class QuickAskController {
         host.sizingOptions = []
         panel.contentView = host
         self.panel = panel
+        // Drag it anywhere by its background; it opens there next time.
+        NotificationCenter.default.addObserver(forName: NSWindow.didMoveNotification, object: panel, queue: .main) { note in
+            guard let moved = note.object as? NSWindow else { return }
+            MainActor.assumeIsolated {
+                // Test runs move it too; that's not where you put it.
+                guard !SelfTest.requested, !Snapshot.requested else { return }
+                UserDefaults.standard.set([moved.frame.minX, moved.frame.maxY], forKey: Self.positionKey)
+            }
+        }
     }
+
+    private static let positionKey = "quickAsk.topLeft"
 
     func toggle() {
         if isVisible { hide() } else { show() }
@@ -104,8 +112,13 @@ final class QuickAskController {
         panel.setFrame(frame, display: true)
     }
 
-    /// Centered, in the top third of the screen under the pointer.
+    /// Where you last left it, if that spot is still on a screen; otherwise centered near the top
+    /// of the screen under the pointer.
     private func startingFrame(height: CGFloat) -> NSRect {
+        if let saved = UserDefaults.standard.array(forKey: Self.positionKey) as? [CGFloat], saved.count == 2 {
+            let frame = NSRect(x: saved[0], y: saved[1] - height, width: Layout.quickPanel, height: height)
+            if NSScreen.screens.contains(where: { $0.visibleFrame.intersects(frame) }) { return frame }
+        }
         let pointer = NSEvent.mouseLocation
         let screen = NSScreen.screens.first { NSMouseInRect(pointer, $0.frame, false) } ?? NSScreen.main
         let visible = screen?.visibleFrame ?? .zero

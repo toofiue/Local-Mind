@@ -7,9 +7,20 @@ import SwiftUI
 struct GeneralSettings: View {
     @Environment(AppModel.self) private var model
     @AppStorage("showMenuBarItem") private var showMenuBarItem = true
+    @State private var opensAtLogin = LoginItem.isEnabled
+    @State private var loginProblem: String?
 
     var body: some View {
         SettingsPageLayout(title: "General") {
+            SettingRow(title: "Open at login",
+                       description: loginProblem ?? "Starts quietly in the menu bar when you log in, so the Quick Ask shortcut always works. No window opens.") {
+                Toggle("Open at login", isOn: Binding(get: { opensAtLogin }, set: { on in
+                    loginProblem = LoginItem.set(on)
+                    opensAtLogin = LoginItem.isEnabled
+                }))
+                .labelsHidden()
+                .toggleStyle(.switch)
+            }
             SettingRow(title: "Quick Ask shortcut",
                        description: model.hotkeyMessage ?? "Opens Quick Ask from any app while Local Mind is running.") {
                 HStack(spacing: Space.sm) {
@@ -20,7 +31,7 @@ struct GeneralSettings: View {
                 }
             }
             SettingRow(title: "Show in the menu bar",
-                       description: "An aperture that opens when a model is loaded, with Quick Ask and Unload.",
+                       description: "An aperture that opens when a model is loaded, with Quick Ask and Unload. Closing the window keeps Local Mind running here.",
                        divider: false) {
                 Toggle("Show in the menu bar", isOn: $showMenuBarItem)
                     .labelsHidden()

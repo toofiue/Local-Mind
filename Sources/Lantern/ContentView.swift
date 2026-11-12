@@ -23,6 +23,9 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             Task { await model.refreshInstalledModels() }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .showMainWindow)) { _ in model.showMainWindow() }
+        // Whenever the window is open, the app is in the Dock.
+        .onAppear { if !AppPresence.launchedAtLogin { AppPresence.showInDock() } }
         .task { await start() }
     }
 

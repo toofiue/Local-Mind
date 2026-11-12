@@ -914,6 +914,16 @@ Acceptance:
 - [self] Importing restores what's missing and skips what's already here.
 Status: done
 
+### S-074 Always ready in the background, and a Quick Ask that stays put
+As the user, closing the window keeps Local Mind running in the menu bar (out of the Dock), it can open at login without a window, and Quick Ask stays open when I click elsewhere, where I last dragged it.
+Screens: quick-panel, settings-general
+Depends: S-021, S-024
+Acceptance:
+- [self] Clicking another window leaves Quick Ask open.
+- [manual] Closing the window removes the Dock icon; opening Local Mind again brings the window and the icon back.
+- [manual] Open at login starts Local Mind with no window and the shortcut working.
+Status: done
+
 ## Later
 Next after version one:
 - Projects with their own instructions and files

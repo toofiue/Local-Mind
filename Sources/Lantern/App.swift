@@ -134,6 +134,23 @@ extension Hotkey {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // When the last window closes, keep running in the menu bar instead of the Dock.
+        NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: nil, queue: .main) { note in
+            guard let window = note.object as? NSWindow else { return }
+            MainActor.assumeIsolated {
+                guard AppPresence.isMainWindow(window) else { return }
+                // After the close finishes, so the closing window no longer counts.
+                DispatchQueue.main.async { AppPresence.leaveDockIfNoWindows() }
+            }
+        }
+        if AppPresence.launchedAtLogin && !SelfTest.requested && !Snapshot.requested {
+            // Started at login: run quietly, with Quick Ask and the menu bar ready, and no window.
+            NSApp.setActivationPolicy(.accessory)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                for window in NSApp.windows where AppPresence.isMainWindow(window) { window.close() }
+            }
+            return
+        }
         // Started from a terminal, the process is not a foreground app yet.
         NSApp.setActivationPolicy(.regular)
         NSApp.activate()
@@ -141,6 +158,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // Quick Ask keeps working with the main window closed.
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
+
+    /// Opening Local Mind again (Finder, Spotlight, the Dock) brings the window back.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag {
+            MainActor.assumeIsolated {
+                NotificationCenter.default.post(name: .showMainWindow, object: nil)
+            }
+        }
+        return true
+    }
 
     /// The self-test's result becomes the exit code, after a normal quit.
     func applicationWillTerminate(_ notification: Notification) {
@@ -168,4 +195,9 @@ enum Store {
             fatalError("Could not open the database at \(url.path): \(error)")
         }
     }
+}
+
+extension Notification.Name {
+    /// Asks the app model to bring the main window back.
+    static let showMainWindow = Notification.Name("LocalMindShowMainWindow")
 }

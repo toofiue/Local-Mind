@@ -1037,6 +1037,19 @@ enum SelfTest {
             }
         }
 
+        // S-074 Quick Ask stays open when you click elsewhere
+        do {
+            let quick = QuickAskController.shared
+            quick.show()
+            try? await Task.sleep(for: .milliseconds(300))
+            NSApp.windows.first { AppPresence.isMainWindow($0) }?.makeKeyAndOrderFront(nil)
+            try? await Task.sleep(for: .milliseconds(300))
+            check("S-074 clicking another window leaves Quick Ask open", quick.isVisible)
+            quick.hide()
+            check("S-074 the main window counts as the main window", NSApp.windows.contains { AppPresence.isMainWindow($0) })
+            check("S-074 Quick Ask doesn't count as the main window", quick.window.map { !AppPresence.isMainWindow($0) } ?? false)
+        }
+
         // Launch repair
         let stale = Message(role: .assistant, text: "Cut", modelName: "first:1", sequence: 99, state: .writing)
         model.selectedConversation?.messages.append(stale)

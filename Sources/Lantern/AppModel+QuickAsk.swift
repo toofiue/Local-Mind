@@ -12,6 +12,7 @@ extension AppModel {
 
     /// Brings the main window forward, reopening it if it was closed.
     func showMainWindow() {
+        AppPresence.showInDock()
         NSApp.activate()
         if let window = NSApp.windows.first(where: { $0.canBecomeMain && !($0 is NSPanel) }) {
             window.makeKeyAndOrderFront(nil)
