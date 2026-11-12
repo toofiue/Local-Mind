@@ -103,13 +103,43 @@ final class QuickAskController {
         panel?.orderOut(nil)
     }
 
-    /// Grows and shrinks downward, so the field stays put.
+    /// Grows and shrinks downward, so the field stays put, unless that would run off the screen.
     func resize(height: CGFloat) {
         guard let panel, abs(panel.frame.height - height) >= 1 else { return }
         var frame = panel.frame
         frame.origin.y += frame.height - height
         frame.size.height = height
-        panel.setFrame(frame, display: true)
+        panel.setFrame(Self.onScreen(frame), display: true)
+    }
+
+    private var dragStart: (mouse: NSPoint, origin: NSPoint)?
+
+    /// Follows the pointer, clamped to the visible screen it's on, so no part goes off screen.
+    func drag() {
+        guard let panel else { return }
+        let mouse = NSEvent.mouseLocation
+        if dragStart == nil { dragStart = (mouse, panel.frame.origin) }
+        guard let start = dragStart else { return }
+        var frame = panel.frame
+        frame.origin = NSPoint(x: start.origin.x + mouse.x - start.mouse.x, y: start.origin.y + mouse.y - start.mouse.y)
+        panel.setFrameOrigin(Self.onScreen(frame, near: mouse).origin)
+    }
+
+    func endDrag() {
+        dragStart = nil
+    }
+
+    /// Moves a frame just enough to sit inside the visible area (inside the menu bar and the Dock)
+    /// of the screen under `point`, or the screen the frame is mostly on.
+    static func onScreen(_ frame: NSRect, near point: NSPoint? = nil) -> NSRect {
+        let screen = point.flatMap { p in NSScreen.screens.first { NSMouseInRect(p, $0.frame, false) } }
+            ?? NSScreen.screens.max { $0.frame.intersection(frame).area < $1.frame.intersection(frame).area }
+            ?? NSScreen.main
+        guard let visible = screen?.visibleFrame else { return frame }
+        var result = frame
+        result.origin.x = min(max(frame.minX, visible.minX), visible.maxX - frame.width)
+        result.origin.y = min(max(frame.minY, visible.minY), visible.maxY - frame.height)
+        return result
     }
 
     /// Where you last left it, if that spot is still on a screen; otherwise centered near the top
@@ -117,7 +147,7 @@ final class QuickAskController {
     private func startingFrame(height: CGFloat) -> NSRect {
         if let saved = UserDefaults.standard.array(forKey: Self.positionKey) as? [CGFloat], saved.count == 2 {
             let frame = NSRect(x: saved[0], y: saved[1] - height, width: Layout.quickPanel, height: height)
-            if NSScreen.screens.contains(where: { $0.visibleFrame.intersects(frame) }) { return frame }
+            if NSScreen.screens.contains(where: { $0.visibleFrame.intersects(frame) }) { return Self.onScreen(frame) }
         }
         let pointer = NSEvent.mouseLocation
         let screen = NSScreen.screens.first { NSMouseInRect(pointer, $0.frame, false) } ?? NSScreen.main
@@ -186,11 +216,13 @@ struct QuickAskView: View {
         }
         .frame(width: Layout.quickPanel)
         // Drag any empty spot, like the edge around the message box, to move Quick Ask.
-        // It opens there next time.
+        // It stays fully on screen, and opens there next time.
         .background {
             Color.clear
                 .contentShape(Rectangle())
-                .gesture(WindowDragGesture())
+                .gesture(DragGesture(minimumDistance: 2)
+                    .onChanged { _ in QuickAskController.shared.drag() }
+                    .onEnded { _ in QuickAskController.shared.endDrag() })
         }
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Radius.lg))
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
@@ -244,4 +276,8 @@ private struct QuickModelMenu: View {
         .disabled(model.isWriting || model.models.isEmpty)
         .help("Choose which model answers here")
     }
+}
+
+private extension NSRect {
+    var area: CGFloat { isNull ? 0 : width * height }
 }

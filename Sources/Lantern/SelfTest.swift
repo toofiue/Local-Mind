@@ -1050,6 +1050,15 @@ enum SelfTest {
             check("S-074 Quick Ask doesn't count as the main window", quick.window.map { !AppPresence.isMainWindow($0) } ?? false)
         }
 
+        // S-074 Quick Ask stays on screen
+        if let visible = NSScreen.main?.visibleFrame {
+            let wayOff = NSRect(x: visible.maxX + 500, y: visible.minY - 500, width: 640, height: 60)
+            let kept = QuickAskController.onScreen(wayOff)
+            check("S-074 a panel dragged past the edge stays fully on screen", visible.contains(kept), "\(kept) in \(visible)")
+            let inside = NSRect(x: visible.midX - 100, y: visible.midY, width: 640, height: 60)
+            check("S-074 a panel already on screen isn't moved", QuickAskController.onScreen(inside) == inside)
+        }
+
         // Launch repair
         let stale = Message(role: .assistant, text: "Cut", modelName: "first:1", sequence: 99, state: .writing)
         model.selectedConversation?.messages.append(stale)
