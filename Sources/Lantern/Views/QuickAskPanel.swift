@@ -133,16 +133,6 @@ struct QuickAskView: View {
     var body: some View {
         @Bindable var quick = model.quickAsk
         VStack(spacing: 0) {
-            // A grab handle: drag here, or anywhere empty, to move Quick Ask. It opens there next time.
-            Capsule()
-                .fill(.tertiary)
-                .frame(width: 36, height: 4)
-                .frame(maxWidth: .infinity)
-                .frame(height: Space.md)
-                .contentShape(Rectangle())
-                .gesture(WindowDragGesture())
-                .help("Drag to move Quick Ask")
-                .accessibilityLabel("Move Quick Ask")
             HStack(spacing: Space.md) {
                 ComposerField(text: $quick.draft, height: $quick.fieldHeight,
                               isEnabled: model.connection == .connected,
@@ -165,8 +155,7 @@ struct QuickAskView: View {
                         .help("End this reply and keep its text so far")
                 }
             }
-            .padding([.horizontal, .bottom], Space.lg)
-            .padding(.top, Space.xs)
+            .padding(Space.lg)
 
             if let warning = model.memoryWarning, warning.surface == .quickAsk {
                 MemoryWarningView(warning: warning) { model.quickSend(skipMemoryCheck: true) }
@@ -196,7 +185,8 @@ struct QuickAskView: View {
             }
         }
         .frame(width: Layout.quickPanel)
-        // Empty spots between the controls move the panel too.
+        // Drag any empty spot, like the edge around the message box, to move Quick Ask.
+        // It opens there next time.
         .background {
             Color.clear
                 .contentShape(Rectangle())
